@@ -7,6 +7,7 @@ mod uninstall;
 
 use scaffold_catalog::Catalog;
 use scaffold_context::Context;
+use scaffold_platform::Host;
 
 pub use error::InstallError;
 pub use presence::tool_is_present;
@@ -27,7 +28,13 @@ pub fn install_catalog(
     names: &[String],
 ) -> Result<(), InstallError> {
     let catalog = Catalog::load(&ctx.catalog_path)?;
+    let installing_all = names.is_empty();
+    let host = Host::current();
     for tool in resolve_install_order(&catalog, names)? {
+        if installing_all && !tool.supports_host(host) {
+            println!("{}: unsupported, skipping", tool.name);
+            continue;
+        }
         install_tool(ctx, tool, policy)?;
     }
     Ok(())
@@ -53,6 +60,7 @@ mod tests {
 
     use scaffold_catalog::{Catalog, Tool};
     use scaffold_context::Context;
+    use scaffold_platform::{Host, HostOs};
 
     use super::*;
 
@@ -139,6 +147,49 @@ mod tests {
             resolve_install_order(&catalog, &[]),
             Err(InstallError::CyclicInstallOrder)
         ));
+    }
+
+    #[test]
+    fn install_all_skips_unsupported_tools() {
+        let root = unique_test_dir("install-all-skips-unsupported-tools");
+        std::fs::create_dir_all(&root).expect("root");
+        let catalog_path = root.join("catalog.scm");
+        write_catalog_fixture(
+            &catalog_path,
+            include_str!("../fixtures/install/all-with-unsupported.scm"),
+        );
+        let ctx = Context {
+            catalog_path,
+            root_dir: root.clone(),
+            bin_dir: root.join("bin"),
+            state_dir: root.join("state"),
+        };
+
+        install_catalog(&ctx, Policy::Missing, &[]).expect("install all");
+        drop(std::fs::remove_dir_all(root));
+    }
+
+    #[test]
+    fn explicit_install_rejects_unsupported_tools() {
+        let root = unique_test_dir("explicit-install-rejects-unsupported-tools");
+        std::fs::create_dir_all(&root).expect("root");
+        let catalog_path = root.join("catalog.scm");
+        write_catalog_fixture(
+            &catalog_path,
+            include_str!("../fixtures/install/unsupported-only.scm"),
+        );
+        let ctx = Context {
+            catalog_path,
+            root_dir: root.clone(),
+            bin_dir: root.join("bin"),
+            state_dir: root.join("state"),
+        };
+
+        assert!(matches!(
+            install_catalog(&ctx, Policy::Missing, &["unsupported".to_owned()]),
+            Err(InstallError::UnsupportedHost { tool }) if tool == "unsupported"
+        ));
+        drop(std::fs::remove_dir_all(root));
     }
 
     #[test]
@@ -246,5 +297,27 @@ mod tests {
             std::process::id(),
             std::thread::current().id()
         ))
+    }
+
+    const fn unsupported_host_os_symbol() -> &'static str {
+        match Host::current().os {
+            HostOs::Linux => "windows",
+            HostOs::Macos | HostOs::Windows => "linux",
+        }
+    }
+
+    fn escape_scheme_string(value: &str) -> String {
+        value.replace('\\', "\\\\").replace('"', "\\\"")
+    }
+
+    fn write_catalog_fixture(path: &std::path::Path, fixture: &str) {
+        let current_exe = std::env::current_exe().expect("current test executable");
+        let source = fixture
+            .replace(
+                "{{ current_exe }}",
+                &escape_scheme_string(&current_exe.to_string_lossy()),
+            )
+            .replace("{{ unsupported_host_os }}", unsupported_host_os_symbol());
+        std::fs::write(path, source).expect("catalog");
     }
 }

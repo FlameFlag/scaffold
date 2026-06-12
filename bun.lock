@@ -18,7 +18,7 @@
         "@vscode/test-web": "^0.0.80",
         "@vscode/vsce": "^3.2.1",
         "esbuild": "^0.28.1",
-        "typescript": "^5.7.0",
+        "typescript": "^6.0.3",
       },
     },
     "site": {
@@ -1041,8 +1041,6 @@
     "read-pkg/unicorn-magic": ["unicorn-magic@0.1.0", "", {}, ""],
 
     "resolve-path/http-errors": ["http-errors@1.6.3", "", { "dependencies": { "depd": "~1.1.2", "inherits": "2.0.3", "setprototypeof": "1.1.0", "statuses": ">= 1.4.0 < 2" } }, ""],
-
-    "scaffold-scheme/typescript": ["typescript@5.9.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
 
     "string-width/strip-ansi": ["strip-ansi@6.0.1", "", { "dependencies": { "ansi-regex": "^5.0.1" } }, ""],
 

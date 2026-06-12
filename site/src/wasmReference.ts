@@ -1,7 +1,4 @@
 import initScaffoldWasm, {
-  completionItemsScaffoldSchemeForDocument,
-  diagnoseScaffoldScheme,
-  formatScaffoldScheme,
   referenceCapabilitiesScaffoldScheme,
   referenceCatalogSchemaScaffoldScheme,
   referenceEntriesScaffoldSchemeForWorkspace,
@@ -20,29 +17,6 @@ type SemanticToken = {
   length: number;
   token_type: "function" | "keyword" | "string" | "comment" | "parameter";
   modifiers: string[];
-};
-
-export type WasmCompletionItem = {
-  label: string;
-  kind: "function" | "keyword";
-  detail?: string;
-  documentation: string;
-  insert_text: string;
-  insert_text_is_snippet: boolean;
-  sort_text: string;
-  deprecated: boolean;
-};
-
-export type WasmDiagnostic = {
-  message: string;
-  offset: number;
-  length: number;
-  severity: "error" | "warning";
-  code: string;
-  data?: {
-    name: string;
-    line: number;
-  };
 };
 
 const sources = sourceWorkspace as SourceWorkspace;
@@ -72,25 +46,6 @@ export async function loadReferenceDocument(): Promise<ReferenceDocument> {
       referenceEntriesScaffoldSchemeForWorkspace(workspaceJson),
     ).filter((entry) => !entry.hidden),
   };
-}
-
-export async function completionItemsForDocument(
-  code: string,
-): Promise<WasmCompletionItem[]> {
-  await ensureWasm();
-  return parseJson<WasmCompletionItem[]>(
-    completionItemsScaffoldSchemeForDocument(code, workspaceJson),
-  );
-}
-
-export async function diagnoseDocument(code: string): Promise<WasmDiagnostic[]> {
-  await ensureWasm();
-  return parseJson<WasmDiagnostic[]>(diagnoseScaffoldScheme(code));
-}
-
-export async function formatDocument(code: string): Promise<string> {
-  await ensureWasm();
-  return formatScaffoldScheme(code);
 }
 
 export type SourceSnippet = {
@@ -204,129 +159,151 @@ function previousForm(source: string, beforeOffset: number) {
   return start === null ? null : { start, end };
 }
 
-function formStartEndingAt(source: string, targetEnd: number) {
-  const stack: number[] = [];
-  let inString = false;
-  let escaped = false;
-  let inComment = false;
+type ScanEvent =
+  | { kind: "open"; index: number }
+  | { kind: "close"; index: number };
+type ScanState = "code" | "string" | "comment";
+type ScanResult = {
+  state: ScanState;
+  escaped: boolean;
+  event: ScanEvent | null;
+};
 
-  for (let index = 0; index <= targetEnd; index += 1) {
-    const character = source[index];
-
-    if (inComment) {
-      inComment = character !== "\n";
-      continue;
-    }
-
-    if (inString) {
-      if (escaped) {
-        escaped = false;
-      } else if (character === "\\") {
-        escaped = true;
-      } else if (character === "\"") {
-        inString = false;
-      }
-      continue;
-    }
-
-    if (character === ";") {
-      inComment = true;
-    } else if (character === "\"") {
-      inString = true;
-    } else if (character === "(") {
-      stack.push(index);
-    } else if (character === ")") {
-      const start = stack.pop();
-
-      if (index === targetEnd) {
-        return start ?? null;
-      }
-    }
+function stringState(character: string, escaped: boolean) {
+  if (escaped) {
+    return { state: "string" as ScanState, escaped: false, event: null };
   }
 
-  return null;
+  if (character === "\\") {
+    return { state: "string" as ScanState, escaped: true, event: null };
+  }
+
+  return {
+    state: character === "\"" ? "code" : ("string" as ScanState),
+    escaped: false,
+    event: null,
+  };
+}
+
+function commentState(character: string) {
+  return {
+    state: character === "\n" ? "code" : ("comment" as ScanState),
+    escaped: false,
+    event: null,
+  };
+}
+
+function scanEvent(character: string, index: number): ScanEvent | null {
+  if (character === "(") {
+    return { kind: "open", index };
+  }
+
+  return character === ")" ? { kind: "close", index } : null;
+}
+
+function codeState(character: string, index: number): ScanResult {
+  if (character === ";") {
+    return { state: "comment", escaped: false, event: null };
+  }
+
+  if (character === "\"") {
+    return { state: "string", escaped: false, event: null };
+  }
+
+  return { state: "code", escaped: false, event: scanEvent(character, index) };
+}
+
+function scanCharacter(
+  state: ScanState,
+  escaped: boolean,
+  character: string,
+  index: number,
+): ScanResult {
+  if (state === "comment") {
+    return commentState(character);
+  }
+
+  return state === "string"
+    ? stringState(character, escaped)
+    : codeState(character, index);
+}
+
+function scanSchemeForms(
+  source: string,
+  endOffset: number,
+  visit: (event: ScanEvent) => boolean | void,
+) {
+  let state: ScanState = "code";
+  let escaped = false;
+  const end = Math.min(endOffset, source.length - 1);
+
+  for (let index = 0; index <= end; index += 1) {
+    const character = source[index];
+    const result = scanCharacter(state, escaped, character, index);
+
+    state = result.state;
+    escaped = result.escaped;
+
+    if (result.event && visit(result.event) === false) {
+      return;
+    }
+  }
+}
+
+function formStartEndingAt(source: string, targetEnd: number) {
+  const stack: number[] = [];
+  let formStart: number | null = null;
+
+  scanSchemeForms(source, targetEnd, (event) => {
+    if (event.kind === "open") {
+      stack.push(event.index);
+      return;
+    }
+
+    const start = stack.pop();
+
+    if (event.index === targetEnd) {
+      formStart = start ?? null;
+      return false;
+    }
+  });
+
+  return formStart;
 }
 
 function parenStackAt(source: string, offset: number) {
   const stack: number[] = [];
-  let inString = false;
-  let escaped = false;
-  let inComment = false;
 
-  for (let index = 0; index < Math.min(offset, source.length); index += 1) {
-    const character = source[index];
-
-    if (inComment) {
-      inComment = character !== "\n";
-      continue;
-    }
-
-    if (inString) {
-      if (escaped) {
-        escaped = false;
-      } else if (character === "\\") {
-        escaped = true;
-      } else if (character === "\"") {
-        inString = false;
-      }
-      continue;
-    }
-
-    if (character === ";") {
-      inComment = true;
-    } else if (character === "\"") {
-      inString = true;
-    } else if (character === "(") {
-      stack.push(index);
-    } else if (character === ")") {
+  scanSchemeForms(source, offset - 1, (event) => {
+    if (event.kind === "open") {
+      stack.push(event.index);
+    } else {
       stack.pop();
     }
-  }
+  });
 
   return stack;
 }
 
 function matchingParen(source: string, start: number) {
   let depth = 0;
-  let inString = false;
-  let escaped = false;
-  let inComment = false;
+  let match: number | null = null;
 
-  for (let index = start; index < source.length; index += 1) {
-    const character = source[index];
-
-    if (inComment) {
-      inComment = character !== "\n";
-      continue;
-    }
-
-    if (inString) {
-      if (escaped) {
-        escaped = false;
-      } else if (character === "\\") {
-        escaped = true;
-      } else if (character === "\"") {
-        inString = false;
-      }
-      continue;
-    }
-
-    if (character === ";") {
-      inComment = true;
-    } else if (character === "\"") {
-      inString = true;
-    } else if (character === "(") {
+  scanSchemeForms(source.slice(start), source.length - start - 1, (event) => {
+    if (event.kind === "open") {
       depth += 1;
-    } else if (character === ")") {
-      depth -= 1;
-
-      if (depth === 0) {
-        return index;
-      }
+      return;
     }
-  }
 
-  return null;
+    depth -= 1;
+
+    if (depth === 0) {
+      match = start + event.index;
+      return false;
+    }
+  });
+
+  return match;
 }
 
 function formHead(source: string, start: number) {

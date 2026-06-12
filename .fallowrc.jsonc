@@ -1,19 +1,22 @@
 {
   "entry": [
-    "docs/site/src/main.ts",
-    "docs/site/svelte.config.js",
-    "docs/site/vite.config.ts",
+    "site/src/main.ts",
+    "site/svelte.config.js",
+    "site/vite.config.ts",
     "editors/vscode/src/browser.ts",
     "editors/vscode/scripts/smoke-wasm.mts",
     "editors/vscode/web-test/index.js"
   ],
   "ignorePatterns": [
     "**/node_modules/**",
-    "docs/site/dist/**",
-    "docs/site/public/reference.json",
-    "docs/site/tsconfig.tsbuildinfo",
+    // Generated docs-site output.
+    "site/dist/**",
+    "site/public/reference.json",
+    "site/tsconfig.tsbuildinfo",
     "editors/vscode/.fallow/**",
     "editors/vscode/.vscode-test-web/**",
+    // Generated VS Code extension build output and synced runtime assets.
+    "editors/vscode/scaffold-sources.json",
     "editors/vscode/out/**",
     "editors/vscode/wasm/**"
   ],

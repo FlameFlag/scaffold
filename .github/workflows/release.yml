@@ -103,13 +103,31 @@ jobs:
         run: bun run vscode:compile:all
 
       - name: Package VSIX
-        run: bun run vscode:vsix
+        id: package-vsix
+        shell: bash
+        run: |
+          version="${RELEASE_TAG#v}"
+          vsix_path="editors/vscode/out/scaffold-vscode-${version}.vsix"
+          rm -f editors/vscode/out/*.vsix
+          (
+            cd editors/vscode
+            bunx vsce package \
+              --no-dependencies \
+              --allow-missing-repository \
+              --out "out/scaffold-vscode-${version}.vsix"
+          )
+          count="$(find editors/vscode/out -maxdepth 1 -name '*.vsix' | wc -l | tr -d ' ')"
+          if [[ "$count" != "1" ]]; then
+            echo "Expected exactly one VSIX, found ${count}." >&2
+            exit 1
+          fi
+          echo "path=${vsix_path}" >> "$GITHUB_OUTPUT"
 
       - name: Upload VSIX artifact
         uses: actions/upload-artifact@v7
         with:
           name: scaffold-vscode-vsix
-          path: editors/vscode/out/*.vsix
+          path: ${{ steps.package-vsix.outputs.path }}
           if-no-files-found: error
 
   github-release:

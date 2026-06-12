@@ -93,12 +93,21 @@ fn accepts_docs_from_a_shared_index() {
 }
 
 #[test]
-fn only_requires_docs_for_exported_library_definitions() {
+fn requires_docs_for_private_library_definitions() {
     let diagnostics = analyze_source(
         "test.scm",
         "(library (test) (export public) (import (rnrs)) (define private 1) (define public 2))",
     );
 
-    assert_eq!(diagnostics.len(), 1);
-    assert!(diagnostics[0].to_string().contains("public"));
+    assert_eq!(diagnostics.len(), 2);
+    assert!(
+        diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.to_string().contains("private"))
+    );
+    assert!(
+        diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.to_string().contains("public"))
+    );
 }

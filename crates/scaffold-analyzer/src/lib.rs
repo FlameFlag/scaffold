@@ -60,7 +60,6 @@ fn analyze_source_with_docs(
 
     let mut definitions = Vec::new();
     collect_definitions(source, &syntax, &mut definitions);
-    let exported = exported_names(&syntax);
     let mut doc_entries = Vec::new();
     collect_doc_entries(source, &syntax, &mut doc_entries);
     dedup_doc_entries(&mut doc_entries);
@@ -80,11 +79,6 @@ fn analyze_source_with_docs(
     diagnostics.extend(
         definitions
             .into_iter()
-            .filter(|definition| {
-                exported
-                    .as_ref()
-                    .is_none_or(|names| names.contains(&definition.name))
-            })
             .filter(|definition| docs.get(&definition.name).is_none())
             .map(|definition| {
                 SourceDiagnostic::missing_doc(
@@ -222,55 +216,6 @@ fn collect_doc_entries(source: &str, syntax: &Syntax, output: &mut Vec<DocEntry>
             }
             collect_doc_entries(source, item, output);
         }
-    }
-}
-
-fn exported_names(syntax: &Syntax) -> Option<HashSet<String>> {
-    let mut exports = HashSet::new();
-    collect_exported_names(syntax, &mut exports);
-    (!exports.is_empty()).then_some(exports)
-}
-
-fn collect_exported_names(syntax: &Syntax, output: &mut HashSet<String>) {
-    if let Some(items) = proper_list(syntax) {
-        if items
-            .first()
-            .and_then(ident_text)
-            .is_some_and(|head| head == "export")
-        {
-            for item in &items[1..] {
-                collect_export_item(item, output);
-            }
-            return;
-        }
-
-        for item in items {
-            collect_exported_names(item, output);
-        }
-    }
-}
-
-fn collect_export_item(syntax: &Syntax, output: &mut HashSet<String>) {
-    if let Some(name) = ident_text(syntax) {
-        let _inserted = output.insert(name);
-        return;
-    }
-
-    let Some(items) = proper_list(syntax) else {
-        return;
-    };
-    match items {
-        [head, pairs @ ..] if ident_text(head).is_some_and(|head| head == "rename") => {
-            for pair in pairs {
-                let Some(pair_items) = proper_list(pair) else {
-                    continue;
-                };
-                if let Some(local_name) = pair_items.first().and_then(ident_text) {
-                    let _inserted = output.insert(local_name);
-                }
-            }
-        }
-        _ => {}
     }
 }
 

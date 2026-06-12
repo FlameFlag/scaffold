@@ -212,6 +212,6 @@
     "@vscode/test-web": "^0.0.80",
     "@vscode/vsce": "^3.2.1",
     "esbuild": "^0.25.5",
-    "typescript": "^5.7.0"
+    "typescript": "^6.0.3"
   }
 }

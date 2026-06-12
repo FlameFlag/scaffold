@@ -1,0 +1,7 @@
+services:
+  packaging-example:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: verify
+    image: scaffold-packaging-example

@@ -1,0 +1,223 @@
+{
+  "scopeName": "source.scaffold-scheme",
+  "patterns": [
+    {
+      "include": "#comments"
+    },
+    {
+      "include": "#strings"
+    },
+    {
+      "include": "#booleans"
+    },
+    {
+      "include": "#characters"
+    },
+    {
+      "include": "#numbers"
+    },
+    {
+      "include": "#keyword-parameters"
+    },
+    {
+      "include": "#quoted"
+    },
+    {
+      "include": "#definitions"
+    },
+    {
+      "include": "#keywords"
+    },
+    {
+      "include": "#docforms"
+    },
+    {
+      "include": "#scaffold"
+    },
+    {
+      "include": "#calls"
+    },
+    {
+      "include": "#punctuation"
+    },
+    {
+      "include": "#symbols"
+    }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.block.scheme",
+          "begin": "#\\|",
+          "end": "\\|#",
+          "patterns": [
+            {
+              "include": "#comments"
+            }
+          ]
+        },
+        {
+          "name": "comment.line.semicolon.scheme",
+          "match": ";.*$"
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.scheme",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            {
+              "name": "constant.character.escape.scheme",
+              "match": "\\\\."
+            }
+          ]
+        }
+      ]
+    },
+    "booleans": {
+      "patterns": [
+        {
+          "name": "constant.language.boolean.scheme",
+          "match": "#[tf]\\b"
+        }
+      ]
+    },
+    "characters": {
+      "patterns": [
+        {
+          "name": "constant.character.scheme",
+          "match": "#\\\\(?:alarm|backspace|delete|escape|newline|null|return|space|tab|x[0-9A-Fa-f]+|.)\\b?"
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.scheme",
+          "match": "(?<![\\w!?*/+<>=-])[-+]?(?:0x[0-9A-Fa-f]+|\\d+(?:\\.\\d+)?)(?:[eE][-+]?\\d+)?\\b"
+        }
+      ]
+    },
+    "keyword-parameters": {
+      "patterns": [
+        {
+          "name": "variable.parameter.keyword.scaffold",
+          "match": "#:[A-Za-z_+\\-*/<>=!?$%&~^:.][A-Za-z0-9_+\\-*/<>=!?$%&~^:.]*"
+        }
+      ]
+    },
+    "quoted": {
+      "patterns": [
+        {
+          "name": "string.quoted.symbol.scheme",
+          "match": "'[A-Za-z_+\\-*/<>=!?$%&~^:.][A-Za-z0-9_+\\-*/<>=!?$%&~^:.]*"
+        },
+        {
+          "name": "punctuation.definition.quote.scheme",
+          "match": "'"
+        }
+      ]
+    },
+    "definitions": {
+      "patterns": [
+        {
+          "name": "meta.definition.function.scheme",
+          "match": "(\\()\\s*(define)\\s+(\\()\\s*([A-Za-z_+\\-*/<>=!?$%&~^:.][A-Za-z0-9_+\\-*/<>=!?$%&~^:.]*)",
+          "captures": {
+            "1": {
+              "name": "punctuation.section.expression.begin.scheme"
+            },
+            "2": {
+              "name": "keyword.control.scheme"
+            },
+            "3": {
+              "name": "punctuation.section.expression.begin.scheme"
+            },
+            "4": {
+              "name": "entity.name.function.scheme"
+            }
+          }
+        },
+        {
+          "name": "meta.definition.variable.scheme",
+          "match": "(\\()\\s*(define)\\s+([A-Za-z_+\\-*/<>=!?$%&~^:.][A-Za-z0-9_+\\-*/<>=!?$%&~^:.]*)",
+          "captures": {
+            "1": {
+              "name": "punctuation.section.expression.begin.scheme"
+            },
+            "2": {
+              "name": "keyword.control.scheme"
+            },
+            "3": {
+              "name": "entity.name.variable.scheme"
+            }
+          }
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.scheme",
+          "match": "\\b(define|define-syntax|lambda|let|let\\*|letrec|if|cond|begin|import|library|export|syntax-rules)\\b"
+        }
+      ]
+    },
+    "docforms": {
+      "patterns": [
+        {
+          "name": "entity.name.function.documentation.scaffold",
+          "match": "\\b(?:doc|doc-next|extern-doc|moduledoc|typedoc|signature|summary|markdown|example|param|returns|group|see|effect|requires-capability|stability|since|deprecated|hidden)\\b"
+        }
+      ]
+    },
+    "scaffold": {
+      "patterns": [
+        {
+          "name": "support.function.scaffold",
+          "match": "\\b(?:tool|package|field|object|arr|required|optional|object/(?:has-field\\?|ref|remove-fields|replace-fields|merge|inherit|override)|vector/append|arr/append-list|arr/prepend-list|[a-z0-9-]+/[a-z0-9-?]+)\\b"
+        }
+      ]
+    },
+    "calls": {
+      "patterns": [
+        {
+          "name": "meta.function-call.scheme",
+          "match": "(\\()\\s*([A-Za-z_+\\-*/<>=!?$%&~^:.][A-Za-z0-9_+\\-*/<>=!?$%&~^:.]*)",
+          "captures": {
+            "1": {
+              "name": "punctuation.section.expression.begin.scheme"
+            },
+            "2": {
+              "name": "entity.name.function.scheme"
+            }
+          }
+        }
+      ]
+    },
+    "punctuation": {
+      "patterns": [
+        {
+          "name": "punctuation.section.expression.begin.scheme",
+          "match": "\\("
+        },
+        {
+          "name": "punctuation.section.expression.end.scheme",
+          "match": "\\)"
+        }
+      ]
+    },
+    "symbols": {
+      "patterns": [
+        {
+          "name": "variable.other.symbol.scheme",
+          "match": "\\b[A-Za-z_+\\-*/<>=!?$%&~^:.][A-Za-z0-9_+\\-*/<>=!?$%&~^:.]*\\b"
+        }
+      ]
+    }
+  }
+}

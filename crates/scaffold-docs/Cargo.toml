@@ -1,0 +1,20 @@
+[package]
+name = "scaffold-docs"
+version = "0.0.1"
+edition = "2024"
+publish = false
+
+[lints]
+workspace = true
+
+[features]
+default = ["reference"]
+reference = ["dep:scaffold-catalog", "dep:scaffold-dsl", "dep:serde", "dep:serde_json"]
+
+[dependencies]
+lexpr = "0.2.7"
+scaffold-catalog = { path = "../scaffold-catalog", optional = true }
+scaffold-dsl = { path = "../scaffold-dsl", optional = true }
+scaffold-editor = { path = "../scaffold-editor" }
+serde = { version = "1.0.228", features = ["derive"], optional = true }
+serde_json = { version = "1.0.150", optional = true }

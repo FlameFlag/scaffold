@@ -1,0 +1,235 @@
+@layer components {
+  .referenceGroup > header {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: baseline;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.35rem;
+  }
+
+  .referenceGroup h2 {
+    margin: 0;
+  }
+
+  .referenceGroup > header p {
+    margin: 0;
+    color: var(--muted);
+    font-family: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    font-size: 0.78rem;
+  }
+
+  .entryList {
+    display: grid;
+    gap: 0.65rem;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .entryList > li {
+    min-width: 0;
+  }
+
+  .entry {
+    min-width: 0;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    background: var(--surface);
+    padding: 0.85rem;
+    scroll-margin-top: 6rem;
+  }
+
+  .entry header {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+
+  .entry header span,
+  .entry footer span {
+    color: var(--muted);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+  }
+
+  .summary,
+  .meta,
+  .markdown {
+    color: var(--muted);
+  }
+
+  .summary {
+    margin-bottom: 0;
+  }
+
+  .markdown {
+    margin-top: 0.75rem;
+  }
+
+  .markdown > :first-child {
+    margin-top: 0;
+  }
+
+  .markdown > :last-child {
+    margin-bottom: 0;
+  }
+
+  .params {
+    display: grid;
+    grid-template-columns: minmax(7rem, max-content) minmax(0, 1fr);
+    gap: 0.2rem 0.8rem;
+    margin: 0.85rem 0;
+    padding-top: 0.85rem;
+    border-top: 1px solid var(--line);
+  }
+
+  .params dt {
+    color: #7a3d2e;
+    font-weight: 650;
+  }
+
+  .params dd {
+    margin: 0;
+    color: var(--muted);
+  }
+
+  .entry footer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 0.7rem;
+    margin-top: 0.85rem;
+  }
+
+  .sourceDisclosure {
+    margin-top: 0.85rem;
+    border-top: 1px solid var(--line);
+    padding-top: 0.65rem;
+  }
+
+  .sourceDisclosure summary {
+    display: inline-flex;
+    max-width: 100%;
+    gap: 0.5rem;
+    align-items: baseline;
+    cursor: pointer;
+    color: var(--link);
+    font-family: var(--mono-font);
+    font-size: 0.78rem;
+  }
+
+  .sourceDisclosure summary:hover {
+    color: var(--link-hover);
+  }
+
+  .sourceDisclosure small {
+    min-width: 0;
+    color: var(--muted);
+    font-size: 0.72rem;
+    overflow-wrap: anywhere;
+  }
+
+  .sourceCode {
+    margin-top: 0.55rem;
+    --source-start: 0;
+  }
+
+  .sourceCode pre,
+  .sourceFallback {
+    max-width: 100%;
+    overflow-x: auto;
+    margin: 0;
+    border-color: var(--code-border);
+    background: #fbfbfb !important;
+    padding: 0.55rem 0;
+    font-size: 0.78rem;
+    line-height: 1.45;
+  }
+
+  .sourceCode code {
+    font-family: var(--mono-font);
+  }
+
+  .sourceCode pre {
+    counter-reset: source-line var(--source-start);
+    white-space: normal;
+  }
+
+  .sourceCode .scaffoldCode {
+    color: #24292f;
+  }
+
+  .sourceCode .line {
+    display: block;
+    width: max-content;
+    min-width: 100%;
+    padding: 0 0.7rem 0 0;
+    white-space: pre;
+  }
+
+  .sourceCode .line::before {
+    counter-increment: source-line;
+    content: counter(source-line);
+    display: inline-block;
+    width: 2.1rem;
+    margin-right: 0.65rem;
+    padding-right: 0.55rem;
+    border-right: 1px solid var(--code-border);
+    color: #8a8a8a;
+    text-align: right;
+    user-select: none;
+  }
+
+  .sourceCode .line:empty::after {
+    content: " ";
+  }
+
+  .tok-keyword {
+    color: #8a3ffc;
+    font-weight: 650;
+  }
+
+  .tok-function {
+    color: #0550ae;
+  }
+
+  .tok-function.tok-documentation {
+    color: #8250df;
+    font-weight: 650;
+  }
+
+  .tok-string {
+    color: #a40e26;
+  }
+
+  .tok-comment {
+    color: #6a737d;
+    font-style: italic;
+  }
+
+  .tok-parameter {
+    color: #953800;
+  }
+
+  .tok-deprecated {
+    text-decoration: line-through;
+  }
+
+  .sourceLoading {
+    margin: 0.55rem 0 0;
+    color: var(--muted);
+    font-family: var(--mono-font);
+    font-size: 0.78rem;
+  }
+}
+
+@media (max-width: 620px) {
+  .referenceGroup > header,
+  .entry header,
+  .params {
+    display: grid;
+  }
+}

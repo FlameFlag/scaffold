@@ -1,0 +1,12 @@
+[package]
+name = "scaffold-editor"
+version = "0.0.1"
+edition = "2024"
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+lexpr = "0.2.7"
+serde = { version = "1.0.228", features = ["derive"] }

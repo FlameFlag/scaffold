@@ -1,0 +1,39 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug scaffold CLI",
+      "type": "lldb",
+      "request": "launch",
+      "cargo": {
+        "args": [
+          "build",
+          "--bin",
+          "scaffold"
+        ],
+        "filter": {
+          "name": "scaffold",
+          "kind": "bin"
+        }
+      },
+      "args": [
+        "--help"
+      ],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Debug VS Code extension",
+      "type": "extensionHost",
+      "request": "launch",
+      "runtimeExecutable": "${execPath}",
+      "args": [
+        "--extensionDevelopmentPath=${workspaceFolder}/editors/vscode",
+        "${workspaceFolder}"
+      ],
+      "outFiles": [
+        "${workspaceFolder}/editors/vscode/out/**/*.js"
+      ],
+      "preLaunchTask": "VS Code: compile extension"
+    }
+  ]
+}

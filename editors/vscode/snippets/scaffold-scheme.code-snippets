@@ -1,0 +1,60 @@
+{
+  "Documented catalog tool": {
+    "scope": "scaffold-scheme",
+    "prefix": "scaffold-tool",
+    "description": "Create a documented Scaffold catalog tool.",
+    "body": [
+      "(doc-next",
+      "  (summary \"${2:Describe what this tool entry provides.}\")",
+      "  (example \"(${1:name})\"))",
+      "",
+      "(define (${1:name})",
+      "  (tool \"${3:command}\"",
+      "    (package",
+      "      (field 'name \"${4:package}\"))))"
+    ]
+  },
+  "Documentation block": {
+    "scope": "scaffold-scheme",
+    "prefix": "doc-next",
+    "description": "Attach structured docs to the following Scaffold DSL definition.",
+    "body": [
+      "(doc-next",
+      "  (summary \"${1:One-line summary.}\")",
+      "  (param '${2:arg} \"${3:Parameter description.}\")",
+      "  (returns \"${4:Return description.}\")",
+      "  (example \"(${5:symbol} ${6:value})\"))"
+    ]
+  },
+  "External documentation block": {
+    "scope": "scaffold-scheme",
+    "prefix": "extern-doc",
+    "description": "Attach structured docs to an imported or host-backed binding.",
+    "body": [
+      "(extern-doc ${1:symbol}",
+      "  (signature (${1:symbol} ${2:arg}))",
+      "  (summary \"${3:One-line summary.}\")",
+      "  (param '${2:arg} \"${4:Parameter description.}\"))"
+    ]
+  },
+  "Module docs": {
+    "scope": "scaffold-scheme",
+    "prefix": "moduledoc",
+    "description": "Attach structured docs to a Scaffold Scheme file or library.",
+    "body": [
+      "(moduledoc",
+      "  (summary \"${1:Module summary.}\")",
+      "  (group \"${2:Group}\"))"
+    ]
+  },
+  "Package action": {
+    "scope": "scaffold-scheme",
+    "prefix": "package",
+    "description": "Create a package action with install argv.",
+    "body": [
+      "(package",
+      "  (field 'name \"${1:package}\")",
+      "  (field 'install-argv (arr ${2:\"command\"} ${3:\"install\"} \"{{ package }}\")))"
+    ]
+  }
+}

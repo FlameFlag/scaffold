@@ -1,0 +1,14 @@
+[package]
+name = "scaffold-analyzer"
+version = "0.0.1"
+edition = "2024"
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+scaffold-diagnostic = { path = "../scaffold-diagnostic" }
+scaffold-docs = { path = "../scaffold-docs" }
+scaffold-editor = { path = "../scaffold-editor" }
+scheme-rs = { version = "0.2.0", default-features = false }

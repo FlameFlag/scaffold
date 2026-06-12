@@ -1,0 +1,20 @@
+{
+  "files.associations": {
+    "*.scm": "scaffold-scheme",
+    "catalog.scm": "scaffold-scheme",
+    "scaffold.scm": "scaffold-scheme"
+  },
+  "rust-analyzer.cargo.buildScripts.enable": true,
+  "rust-analyzer.check.command": "clippy",
+  "rust-analyzer.procMacro.enable": true,
+  "[rust]": {
+    "editor.defaultFormatter": "rust-lang.rust-analyzer",
+    "editor.formatOnSave": true
+  },
+  "[scaffold-scheme]": {
+    "editor.defaultFormatter": "scaffold.scaffold-scheme",
+    "editor.formatOnSave": true,
+    "editor.inlayHints.enabled": "onUnlessPressed",
+    "editor.semanticHighlighting.enabled": true
+  }
+}

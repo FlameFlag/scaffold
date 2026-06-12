@@ -1,0 +1,20 @@
+[package]
+name = "scaffold-dsl"
+version = "0.0.1"
+edition = "2024"
+publish = false
+
+[lints]
+workspace = true
+
+[features]
+test-support = []
+
+[dependencies]
+miette = { version = "7.6.0", default-features = false, features = ["fancy-no-backtrace", "derive"] }
+scaffold-context = { path = "../scaffold-context" }
+scaffold-diagnostic = { path = "../scaffold-diagnostic" }
+scaffold-process = { path = "../scaffold-process" }
+scheme-rs = { version = "0.2.0", default-features = false }
+serde_json = "1.0.150"
+thiserror = "2.0.18"

@@ -1,0 +1,12 @@
+[package]
+name = "scaffold-diagnostic"
+version = "0.0.1"
+edition = "2024"
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+miette = { version = "7.6.0", default-features = false, features = ["fancy-no-backtrace", "derive"] }
+thiserror = "2.0.18"

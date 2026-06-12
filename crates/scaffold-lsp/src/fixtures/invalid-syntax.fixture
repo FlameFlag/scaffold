@@ -1,0 +1,10 @@
+(import (rnrs) (scaffold config))
+
+(moduledoc
+  (summary "Fixture with intentionally invalid Scheme syntax."))
+
+(doc 'x
+  (signature "x")
+  (summary "Fixture value before an intentional syntax error."))
+
+(define x 1

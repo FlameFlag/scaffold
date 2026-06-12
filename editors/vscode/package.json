@@ -1,0 +1,217 @@
+{
+  "name": "scaffold-scheme",
+  "displayName": "Scaffold Scheme",
+  "description": "VS Code language support for Scaffold Scheme catalogs and extensions.",
+  "version": "0.0.1",
+  "publisher": "scaffold",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.95.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Formatters",
+    "Linters"
+  ],
+  "activationEvents": [
+    "onLanguage:scaffold-scheme",
+    "onLanguage:scheme",
+    "workspaceContains:**/*.scm",
+    "onStartupFinished"
+  ],
+  "main": "./out/browser.js",
+  "browser": "./out/browser.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "scaffold-scheme",
+        "aliases": [
+          "Scaffold Scheme",
+          "scaffold-scheme"
+        ],
+        "extensions": [
+          ".scm"
+        ],
+        "filenames": [
+          "scaffold.scm",
+          "catalog.scm"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "scaffold-scheme",
+        "scopeName": "source.scaffold-scheme",
+        "path": "./syntaxes/scaffold-scheme.tmLanguage.json"
+      }
+    ],
+    "semanticTokenScopes": [
+      {
+        "language": "scaffold-scheme",
+        "scopes": {
+          "keyword": [
+            "keyword.control.scheme"
+          ],
+          "function": [
+            "entity.name.function.scheme"
+          ],
+          "function.defaultLibrary": [
+            "support.function.scaffold"
+          ],
+          "function.documentation": [
+            "entity.name.function.documentation.scaffold"
+          ],
+          "function.defaultLibrary.documentation": [
+            "entity.name.function.documentation.scaffold"
+          ],
+          "parameter": [
+            "variable.parameter.keyword.scaffold"
+          ]
+        }
+      }
+    ],
+    "snippets": [
+      {
+        "language": "scaffold-scheme",
+        "path": "./snippets/scaffold-scheme.code-snippets"
+      }
+    ],
+    "commands": [
+      {
+        "command": "scaffold.openLanguageReference",
+        "title": "Open Language Reference",
+        "category": "Scaffold"
+      },
+      {
+        "command": "scaffold.refreshReference",
+        "title": "Refresh Reference",
+        "category": "Scaffold",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "scaffold.searchReference",
+        "title": "Search Reference",
+        "category": "Scaffold",
+        "icon": "$(search)"
+      },
+      {
+        "command": "scaffold.formatDocument",
+        "title": "Format Document",
+        "category": "Scaffold"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "scaffold.openLanguageReference"
+        },
+        {
+          "command": "scaffold.searchReference"
+        },
+        {
+          "command": "scaffold.formatDocument",
+          "when": "editorLangId == scaffold-scheme"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "scaffold.formatDocument",
+          "when": "editorLangId == scaffold-scheme",
+          "group": "navigation"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "scaffold.searchReference",
+          "when": "view == scaffold.reference",
+          "group": "navigation"
+        },
+        {
+          "command": "scaffold.refreshReference",
+          "when": "view == scaffold.reference",
+          "group": "navigation"
+        }
+      ]
+    },
+    "views": {
+      "explorer": [
+        {
+          "id": "scaffold.reference",
+          "name": "Scaffold Reference"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "scaffold.reference",
+        "contents": "Browse Scaffold DSL docs generated from parsable Doc v2 forms.\n[Refresh](command:scaffold.refreshReference) • [Search](command:scaffold.searchReference)"
+      }
+    ],
+    "walkthroughs": [
+      {
+        "id": "scaffold-scheme.getStarted",
+        "title": "Get Started with Scaffold Scheme",
+        "description": "Edit Scaffold DSL files with WASM-backed completion, hover docs, diagnostics, symbols, and formatting.",
+        "steps": [
+          {
+            "id": "scaffold-scheme.open-scm",
+            "title": "Open a Scheme DSL file",
+            "description": "Open a `.scm` file to activate diagnostics, autocomplete, hover docs, document symbols, and formatting.",
+            "media": {
+              "markdown": "media/open-scm.md"
+            },
+            "completionEvents": [
+              "onLanguage:scaffold-scheme"
+            ]
+          },
+          {
+            "id": "scaffold-scheme.open-reference",
+            "title": "Open the language reference",
+            "description": "Open the generated reference built from Scaffold's parsable DSL documentation forms.",
+            "media": {
+              "markdown": "media/open-reference.md"
+            },
+            "completionEvents": [
+              "onCommand:scaffold.openLanguageReference"
+            ]
+          }
+        ]
+      }
+    ],
+    "configurationDefaults": {
+      "[scaffold-scheme]": {
+        "editor.defaultFormatter": "scaffold.scaffold-scheme",
+        "editor.semanticHighlighting.enabled": true,
+        "editor.inlayHints.enabled": "onUnlessPressed"
+      }
+    }
+  },
+  "scripts": {
+    "sync:sources": "bun scripts/sync-sources.mjs",
+    "compile": "tsc -p ./ && bun run bundle:browser",
+    "bundle:browser": "esbuild src/browser.ts --bundle --platform=browser --format=cjs --external:vscode --log-override:empty-import-meta=silent --sourcemap --outfile=out/browser.js",
+    "compile:wasm": "cargo build --manifest-path ../../Cargo.toml -p scaffold-wasm --target wasm32-unknown-unknown --release && wasm-bindgen ../../target/wasm32-unknown-unknown/release/scaffold_wasm.wasm --target web --remove-name-section --remove-producers-section --out-dir wasm --out-name scaffold_wasm",
+    "compile:all": "bun run sync:sources && bun run compile:wasm && bun run compile",
+    "format": "biome format --write .",
+    "lint": "biome lint .",
+    "check": "biome check .",
+    "check:fix": "biome check --write .",
+    "fallow": "fallow",
+    "fallow:ci": "fallow --fail-on-issues",
+    "test:wasm:smoke": "tsc -p tsconfig.scripts.json && bun out/scripts/smoke-wasm.mjs",
+    "test:web": "vscode-test-web --browser chromium --headless --extensionDevelopmentPath=. --extensionTestsPath=web-test/index.js test-fixtures/workspace",
+    "watch": "tsc -watch -p ./",
+    "vscode:prepublish": "bun run compile:all",
+    "vsix": "vsce package --no-dependencies --allow-missing-repository --out out",
+    "package": "bun run vsix"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/vscode": "^1.95.0",
+    "@vscode/test-web": "^0.0.80",
+    "@vscode/vsce": "^3.2.1",
+    "esbuild": "^0.25.5",
+    "typescript": "^5.7.0"
+  }
+}

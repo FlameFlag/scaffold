@@ -1,0 +1,31 @@
+/* tslint:disable */
+/* eslint-disable */
+export const memory: WebAssembly.Memory;
+export const completionItemsScaffoldScheme: (a: number) => void;
+export const completionItemsScaffoldSchemeForDocument: (a: number, b: number, c: number, d: number, e: number) => void;
+export const definitionScaffoldScheme: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number) => void;
+export const diagnoseScaffoldScheme: (a: number, b: number, c: number) => void;
+export const documentReferenceSymbolsScaffoldScheme: (a: number, b: number, c: number) => void;
+export const formContextScaffoldScheme: (a: number, b: number, c: number, d: number, e: number) => void;
+export const formatScaffoldScheme: (a: number, b: number, c: number) => void;
+export const hoverScaffoldScheme: (a: number, b: number, c: number) => void;
+export const hoverScaffoldSchemeForDocument: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => void;
+export const inlayHintsScaffoldScheme: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => void;
+export const inlayHintsScaffoldSchemeForDocument: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number) => void;
+export const missingDocStubScaffoldScheme: (a: number, b: number, c: number, d: number, e: number) => void;
+export const referenceCapabilitiesScaffoldScheme: (a: number) => void;
+export const referenceCatalogSchemaScaffoldScheme: (a: number) => void;
+export const referenceEntriesScaffoldScheme: (a: number) => void;
+export const referenceEntriesScaffoldSchemeForDocument: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => void;
+export const referenceEntriesScaffoldSchemeForWorkspace: (a: number, b: number, c: number) => void;
+export const referenceLocationsScaffoldScheme: (a: number, b: number, c: number, d: number, e: number) => void;
+export const semanticTokensScaffoldScheme: (a: number, b: number, c: number) => void;
+export const semanticTokensScaffoldSchemeForDocument: (a: number, b: number, c: number, d: number, e: number) => void;
+export const signatureHelpScaffoldScheme: (a: number, b: number, c: number) => void;
+export const signatureHelpScaffoldSchemeForDocument: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => void;
+export const symbolAtScaffoldScheme: (a: number, b: number, c: number, d: number, e: number) => void;
+export const workspaceSymbolsScaffoldScheme: (a: number, b: number, c: number, d: number, e: number) => void;
+export const __wbindgen_add_to_stack_pointer: (a: number) => number;
+export const __wbindgen_export: (a: number, b: number, c: number) => void;
+export const __wbindgen_export2: (a: number, b: number) => number;
+export const __wbindgen_export3: (a: number, b: number, c: number, d: number) => number;

@@ -1,0 +1,52 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Rust: build scaffold server",
+      "type": "shell",
+      "command": "cargo build",
+      "group": "build",
+      "problemMatcher": "$rustc"
+    },
+    {
+      "label": "Rust: test",
+      "type": "shell",
+      "command": "cargo test",
+      "group": "test",
+      "problemMatcher": "$rustc"
+    },
+    {
+      "label": "VS Code: compile extension",
+      "type": "shell",
+      "command": "npm run compile",
+      "options": {
+        "cwd": "${workspaceFolder}/editors/vscode"
+      },
+      "problemMatcher": "$tsc"
+    },
+    {
+      "label": "VS Code: package VSIX",
+      "type": "shell",
+      "command": "npm run package",
+      "options": {
+        "cwd": "${workspaceFolder}/editors/vscode"
+      },
+      "problemMatcher": "$tsc",
+      "dependsOn": [
+        "Rust: build scaffold server"
+      ]
+    },
+    {
+      "label": "VS Code: install local VSIX",
+      "type": "shell",
+      "command": "code --install-extension out/scaffold-scheme-0.1.0.vsix --force",
+      "options": {
+        "cwd": "${workspaceFolder}/editors/vscode"
+      },
+      "problemMatcher": [],
+      "dependsOn": [
+        "VS Code: package VSIX"
+      ]
+    }
+  ]
+}

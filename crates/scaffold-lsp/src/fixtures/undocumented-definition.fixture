@@ -1,0 +1,7 @@
+(import (rnrs) (scaffold catalog))
+
+(moduledoc
+  (summary "Fixture for missing documentation diagnostics."))
+
+(define (local-helper value)
+  value)

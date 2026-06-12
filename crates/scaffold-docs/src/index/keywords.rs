@@ -1,0 +1,86 @@
+pub(super) const LANGUAGE_KEYWORDS: &[(&str, &str, &str, &str)] = &[
+    (
+        "begin",
+        "(begin expression ...)",
+        "Evaluate expressions in order and return the final value.",
+        "scheme keyword",
+    ),
+    (
+        "cond",
+        "(cond clause ...)",
+        "Branch across ordered test clauses.",
+        "scheme keyword",
+    ),
+    (
+        "define",
+        "(define name value)",
+        "Bind a Scheme value or procedure in the current scope.",
+        "scheme keyword",
+    ),
+    (
+        "define-syntax",
+        "(define-syntax name transformer)",
+        "Bind a hygienic syntax transformer in the current scope.",
+        "scheme keyword",
+    ),
+    (
+        "export",
+        "(export binding ...)",
+        "Export bindings from a Scheme library.",
+        "scheme keyword",
+    ),
+    (
+        "if",
+        "(if test consequent alternate)",
+        "Choose between consequent and alternate expressions.",
+        "scheme keyword",
+    ),
+    (
+        "import",
+        "(import library ...)",
+        "Import Scheme libraries allowed by Scaffold's import policy.",
+        "scheme keyword",
+    ),
+    (
+        "library",
+        "(library (name ...) declarations ...)",
+        "Define a Scheme library for a local Scaffold extension.",
+        "scheme keyword",
+    ),
+    (
+        "lambda",
+        "(lambda (arg ...) body ...)",
+        "Create a Scheme procedure.",
+        "scheme keyword",
+    ),
+    (
+        "let",
+        "(let ((name value) ...) body ...)",
+        "Bind local values for a body expression.",
+        "scheme keyword",
+    ),
+    (
+        "let*",
+        "(let* ((name value) ...) body ...)",
+        "Bind local values sequentially for a body expression.",
+        "scheme keyword",
+    ),
+    (
+        "letrec",
+        "(letrec ((name value) ...) body ...)",
+        "Bind mutually recursive local values for a body expression.",
+        "scheme keyword",
+    ),
+    (
+        "syntax-rules",
+        "(syntax-rules literals rule ...)",
+        "Define a hygienic Scheme macro.",
+        "scheme keyword",
+    ),
+    (
+        "quote",
+        "(quote datum)",
+        "Return datum without evaluating it.",
+        "scheme keyword",
+    ),
+];

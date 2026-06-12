@@ -1,0 +1,59 @@
+# Rust build output
+/target/
+
+# Node / VS Code extension dependencies and build output
+node_modules/
+site/dist/
+site/public/reference.json
+editors/vscode/out/
+.vscode-test/
+.vscode-test-web/
+
+# Packaged artifacts
+*.vsix
+
+# Test, coverage, and tool caches
+coverage/
+.nyc_output/
+.cache/
+.parcel-cache/
+.turbo/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.tsbuildinfo
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Local environment files
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.local
+
+# OS and editor files
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+desktop.ini
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Nix
+result
+result/
+result-*

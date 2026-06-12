@@ -1,0 +1,17 @@
+[package]
+name = "scaffold-archive"
+version = "0.0.1"
+edition = "2024"
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+bzip2 = "0.6.1"
+flate2 = "1.1.9"
+scaffold-process = { path = "../scaffold-process" }
+tar = { version = "0.4.46", default-features = false }
+thiserror = "2.0.18"
+xz2 = "0.1.7"
+zip = { version = "8.6.0", default-features = false, features = ["deflate-flate2"] }

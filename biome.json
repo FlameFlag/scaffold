@@ -1,0 +1,76 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.4.16/schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": false
+  },
+  "files": {
+    "ignoreUnknown": true,
+    "includes": [
+      ".fallowrc.jsonc",
+      "biome.json",
+      "package.json",
+      "docs/site/index.html",
+      "docs/site/package.json",
+      "docs/site/src/**",
+      "docs/site/svelte.config.js",
+      "docs/site/tsconfig.json",
+      "docs/site/vite.config.ts",
+      "editors/vscode/language-configuration.json",
+      "editors/vscode/package.json",
+      "editors/vscode/scripts/**",
+      "editors/vscode/snippets/**",
+      "editors/vscode/src/**",
+      "editors/vscode/syntaxes/**",
+      "editors/vscode/tsconfig.json",
+      "editors/vscode/tsconfig.scripts.json",
+      "editors/vscode/web-test/**",
+      "!**/node_modules",
+      "!docs/site/dist",
+      "!docs/site/public/reference.json",
+      "!docs/site/tsconfig.tsbuildinfo",
+      "!editors/vscode/.fallow",
+      "!editors/vscode/.vscode-test-web",
+      "!editors/vscode/out",
+      "!editors/vscode/wasm"
+    ]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true
+    }
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "double"
+    }
+  },
+  "assist": {
+    "enabled": true,
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
+  },
+  "overrides": [
+    {
+      "includes": ["**/*.svelte"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "noUnusedImports": "off",
+            "noUnusedVariables": "off"
+          }
+        }
+      }
+    }
+  ]
+}

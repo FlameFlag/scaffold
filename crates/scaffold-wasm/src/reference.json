@@ -1,0 +1,6592 @@
+{
+  "title": "Scaffold Scheme Reference",
+  "capabilities": [
+    {
+      "library_name": [
+        "scaffold",
+        "path"
+      ],
+      "library": "(scaffold path)",
+      "bridge_library_name": [
+        "scaffold",
+        "path",
+        "builtins"
+      ],
+      "bridge_library": "(scaffold path builtins)",
+      "effect": "pure",
+      "modes": {
+        "catalog": "available",
+        "editor": "reference-only",
+        "test": "available",
+        "wasm": "reference-only"
+      },
+      "docs_source": "src/dsl/std/path.scm",
+      "notes": "Lexical path operations only; path values do not need to exist."
+    },
+    {
+      "library_name": [
+        "scaffold",
+        "host"
+      ],
+      "library": "(scaffold host)",
+      "bridge_library_name": [
+        "scaffold",
+        "host",
+        "builtins"
+      ],
+      "bridge_library": "(scaffold host builtins)",
+      "effect": "host-read-only",
+      "modes": {
+        "catalog": "available",
+        "editor": "reference-only",
+        "test": "available",
+        "wasm": "reference-only"
+      },
+      "docs_source": "src/dsl/std/host.scm",
+      "notes": "Reads host facts, environment variables, and PATH resolution without shelling out."
+    },
+    {
+      "library_name": [
+        "scaffold",
+        "workspace"
+      ],
+      "library": "(scaffold workspace)",
+      "bridge_library_name": [
+        "scaffold",
+        "workspace",
+        "generated"
+      ],
+      "bridge_library": "(scaffold workspace generated)",
+      "effect": "context-read-only",
+      "modes": {
+        "catalog": "available",
+        "editor": "reference-only",
+        "test": "available",
+        "wasm": "reference-only"
+      },
+      "docs_source": "src/dsl/std/workspace.scm",
+      "notes": "Exposes paths supplied by DslEvalContext; it does not inspect the filesystem."
+    },
+    {
+      "library_name": [
+        "scaffold",
+        "fs"
+      ],
+      "library": "(scaffold fs)",
+      "bridge_library_name": [
+        "scaffold",
+        "fs",
+        "builtins"
+      ],
+      "bridge_library": "(scaffold fs builtins)",
+      "effect": "host-read-only",
+      "modes": {
+        "catalog": "available",
+        "editor": "reference-only",
+        "test": "available",
+        "wasm": "reference-only"
+      },
+      "docs_source": "src/dsl/std/fs.scm",
+      "notes": "Read-only existence/type predicates for absolute paths; no listing, reading, or mutation."
+    }
+  ],
+  "catalog_schema": {
+    "enums": {
+      "action_type": [
+        "archive",
+        "build",
+        "package",
+        "required"
+      ],
+      "host_arch": [
+        "aarch64",
+        "x86_64"
+      ],
+      "host_os": [
+        "linux",
+        "macos",
+        "windows"
+      ],
+      "phase": [
+        "prerequisites",
+        "packages",
+        "builds"
+      ]
+    },
+    "objects": [
+      {
+        "fields": [
+          "action",
+          "after",
+          "before",
+          "bins",
+          "checks",
+          "depends",
+          "meta",
+          "name",
+          "order",
+          "paths",
+          "passthru",
+          "phase",
+          "platforms",
+          "requires",
+          "uninstall",
+          "verify_after_install"
+        ],
+        "name": "tool",
+        "required": [
+          "name",
+          "action"
+        ],
+        "type": "object"
+      },
+      {
+        "fields": [
+          "name",
+          "version_argv"
+        ],
+        "name": "bin",
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      {
+        "fields": [
+          "path",
+          "when"
+        ],
+        "name": "tool_path",
+        "required": [
+          "path"
+        ],
+        "type": "object"
+      },
+      {
+        "fields": [
+          "argv",
+          "when"
+        ],
+        "name": "check",
+        "required": [
+          "argv"
+        ],
+        "type": "object"
+      },
+      {
+        "fields": [
+          "commands",
+          "paths",
+          "remove_bins",
+          "remove_prefix"
+        ],
+        "name": "uninstall",
+        "required": [],
+        "type": "object"
+      },
+      {
+        "fields": [
+          "argv",
+          "when"
+        ],
+        "name": "uninstall_command",
+        "required": [
+          "argv"
+        ],
+        "type": "object"
+      },
+      {
+        "fields": [
+          "arch",
+          "os"
+        ],
+        "name": "predicate",
+        "required": [],
+        "type": "object"
+      },
+      {
+        "fields": [
+          "description",
+          "home_page",
+          "license",
+          "main_program",
+          "maintainers",
+          "source",
+          "tags"
+        ],
+        "name": "tool_meta",
+        "required": [],
+        "type": "object"
+      },
+      {
+        "fields": [
+          "install_argv",
+          "install_argvs",
+          "name",
+          "platforms",
+          "type"
+        ],
+        "name": "package_action",
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      {
+        "fields": [
+          "install_argv",
+          "install_argvs",
+          "name",
+          "requires_commands",
+          "when"
+        ],
+        "name": "package_platform",
+        "required": [
+          "when"
+        ],
+        "type": "object"
+      },
+      {
+        "fields": [
+          "argv",
+          "argvs",
+          "path",
+          "type"
+        ],
+        "name": "build_action",
+        "required": [
+          "type",
+          "path"
+        ],
+        "type": "object"
+      },
+      {
+        "fields": [
+          "path",
+          "strip_components",
+          "type"
+        ],
+        "name": "archive_action",
+        "required": [
+          "type",
+          "path"
+        ],
+        "type": "object"
+      },
+      {
+        "fields": [
+          "type"
+        ],
+        "name": "required_action",
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      }
+    ],
+    "relationships": [
+      {
+        "cycle_checked": true,
+        "fields": [
+          "depends",
+          "before",
+          "after"
+        ],
+        "special_before_values": [
+          "first",
+          "none"
+        ],
+        "target": "tool.name"
+      }
+    ],
+    "root": {
+      "fields": {
+        "tools": {
+          "items": "tool",
+          "type": "array"
+        }
+      },
+      "required": [
+        "tools"
+      ],
+      "type": "object"
+    },
+    "title": "Scaffold Catalog",
+    "version": 1
+  },
+  "entries": [
+    {
+      "name": "build",
+      "kind": "function",
+      "signature": "(build field ...)",
+      "summary": "Create a build action for tools compiled from source.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "field",
+          "summary": "Build fields such as `path`, `argv`, or ordered `argvs`."
+        }
+      ],
+      "returns": null,
+      "group": "Actions",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/action.scm",
+      "range": {
+        "line": 33,
+        "start": 11,
+        "length": 5
+      }
+    },
+    {
+      "name": "package",
+      "kind": "function",
+      "signature": "(package field ...)",
+      "summary": "Create a package install action.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "field",
+          "summary": "Package fields such as `name`, `install-argv`, `install-argvs`, or `platforms`."
+        }
+      ],
+      "returns": "An action object with type `package`.",
+      "group": "Actions",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/action.scm",
+      "range": {
+        "line": 26,
+        "start": 11,
+        "length": 7
+      }
+    },
+    {
+      "name": "required",
+      "kind": "function",
+      "signature": "(required)",
+      "summary": "Create an action for commands Scaffold should require but not install.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": "An action object with type `required`.",
+      "group": "Actions",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/action.scm",
+      "range": {
+        "line": 16,
+        "start": 11,
+        "length": 8
+      }
+    },
+    {
+      "name": "flatpak/app",
+      "kind": "function",
+      "signature": "(flatpak/app name app-id field ...)",
+      "summary": "Create a Linux-only catalog tool installed from Flathub.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "name",
+          "summary": "Catalog tool name."
+        },
+        {
+          "name": "app-id",
+          "summary": "Flatpak application ID used for install, checks, and version argv."
+        },
+        {
+          "name": "field",
+          "summary": "Additional tool fields that override defaults."
+        }
+      ],
+      "returns": "A tool with package action, Flatpak info check, binary metadata, and Linux platform tag.",
+      "group": "Applications",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/app/flatpak.scm",
+      "range": {
+        "line": 35,
+        "start": 11,
+        "length": 11
+      }
+    },
+    {
+      "name": "flatpak/install-argv",
+      "kind": "function",
+      "signature": "(flatpak/install-argv remote app-id)",
+      "summary": "Build argv for installing a Flatpak app non-interactively.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "remote",
+          "summary": "Flatpak remote, usually `flathub`."
+        },
+        {
+          "name": "app-id",
+          "summary": "Flatpak application ID."
+        }
+      ],
+      "returns": "Vector argv for `flatpak install --assumeyes --noninteractive`.",
+      "group": "Applications",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/app/flatpak.scm",
+      "range": {
+        "line": 15,
+        "start": 11,
+        "length": 20
+      }
+    },
+    {
+      "name": "flatpak/package-platform",
+      "kind": "function",
+      "signature": "(flatpak/package-platform app-id field ...)",
+      "summary": "Create a Linux package/platform override that requires Flatpak.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "app-id",
+          "summary": "Flatpak application ID installed from Flathub."
+        },
+        {
+          "name": "field",
+          "summary": "Additional platform fields that override defaults."
+        }
+      ],
+      "returns": null,
+      "group": "Applications",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/app/flatpak.scm",
+      "range": {
+        "line": 62,
+        "start": 11,
+        "length": 24
+      }
+    },
+    {
+      "name": "flatpak/uninstall-argv",
+      "kind": "function",
+      "signature": "(flatpak/uninstall-argv app-id)",
+      "summary": "Build argv for uninstalling a Flatpak app non-interactively.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "app-id",
+          "summary": "Flatpak application ID."
+        }
+      ],
+      "returns": "Vector argv for `flatpak uninstall --assumeyes --noninteractive`.",
+      "group": "Applications",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/app/flatpak.scm",
+      "range": {
+        "line": 23,
+        "start": 11,
+        "length": 22
+      }
+    },
+    {
+      "name": "winget/install-argv",
+      "kind": "function",
+      "signature": "(winget/install-argv package-id flag ...)",
+      "summary": "Build argv for a noninteractive `winget install --id` command.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "package-id",
+          "summary": "WinGet package identifier."
+        },
+        {
+          "name": "flag",
+          "summary": "Additional flags appended after the default silent/agreement flags."
+        }
+      ],
+      "returns": null,
+      "group": "Applications",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/app/winget.scm",
+      "range": {
+        "line": 27,
+        "start": 11,
+        "length": 19
+      }
+    },
+    {
+      "name": "winget/list-argv",
+      "kind": "function",
+      "signature": "(winget/list-argv package-id)",
+      "summary": "Build argv for checking an installed package with `winget list --id`.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Applications",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/app/winget.scm",
+      "range": {
+        "line": 58,
+        "start": 11,
+        "length": 16
+      }
+    },
+    {
+      "name": "winget/package",
+      "kind": "function",
+      "signature": "(winget/package name package-id bin-name field ...)",
+      "summary": "Create a Windows-only catalog tool installed through WinGet.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "name",
+          "summary": "Catalog tool name."
+        },
+        {
+          "name": "package-id",
+          "summary": "WinGet package identifier."
+        },
+        {
+          "name": "bin-name",
+          "summary": "Executable exposed by the package."
+        },
+        {
+          "name": "field",
+          "summary": "Additional tool fields that override defaults."
+        }
+      ],
+      "returns": null,
+      "group": "Applications",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/app/winget.scm",
+      "range": {
+        "line": 80,
+        "start": 11,
+        "length": 14
+      }
+    },
+    {
+      "name": "winget/package-platform",
+      "kind": "function",
+      "signature": "(winget/package-platform package-id option ...)",
+      "summary": "Create a Windows package/platform override that requires `winget`.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "package-id",
+          "summary": "WinGet package identifier."
+        },
+        {
+          "name": "option",
+          "summary": "Additional install flags or package platform fields. Field values are applied after defaults."
+        }
+      ],
+      "returns": null,
+      "group": "Applications",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/app/winget.scm",
+      "range": {
+        "line": 107,
+        "start": 11,
+        "length": 23
+      }
+    },
+    {
+      "name": "winget/uninstall-argv",
+      "kind": "function",
+      "signature": "(winget/uninstall-argv package-id flag ...)",
+      "summary": "Build argv for `winget uninstall --id`.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Applications",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/app/winget.scm",
+      "range": {
+        "line": 49,
+        "start": 11,
+        "length": 21
+      }
+    },
+    {
+      "name": "winget/upgrade-argv",
+      "kind": "function",
+      "signature": "(winget/upgrade-argv package-id flag ...)",
+      "summary": "Build argv for a noninteractive `winget upgrade --id` command.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Applications",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/app/winget.scm",
+      "range": {
+        "line": 38,
+        "start": 11,
+        "length": 19
+      }
+    },
+    {
+      "name": "archive",
+      "kind": "function",
+      "signature": "(archive path field ...)",
+      "summary": "Create an action that extracts a local archive into the tool prefix.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "path",
+          "summary": "Archive path relative to the Scaffold root."
+        },
+        {
+          "name": "field",
+          "summary": "Archive fields such as `strip-components`."
+        }
+      ],
+      "returns": "An action object with type `archive`. Supported formats are `.zip`, `.tar`, `.tar.gz`, `.tgz`, `.tar.bz2`, `.tbz2`, `.tar.xz`, `.txz`, and `.dmg`.",
+      "group": "Archives",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/archive.scm",
+      "range": {
+        "line": 13,
+        "start": 11,
+        "length": 7
+      }
+    },
+    {
+      "name": "archive/strip-components",
+      "kind": "function",
+      "signature": "(archive/strip-components path count field ...)",
+      "summary": "Create an archive action that removes leading path components while extracting.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "path",
+          "summary": "Archive path relative to the Scaffold root."
+        },
+        {
+          "name": "count",
+          "summary": "Number of leading path components to remove from archive entries."
+        },
+        {
+          "name": "field",
+          "summary": "Additional archive fields."
+        }
+      ],
+      "returns": null,
+      "group": "Archives",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/archive.scm",
+      "range": {
+        "line": 23,
+        "start": 11,
+        "length": 24
+      }
+    },
+    {
+      "name": "dmg",
+      "kind": "function",
+      "signature": "(dmg path field ...)",
+      "summary": "Create an action that mounts and extracts a local macOS DMG.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "path",
+          "summary": "DMG path relative to the Scaffold root."
+        },
+        {
+          "name": "field",
+          "summary": "Additional archive fields."
+        }
+      ],
+      "returns": "An archive action for `.dmg` files. DMG extraction requires macOS `hdiutil` and `ditto`.",
+      "group": "Archives",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/archive.scm",
+      "range": {
+        "line": 34,
+        "start": 11,
+        "length": 3
+      }
+    },
+    {
+      "name": "cmake/argv",
+      "kind": "function",
+      "signature": "(cmake/argv argv ...)",
+      "summary": "Build a raw CMake argv vector.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Build tools",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/build/cmake.scm",
+      "range": {
+        "line": 15,
+        "start": 11,
+        "length": 10
+      }
+    },
+    {
+      "name": "cmake/build-argv",
+      "kind": "function",
+      "signature": "(cmake/build-argv build-dir flag ...)",
+      "summary": "Build argv for `cmake --build <build-dir>`.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Build tools",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/build/cmake.scm",
+      "range": {
+        "line": 28,
+        "start": 11,
+        "length": 16
+      }
+    },
+    {
+      "name": "cmake/configure-argv",
+      "kind": "function",
+      "signature": "(cmake/configure-argv source/dir build-dir flag ...)",
+      "summary": "Build argv for `cmake -S <source> -B <build>`.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Build tools",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/build/cmake.scm",
+      "range": {
+        "line": 21,
+        "start": 11,
+        "length": 20
+      }
+    },
+    {
+      "name": "cmake/install-argv",
+      "kind": "function",
+      "signature": "(cmake/install-argv build-dir prefix flag ...)",
+      "summary": "Build argv for `cmake --install <build-dir> --prefix <prefix>`.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Build tools",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/build/cmake.scm",
+      "range": {
+        "line": 35,
+        "start": 11,
+        "length": 18
+      }
+    },
+    {
+      "name": "cmake/project-tool",
+      "kind": "function",
+      "signature": "(cmake/project-tool name path field ...)",
+      "summary": "Create a build action for a CMake project using configure/build/install commands.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "name",
+          "summary": "Catalog tool name and default installed binary name."
+        },
+        {
+          "name": "path",
+          "summary": "Source path stored on the build action."
+        },
+        {
+          "name": "field",
+          "summary": "Additional tool fields that override defaults."
+        }
+      ],
+      "returns": null,
+      "group": "Build tools",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/build/cmake.scm",
+      "range": {
+        "line": 55,
+        "start": 11,
+        "length": 18
+      }
+    },
+    {
+      "name": "cmake/tool",
+      "kind": "function",
+      "signature": "(cmake/tool field ...)",
+      "summary": "Create a required host CMake tool descriptor.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Build tools",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/build/cmake.scm",
+      "range": {
+        "line": 44,
+        "start": 11,
+        "length": 10
+      }
+    },
+    {
+      "name": "gcc/argv",
+      "kind": "function",
+      "signature": "(gcc/argv argv ...)",
+      "summary": "Build a raw GCC argv vector.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Build tools",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/build/gcc.scm",
+      "range": {
+        "line": 7,
+        "start": 11,
+        "length": 8
+      }
+    },
+    {
+      "name": "gcc/c-tool",
+      "kind": "function",
+      "signature": "(gcc/c-tool name path source field ...)",
+      "summary": "Create a build action that compiles one C source into the Scaffold prefix.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Build tools",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/build/gcc.scm",
+      "range": {
+        "line": 37,
+        "start": 11,
+        "length": 10
+      }
+    },
+    {
+      "name": "gcc/compile-argv",
+      "kind": "function",
+      "signature": "(gcc/compile-argv output sources flags)",
+      "summary": "Build argv for compiling and linking sources with GCC.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "output",
+          "summary": "Output executable or object path."
+        },
+        {
+          "name": "sources",
+          "summary": "Vector of source files."
+        },
+        {
+          "name": "flags",
+          "summary": "Vector of GCC flags inserted before sources."
+        }
+      ],
+      "returns": null,
+      "group": "Build tools",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/build/gcc.scm",
+      "range": {
+        "line": 15,
+        "start": 11,
+        "length": 16
+      }
+    },
+    {
+      "name": "gcc/object-argv",
+      "kind": "function",
+      "signature": "(gcc/object-argv source output flag ...)",
+      "summary": "Build argv for `gcc -c` object compilation.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Build tools",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/build/gcc.scm",
+      "range": {
+        "line": 22,
+        "start": 11,
+        "length": 15
+      }
+    },
+    {
+      "name": "gcc/tool",
+      "kind": "function",
+      "signature": "(gcc/tool field ...)",
+      "summary": "Create a required host GCC tool descriptor.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Build tools",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/build/gcc.scm",
+      "range": {
+        "line": 29,
+        "start": 11,
+        "length": 8
+      }
+    },
+    {
+      "name": "make/argv",
+      "kind": "function",
+      "signature": "(make/argv argv ...)",
+      "summary": "Build a raw Make argv vector.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Build tools",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/build/make.scm",
+      "range": {
+        "line": 9,
+        "start": 11,
+        "length": 9
+      }
+    },
+    {
+      "name": "make/jobs-argv",
+      "kind": "function",
+      "signature": "(make/jobs-argv jobs argv ...)",
+      "summary": "Build argv for `make -j <jobs>`.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Build tools",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/build/make.scm",
+      "range": {
+        "line": 15,
+        "start": 11,
+        "length": 14
+      }
+    },
+    {
+      "name": "make/prefix-install-argv",
+      "kind": "function",
+      "signature": "(make/prefix-install-argv prefix target ...)",
+      "summary": "Build argv for `make PREFIX=<prefix> install` or custom targets.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Build tools",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/build/make.scm",
+      "range": {
+        "line": 21,
+        "start": 11,
+        "length": 24
+      }
+    },
+    {
+      "name": "make/project-tool",
+      "kind": "function",
+      "signature": "(make/project-tool name path field ...)",
+      "summary": "Create a build action that runs `make` and `make PREFIX={{ prefix }} install`.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "name",
+          "summary": "Catalog tool name and default installed binary name."
+        },
+        {
+          "name": "path",
+          "summary": "Source path stored on the build action."
+        },
+        {
+          "name": "field",
+          "summary": "Additional tool fields that override defaults."
+        }
+      ],
+      "returns": null,
+      "group": "Build tools",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/build/make.scm",
+      "range": {
+        "line": 41,
+        "start": 11,
+        "length": 17
+      }
+    },
+    {
+      "name": "make/tool",
+      "kind": "function",
+      "signature": "(make/tool field ...)",
+      "summary": "Create a required host Make tool descriptor.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Build tools",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/build/make.scm",
+      "range": {
+        "line": 30,
+        "start": 11,
+        "length": 9
+      }
+    },
+    {
+      "name": "bun/global-install-argv",
+      "kind": "function",
+      "signature": "(bun/global-install-argv package-name flag ...)",
+      "summary": "Build argv for globally installing a package with Bun.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "package-name",
+          "summary": "Package name passed to `bun add -g`."
+        },
+        {
+          "name": "flag",
+          "summary": "Additional Bun add flags placed before the package name."
+        }
+      ],
+      "returns": "Vector argv for `bun add -g`.",
+      "group": "Bun",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/ecosystem/bun.scm",
+      "range": {
+        "line": 17,
+        "start": 11,
+        "length": 23
+      }
+    },
+    {
+      "name": "bun/global-package-platform",
+      "kind": "function",
+      "signature": "(bun/global-package-platform predicate package-name option ...)",
+      "summary": "Create a package/platform override that installs with global Bun.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "predicate",
+          "summary": "Host predicate for this package rule."
+        },
+        {
+          "name": "package-name",
+          "summary": "Package name passed to `bun add -g`."
+        },
+        {
+          "name": "option",
+          "summary": "Additional Bun add flags or package platform fields. Field values are applied after defaults."
+        }
+      ],
+      "returns": null,
+      "group": "Bun",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/ecosystem/bun.scm",
+      "range": {
+        "line": 77,
+        "start": 11,
+        "length": 27
+      }
+    },
+    {
+      "name": "bun/global-tool",
+      "kind": "function",
+      "signature": "(bun/global-tool name package-name bin-name option ...)",
+      "summary": "Create a catalog tool installed globally with Bun.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "name",
+          "summary": "Catalog tool name."
+        },
+        {
+          "name": "package-name",
+          "summary": "Package to install."
+        },
+        {
+          "name": "bin-name",
+          "summary": "Executable exposed by the package."
+        },
+        {
+          "name": "option",
+          "summary": "Additional Bun add flags or tool fields. Field values are applied after defaults."
+        }
+      ],
+      "returns": null,
+      "group": "Bun",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/ecosystem/bun.scm",
+      "range": {
+        "line": 50,
+        "start": 11,
+        "length": 15
+      }
+    },
+    {
+      "name": "bun/global-uninstall-argv",
+      "kind": "function",
+      "signature": "(bun/global-uninstall-argv package-name)",
+      "summary": "Build argv for removing a globally installed Bun package.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "package-name",
+          "summary": "Package name passed to `bun remove -g`."
+        }
+      ],
+      "returns": "Vector argv for `bun remove -g`.",
+      "group": "Bun",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/ecosystem/bun.scm",
+      "range": {
+        "line": 25,
+        "start": 11,
+        "length": 25
+      }
+    },
+    {
+      "name": "bunx/argv",
+      "kind": "function",
+      "signature": "(bunx/argv package-name argv ...)",
+      "summary": "Build argv for running a package through `bunx`.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "package-name",
+          "summary": "Package passed to bunx."
+        },
+        {
+          "name": "argv",
+          "summary": "Arguments forwarded to the package command."
+        }
+      ],
+      "returns": null,
+      "group": "Bun",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/ecosystem/bun.scm",
+      "range": {
+        "line": 94,
+        "start": 11,
+        "length": 9
+      }
+    },
+    {
+      "name": "cargo/crate-install-argv",
+      "kind": "function",
+      "signature": "(cargo/crate-install-argv crate extra-argv)",
+      "summary": "Build argv for installing a published Cargo crate into the Scaffold prefix.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "crate",
+          "summary": "Crate package spec passed to `cargo install`."
+        },
+        {
+          "name": "extra-argv",
+          "summary": "Vector of extra cargo arguments appended after the default flags."
+        }
+      ],
+      "returns": "Vector argv using `--root {{ prefix }}`, `--force`, and `--locked`.",
+      "group": "Cargo",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/ecosystem/cargo.scm",
+      "range": {
+        "line": 41,
+        "start": 11,
+        "length": 24
+      }
+    },
+    {
+      "name": "cargo/crate-platform",
+      "kind": "function",
+      "signature": "(cargo/crate-platform predicate crate option ...)",
+      "summary": "Create a package/platform override that installs a published Cargo crate.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "predicate",
+          "summary": "Host predicate for this package rule."
+        },
+        {
+          "name": "crate",
+          "summary": "Crate package spec passed to `cargo install`."
+        },
+        {
+          "name": "option",
+          "summary": "Additional cargo install flags or package platform fields. Field values are applied after defaults."
+        }
+      ],
+      "returns": null,
+      "group": "Cargo",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/ecosystem/cargo.scm",
+      "range": {
+        "line": 130,
+        "start": 11,
+        "length": 20
+      }
+    },
+    {
+      "name": "cargo/crate-tool",
+      "kind": "function",
+      "signature": "(cargo/crate-tool name crate bin-name option ...)",
+      "summary": "Create a catalog tool installed from a published Cargo crate.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "name",
+          "summary": "Catalog tool name."
+        },
+        {
+          "name": "crate",
+          "summary": "Crate package spec passed to `cargo install`."
+        },
+        {
+          "name": "bin-name",
+          "summary": "Executable exposed by the crate."
+        },
+        {
+          "name": "option",
+          "summary": "Additional cargo install flags or tool fields. Field values are applied after defaults."
+        }
+      ],
+      "returns": null,
+      "group": "Cargo",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/ecosystem/cargo.scm",
+      "range": {
+        "line": 98,
+        "start": 11,
+        "length": 16
+      }
+    },
+    {
+      "name": "cargo/install-argv",
+      "kind": "function",
+      "signature": "(cargo/install-argv source/path extra-argv)",
+      "summary": "Build argv for `cargo install` into the Scaffold prefix.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "source/path",
+          "summary": "Path passed to `cargo install --path`."
+        },
+        {
+          "name": "extra-argv",
+          "summary": "Vector of extra cargo arguments appended after the default flags."
+        }
+      ],
+      "returns": "Vector argv using `--root {{ prefix }}`, `--force`, and `--locked`.",
+      "group": "Cargo",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/ecosystem/cargo.scm",
+      "range": {
+        "line": 19,
+        "start": 11,
+        "length": 18
+      }
+    },
+    {
+      "name": "cargo/tool",
+      "kind": "function",
+      "signature": "(cargo/tool name path field ...)",
+      "summary": "Create a catalog tool built with Cargo from a source path.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "name",
+          "summary": "Catalog tool name."
+        },
+        {
+          "name": "path",
+          "summary": "Source path stored on the build action."
+        },
+        {
+          "name": "field",
+          "summary": "Additional tool fields that override defaults."
+        }
+      ],
+      "returns": "A tool with a build action that runs `cargo install`.",
+      "group": "Cargo",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/ecosystem/cargo.scm",
+      "range": {
+        "line": 63,
+        "start": 11,
+        "length": 10
+      }
+    },
+    {
+      "name": "cargo/uninstall-argv",
+      "kind": "function",
+      "signature": "(cargo/uninstall-argv package-name)",
+      "summary": "Build argv for uninstalling a Cargo-installed package from the Scaffold prefix.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "package-name",
+          "summary": "Cargo package name passed to `cargo uninstall`."
+        }
+      ],
+      "returns": "Vector argv using `--root {{ prefix }}`.",
+      "group": "Cargo",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/ecosystem/cargo.scm",
+      "range": {
+        "line": 52,
+        "start": 11,
+        "length": 20
+      }
+    },
+    {
+      "name": "bin",
+      "kind": "function",
+      "signature": "(bin name field ...)",
+      "summary": "Describe a binary exposed by an installed tool.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Catalog",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/tool.scm",
+      "range": {
+        "line": 44,
+        "start": 11,
+        "length": 3
+      }
+    },
+    {
+      "name": "bin/version",
+      "kind": "function",
+      "signature": "(bin/version name argv ...)",
+      "summary": "Describe a binary whose version can be queried by running the binary.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Catalog",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/tool.scm",
+      "range": {
+        "line": 50,
+        "start": 11,
+        "length": 11
+      }
+    },
+    {
+      "name": "catalog",
+      "kind": "function",
+      "signature": "(catalog tool ...)",
+      "summary": "Build the top-level catalog object from one or more tool objects.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "tool",
+          "summary": "Tool objects produced by `tool`, `required/tool`, or extension helpers."
+        }
+      ],
+      "returns": "An object with a `tools` vector ready for Scaffold catalog output.",
+      "group": "Catalog",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/root.scm",
+      "range": {
+        "line": 13,
+        "start": 11,
+        "length": 7
+      }
+    },
+    {
+      "name": "catalog/tool",
+      "kind": "keyword",
+      "signature": "(catalog/tool name action field ...)",
+      "summary": "Create a raw catalog tool list for macro-oriented helpers.",
+      "markdown": "Prefer `tool` for ordinary catalog entries. Use `catalog/tool` when writing extension macros that need to splice fields directly into the raw catalog shape before Scaffold normalizes it.",
+      "example": "(catalog/tool\n  \"rg\"\n  (package \"ripgrep\")\n  (field 'bins (arr (bin \"rg\"))))",
+      "params": [
+        {
+          "name": "name",
+          "summary": "Displayed tool name."
+        },
+        {
+          "name": "action",
+          "summary": "Action object such as `package` or `required`."
+        },
+        {
+          "name": "field",
+          "summary": "Additional raw fields added to the tool."
+        }
+      ],
+      "returns": "A raw association-list representation of a catalog tool.",
+      "group": "Catalog",
+      "see": [
+        "tool"
+      ],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/root.scm",
+      "range": {
+        "line": 28,
+        "start": 17,
+        "length": 12
+      }
+    },
+    {
+      "name": "depends",
+      "kind": "function",
+      "signature": "(depends name ...)",
+      "summary": "Declare tools that must be installed before this tool.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "name",
+          "summary": "Tool name dependency. Requested installs include dependencies automatically."
+        }
+      ],
+      "returns": null,
+      "group": "Catalog",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/dependency.scm",
+      "range": {
+        "line": 21,
+        "start": 11,
+        "length": 7
+      }
+    },
+    {
+      "name": "description",
+      "kind": "function",
+      "signature": "(description text)",
+      "summary": "Create a longer metadata description for a tool.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Catalog",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/metadata.scm",
+      "range": {
+        "line": 30,
+        "start": 11,
+        "length": 11
+      }
+    },
+    {
+      "name": "home-page",
+      "kind": "function",
+      "signature": "(home-page url)",
+      "summary": "Create a metadata field for the tool's upstream homepage.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Catalog",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/metadata.scm",
+      "range": {
+        "line": 26,
+        "start": 11,
+        "length": 9
+      }
+    },
+    {
+      "name": "host/package-platform",
+      "kind": "function",
+      "signature": "(host/package-platform requires install-argv field ...)",
+      "summary": "Create a package platform override for the current host OS.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "requires",
+          "summary": "Commands that must be available for this platform rule."
+        },
+        {
+          "name": "install-argv",
+          "summary": "Install command argv vector."
+        }
+      ],
+      "returns": null,
+      "group": "Catalog",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/helper.scm",
+      "range": {
+        "line": 53,
+        "start": 11,
+        "length": 21
+      }
+    },
+    {
+      "name": "host/package-platform-argvs",
+      "kind": "function",
+      "signature": "(host/package-platform-argvs requires install-argvs field ...)",
+      "summary": "Create a package platform override with multiple commands for the current host OS.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "requires",
+          "summary": "Commands that must be available for this platform rule."
+        },
+        {
+          "name": "install-argvs",
+          "summary": "Vector of install command argv vectors."
+        },
+        {
+          "name": "field",
+          "summary": "Additional platform fields."
+        }
+      ],
+      "returns": null,
+      "group": "Catalog",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/helper.scm",
+      "range": {
+        "line": 64,
+        "start": 11,
+        "length": 27
+      }
+    },
+    {
+      "name": "host/uninstall-command",
+      "kind": "function",
+      "signature": "(host/uninstall-command predicate argv field ...)",
+      "summary": "Create an uninstall command that only runs on matching hosts.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Catalog",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/uninstall.scm",
+      "range": {
+        "line": 30,
+        "start": 11,
+        "length": 22
+      }
+    },
+    {
+      "name": "host/uninstall-path",
+      "kind": "function",
+      "signature": "(host/uninstall-path predicate path field ...)",
+      "summary": "Create an uninstall path that is only removed on matching hosts.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Catalog",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/uninstall.scm",
+      "range": {
+        "line": 44,
+        "start": 11,
+        "length": 19
+      }
+    },
+    {
+      "name": "inherit",
+      "kind": "function",
+      "signature": "(inherit base field ...)",
+      "summary": "Derive a tool object by replacing fields on an existing tool.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Catalog",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/tool.scm",
+      "range": {
+        "line": 22,
+        "start": 11,
+        "length": 7
+      }
+    },
+    {
+      "name": "install/after",
+      "kind": "function",
+      "signature": "(install/after name ...)",
+      "summary": "Declare tools that should be installed before this tool.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Catalog",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/dependency.scm",
+      "range": {
+        "line": 33,
+        "start": 11,
+        "length": 13
+      }
+    },
+    {
+      "name": "install/before",
+      "kind": "function",
+      "signature": "(install/before name ...)",
+      "summary": "Declare tools that should be installed after this tool.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Catalog",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/dependency.scm",
+      "range": {
+        "line": 27,
+        "start": 11,
+        "length": 14
+      }
+    },
+    {
+      "name": "install/order",
+      "kind": "function",
+      "signature": "(install/order value)",
+      "summary": "Set a numeric ordering priority for a tool within the resolved install graph.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "value",
+          "summary": "Lower values are installed earlier when dependency constraints allow."
+        }
+      ],
+      "returns": null,
+      "group": "Catalog",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/dependency.scm",
+      "range": {
+        "line": 12,
+        "start": 11,
+        "length": 13
+      }
+    },
+    {
+      "name": "license",
+      "kind": "function",
+      "signature": "(license value)",
+      "summary": "Create a metadata field for a tool license identifier or note.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Catalog",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/metadata.scm",
+      "range": {
+        "line": 34,
+        "start": 11,
+        "length": 7
+      }
+    },
+    {
+      "name": "main-program",
+      "kind": "function",
+      "signature": "(main-program name)",
+      "summary": "Create a metadata field naming the primary executable for a tool.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Catalog",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/metadata.scm",
+      "range": {
+        "line": 51,
+        "start": 11,
+        "length": 12
+      }
+    },
+    {
+      "name": "maintainers",
+      "kind": "function",
+      "signature": "(maintainers name ...)",
+      "summary": "Create a metadata field listing maintainers for a catalog tool.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Catalog",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/metadata.scm",
+      "range": {
+        "line": 40,
+        "start": 11,
+        "length": 11
+      }
+    },
+    {
+      "name": "meta",
+      "kind": "function",
+      "signature": "(meta field ...)",
+      "summary": "Attach descriptive metadata to a catalog tool.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "field",
+          "summary": "Metadata fields such as `home-page`, `description`, `license`, `maintainers`, `tags`, `main-program`, or `source`."
+        }
+      ],
+      "returns": "A `meta` field accepted by `tool`.",
+      "group": "Catalog",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/metadata.scm",
+      "range": {
+        "line": 22,
+        "start": 11,
+        "length": 4
+      }
+    },
+    {
+      "name": "override",
+      "kind": "function",
+      "signature": "(override base proc)",
+      "summary": "Derive a tool from overrides computed from the existing tool object.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "base",
+          "summary": "Tool object to derive from."
+        },
+        {
+          "name": "proc",
+          "summary": "Procedure that receives `base` and returns an object of replacement fields."
+        }
+      ],
+      "returns": null,
+      "group": "Catalog",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/tool.scm",
+      "range": {
+        "line": 31,
+        "start": 11,
+        "length": 8
+      }
+    },
+    {
+      "name": "passthru",
+      "kind": "function",
+      "signature": "(passthru field ...)",
+      "summary": "Attach open extension data to a catalog tool.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "field",
+          "summary": "Arbitrary object fields preserved in evaluated catalog JSON but ignored by installation."
+        }
+      ],
+      "returns": null,
+      "group": "Catalog",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/metadata.scm",
+      "range": {
+        "line": 65,
+        "start": 11,
+        "length": 8
+      }
+    },
+    {
+      "name": "required/tool",
+      "kind": "keyword",
+      "signature": "(required/tool name field ...)",
+      "summary": "Create a raw catalog tool that must already exist on the host.",
+      "markdown": "This is the raw macro form behind higher-level required command helpers. Prefer `tool` with `required`, or an extension helper, unless a macro needs to splice raw fields.",
+      "example": "(required/tool \"git\" (field 'bins (arr (bin \"git\"))))",
+      "params": [
+        {
+          "name": "name",
+          "summary": "Required command name."
+        },
+        {
+          "name": "field",
+          "summary": "Additional raw fields added to the tool."
+        }
+      ],
+      "returns": "A raw tool list with a `required` action.",
+      "group": "Catalog",
+      "see": [
+        "tool",
+        "required"
+      ],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/root.scm",
+      "range": {
+        "line": 46,
+        "start": 17,
+        "length": 13
+      }
+    },
+    {
+      "name": "source",
+      "kind": "function",
+      "signature": "(source value)",
+      "summary": "Create a metadata field describing the upstream source location.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Catalog",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/metadata.scm",
+      "range": {
+        "line": 56,
+        "start": 11,
+        "length": 6
+      }
+    },
+    {
+      "name": "tags",
+      "kind": "function",
+      "signature": "(tags tag ...)",
+      "summary": "Create a metadata field listing searchable labels for a catalog tool.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Catalog",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/metadata.scm",
+      "range": {
+        "line": 46,
+        "start": 11,
+        "length": 4
+      }
+    },
+    {
+      "name": "tool",
+      "kind": "function",
+      "signature": "(tool name action field ...)",
+      "summary": "Create a catalog tool object.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "name",
+          "summary": "Tool name used in catalog output."
+        },
+        {
+          "name": "action",
+          "summary": "Action object describing how the tool is installed or required."
+        },
+        {
+          "name": "field",
+          "summary": "Additional fields such as `bins`, `checks`, or `platforms`."
+        }
+      ],
+      "returns": "A tool object accepted by `catalog`.",
+      "group": "Catalog",
+      "see": [
+        "package",
+        "required"
+      ],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/tool.scm",
+      "range": {
+        "line": 15,
+        "start": 11,
+        "length": 4
+      }
+    },
+    {
+      "name": "tool/append-bins",
+      "kind": "function",
+      "signature": "(tool/append-bins obj bin ...)",
+      "summary": "Append binary descriptors to an object's `bins` vector.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Catalog",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/tool.scm",
+      "range": {
+        "line": 37,
+        "start": 11,
+        "length": 16
+      }
+    },
+    {
+      "name": "tool/inherit",
+      "kind": "function",
+      "signature": "(tool/inherit base field ...)",
+      "summary": "Facade name for deriving a tool object by replacing fields on an existing tool.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Catalog",
+      "see": [
+        "inherit"
+      ],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/base.scm",
+      "range": {
+        "line": 114,
+        "start": 14,
+        "length": 12
+      }
+    },
+    {
+      "name": "tool/override",
+      "kind": "function",
+      "signature": "(tool/override base proc)",
+      "summary": "Facade name for deriving a tool from overrides computed from the existing tool object.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "base",
+          "summary": "Tool object to derive from."
+        },
+        {
+          "name": "proc",
+          "summary": "Procedure that receives `base` and returns an object of replacement fields."
+        }
+      ],
+      "returns": null,
+      "group": "Catalog",
+      "see": [
+        "override"
+      ],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/base.scm",
+      "range": {
+        "line": 120,
+        "start": 14,
+        "length": 13
+      }
+    },
+    {
+      "name": "tool/platforms",
+      "kind": "function",
+      "signature": "(tool/platforms platform ...)",
+      "summary": "Create a `platforms` field for a tool.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "platform",
+          "summary": "Host OS symbol or string such as `linux`, `macos`, or `windows`."
+        }
+      ],
+      "returns": null,
+      "group": "Catalog",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/helper.scm",
+      "range": {
+        "line": 45,
+        "start": 11,
+        "length": 14
+      }
+    },
+    {
+      "name": "tool/prefer-present",
+      "kind": "function",
+      "signature": "(tool/prefer-present name package-action field ...)",
+      "summary": "Create a required tool when the command is already present, otherwise use a package action.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "name",
+          "summary": "Command and tool name to prefer from the host when available."
+        },
+        {
+          "name": "package-action",
+          "summary": "Package action used when the command is not available."
+        }
+      ],
+      "returns": "A tool object with either a `required` or package action.",
+      "group": "Catalog",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/helper.scm",
+      "range": {
+        "line": 27,
+        "start": 11,
+        "length": 19
+      }
+    },
+    {
+      "name": "uninstall",
+      "kind": "function",
+      "signature": "(uninstall field ...)",
+      "summary": "Create uninstall metadata for a catalog tool.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "field",
+          "summary": "Fields such as `commands`, `paths`, `remove-bins`, or `remove-prefix`."
+        }
+      ],
+      "returns": null,
+      "group": "Catalog",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/uninstall.scm",
+      "range": {
+        "line": 17,
+        "start": 11,
+        "length": 9
+      }
+    },
+    {
+      "name": "uninstall/command",
+      "kind": "function",
+      "signature": "(uninstall/command argv field ...)",
+      "summary": "Create a command run by `scaffold uninstall`.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "argv",
+          "summary": "Command argv vector. Supports normal Scaffold template bindings."
+        }
+      ],
+      "returns": null,
+      "group": "Catalog",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/uninstall.scm",
+      "range": {
+        "line": 24,
+        "start": 11,
+        "length": 17
+      }
+    },
+    {
+      "name": "uninstall/path",
+      "kind": "function",
+      "signature": "(uninstall/path path field ...)",
+      "summary": "Create a path removed by `scaffold uninstall`.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "path",
+          "summary": "File or directory path. Supports normal Scaffold template bindings."
+        }
+      ],
+      "returns": null,
+      "group": "Catalog",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/uninstall.scm",
+      "range": {
+        "line": 38,
+        "start": 11,
+        "length": 14
+      }
+    },
+    {
+      "name": "uninstall/paths",
+      "kind": "function",
+      "signature": "(uninstall/paths path ...)",
+      "summary": "Create an `uninstall` field containing path removal entries.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "path",
+          "summary": "Path template removed by `scaffold uninstall`."
+        }
+      ],
+      "returns": null,
+      "group": "Catalog",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/helper.scm",
+      "range": {
+        "line": 72,
+        "start": 11,
+        "length": 15
+      }
+    },
+    {
+      "name": "workspace/build",
+      "kind": "function",
+      "signature": "(workspace/build path field ...)",
+      "summary": "Create a build action whose source path is resolved from the workspace root.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "path",
+          "summary": "Path relative to `workspace/root`."
+        },
+        {
+          "name": "field",
+          "summary": "Build fields such as `argv` or ordered `argvs`."
+        }
+      ],
+      "returns": null,
+      "group": "Catalog",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/helper.scm",
+      "range": {
+        "line": 37,
+        "start": 11,
+        "length": 15
+      }
+    },
+    {
+      "name": "check",
+      "kind": "function",
+      "signature": "(check argv field ...)",
+      "summary": "Create a command check run to detect whether a tool is already present.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Checks",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/check.scm",
+      "range": {
+        "line": 9,
+        "start": 11,
+        "length": 5
+      }
+    },
+    {
+      "name": "command/check",
+      "kind": "function",
+      "signature": "(command/check argv ...)",
+      "summary": "Create a command check from plain argv parts.",
+      "markdown": null,
+      "example": "(command/check \"git\" \"--version\")",
+      "params": [
+        {
+          "name": "argv",
+          "summary": "Command and arguments Scaffold should run to verify presence."
+        }
+      ],
+      "returns": "A `check` object with `argv` converted to a vector.",
+      "group": "Checks",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/support/checks.scm",
+      "range": {
+        "line": 12,
+        "start": 11,
+        "length": 13
+      }
+    },
+    {
+      "name": "host/check",
+      "kind": "function",
+      "signature": "(host/check predicate argv field ...)",
+      "summary": "Create a check that only applies when the host matches a predicate.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Checks",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/check.scm",
+      "range": {
+        "line": 15,
+        "start": 11,
+        "length": 10
+      }
+    },
+    {
+      "name": "apt-get/install-argv",
+      "kind": "function",
+      "signature": "(apt-get/install-argv package ...)",
+      "summary": "Build argv for installing packages with `sudo apt-get install -y`.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "package",
+          "summary": "APT package names."
+        }
+      ],
+      "returns": "Vector argv suitable for a package action `install-argv`.",
+      "group": "Distro packages",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/distro/apt.scm",
+      "range": {
+        "line": 16,
+        "start": 11,
+        "length": 20
+      }
+    },
+    {
+      "name": "apt-get/remove-argv",
+      "kind": "function",
+      "signature": "(apt-get/remove-argv package ...)",
+      "summary": "Build argv for removing packages with `sudo apt-get remove -y`.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "package",
+          "summary": "APT package names."
+        }
+      ],
+      "returns": "Vector argv suitable for uninstall metadata.",
+      "group": "Distro packages",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/distro/apt.scm",
+      "range": {
+        "line": 25,
+        "start": 11,
+        "length": 19
+      }
+    },
+    {
+      "name": "apt/package",
+      "kind": "function",
+      "signature": "(apt/package name field ...)",
+      "summary": "Create a catalog tool installed through APT.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "name",
+          "summary": "APT package name and default catalog tool name."
+        },
+        {
+          "name": "field",
+          "summary": "Additional tool fields that override defaults."
+        }
+      ],
+      "returns": "A tool with an APT package action and `dpkg-query -W` check.",
+      "group": "Distro packages",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/distro/apt.scm",
+      "range": {
+        "line": 35,
+        "start": 11,
+        "length": 11
+      }
+    },
+    {
+      "name": "apt/package-platform",
+      "kind": "function",
+      "signature": "(apt/package-platform package-name field ...)",
+      "summary": "Create a Linux package/platform override that requires `apt-get`.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "package-name",
+          "summary": "APT package name."
+        },
+        {
+          "name": "field",
+          "summary": "Additional platform fields that override defaults."
+        }
+      ],
+      "returns": null,
+      "group": "Distro packages",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/distro/apt.scm",
+      "range": {
+        "line": 85,
+        "start": 11,
+        "length": 20
+      }
+    },
+    {
+      "name": "apt/package-tool",
+      "kind": "function",
+      "signature": "(apt/package-tool name package-name bin-name field ...)",
+      "summary": "Create a catalog tool installed through an APT package with a separate tool name.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "name",
+          "summary": "Catalog tool name."
+        },
+        {
+          "name": "package-name",
+          "summary": "APT package name."
+        },
+        {
+          "name": "bin-name",
+          "summary": "Executable exposed by the package."
+        },
+        {
+          "name": "field",
+          "summary": "Additional tool fields that override defaults."
+        }
+      ],
+      "returns": null,
+      "group": "Distro packages",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/distro/apt.scm",
+      "range": {
+        "line": 61,
+        "start": 11,
+        "length": 16
+      }
+    },
+    {
+      "name": "dnf/install-argv",
+      "kind": "function",
+      "signature": "(dnf/install-argv package ...)",
+      "summary": "Build argv for installing packages with `sudo dnf install -y`.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "package",
+          "summary": "DNF package names."
+        }
+      ],
+      "returns": "Vector argv suitable for a package action `install-argv`.",
+      "group": "Distro packages",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/distro/dnf.scm",
+      "range": {
+        "line": 16,
+        "start": 11,
+        "length": 16
+      }
+    },
+    {
+      "name": "dnf/package",
+      "kind": "function",
+      "signature": "(dnf/package name field ...)",
+      "summary": "Create a catalog tool installed through DNF.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "name",
+          "summary": "DNF package name and default catalog tool name."
+        },
+        {
+          "name": "field",
+          "summary": "Additional tool fields that override defaults."
+        }
+      ],
+      "returns": "A tool with a DNF package action and `rpm -q` check.",
+      "group": "Distro packages",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/distro/dnf.scm",
+      "range": {
+        "line": 34,
+        "start": 11,
+        "length": 11
+      }
+    },
+    {
+      "name": "dnf/package-platform",
+      "kind": "function",
+      "signature": "(dnf/package-platform package-name field ...)",
+      "summary": "Create a Linux package/platform override that requires `dnf`.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "package-name",
+          "summary": "DNF package name."
+        },
+        {
+          "name": "field",
+          "summary": "Additional platform fields that override defaults."
+        }
+      ],
+      "returns": null,
+      "group": "Distro packages",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/distro/dnf.scm",
+      "range": {
+        "line": 84,
+        "start": 11,
+        "length": 20
+      }
+    },
+    {
+      "name": "dnf/package-tool",
+      "kind": "function",
+      "signature": "(dnf/package-tool name package-name bin-name field ...)",
+      "summary": "Create a catalog tool installed through a DNF package with a separate tool name.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "name",
+          "summary": "Catalog tool name."
+        },
+        {
+          "name": "package-name",
+          "summary": "DNF package name."
+        },
+        {
+          "name": "bin-name",
+          "summary": "Executable exposed by the package."
+        },
+        {
+          "name": "field",
+          "summary": "Additional tool fields that override defaults."
+        }
+      ],
+      "returns": null,
+      "group": "Distro packages",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/distro/dnf.scm",
+      "range": {
+        "line": 60,
+        "start": 11,
+        "length": 16
+      }
+    },
+    {
+      "name": "dnf/remove-argv",
+      "kind": "function",
+      "signature": "(dnf/remove-argv package ...)",
+      "summary": "Build argv for removing packages with `sudo dnf remove -y`.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "package",
+          "summary": "DNF package names."
+        }
+      ],
+      "returns": "Vector argv suitable for uninstall metadata.",
+      "group": "Distro packages",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/distro/dnf.scm",
+      "range": {
+        "line": 25,
+        "start": 11,
+        "length": 15
+      }
+    },
+    {
+      "name": "pacman/install-argv",
+      "kind": "function",
+      "signature": "(pacman/install-argv package ...)",
+      "summary": "Build argv for installing packages with `sudo pacman -S --needed --noconfirm`.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "package",
+          "summary": "Pacman package names."
+        }
+      ],
+      "returns": "Vector argv suitable for a package action `install-argv`.",
+      "group": "Distro packages",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/distro/pacman.scm",
+      "range": {
+        "line": 17,
+        "start": 11,
+        "length": 19
+      }
+    },
+    {
+      "name": "pacman/package",
+      "kind": "function",
+      "signature": "(pacman/package name field ...)",
+      "summary": "Create a catalog tool installed through Pacman.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "name",
+          "summary": "Pacman package name and default catalog tool name."
+        },
+        {
+          "name": "field",
+          "summary": "Additional tool fields that override defaults."
+        }
+      ],
+      "returns": "A tool with a Pacman package action and `pacman -Q` check.",
+      "group": "Distro packages",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/distro/pacman.scm",
+      "range": {
+        "line": 36,
+        "start": 11,
+        "length": 14
+      }
+    },
+    {
+      "name": "pacman/package-platform",
+      "kind": "function",
+      "signature": "(pacman/package-platform package-name field ...)",
+      "summary": "Create a Linux package/platform override that requires `pacman`.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "package-name",
+          "summary": "Pacman package name."
+        },
+        {
+          "name": "field",
+          "summary": "Additional platform fields that override defaults."
+        }
+      ],
+      "returns": null,
+      "group": "Distro packages",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/distro/pacman.scm",
+      "range": {
+        "line": 86,
+        "start": 11,
+        "length": 23
+      }
+    },
+    {
+      "name": "pacman/package-tool",
+      "kind": "function",
+      "signature": "(pacman/package-tool name package-name bin-name field ...)",
+      "summary": "Create a catalog tool installed through a Pacman package with a separate tool name.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "name",
+          "summary": "Catalog tool name."
+        },
+        {
+          "name": "package-name",
+          "summary": "Pacman package name."
+        },
+        {
+          "name": "bin-name",
+          "summary": "Executable exposed by the package."
+        },
+        {
+          "name": "field",
+          "summary": "Additional tool fields that override defaults."
+        }
+      ],
+      "returns": null,
+      "group": "Distro packages",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/distro/pacman.scm",
+      "range": {
+        "line": 62,
+        "start": 11,
+        "length": 19
+      }
+    },
+    {
+      "name": "pacman/remove-argv",
+      "kind": "function",
+      "signature": "(pacman/remove-argv package ...)",
+      "summary": "Build argv for removing packages with `sudo pacman -R --noconfirm`.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "package",
+          "summary": "Pacman package names."
+        }
+      ],
+      "returns": "Vector argv suitable for uninstall metadata.",
+      "group": "Distro packages",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/distro/pacman.scm",
+      "range": {
+        "line": 26,
+        "start": 11,
+        "length": 18
+      }
+    },
+    {
+      "name": "rpm-ostree/install-argv",
+      "kind": "function",
+      "signature": "(rpm-ostree/install-argv package ...)",
+      "summary": "Build argv for installing packages with `sudo rpm-ostree install --idempotent -y`.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "package",
+          "summary": "RPM package names."
+        }
+      ],
+      "returns": "Vector argv suitable for a package action `install-argv`.",
+      "group": "Distro packages",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/distro/rpm.scm",
+      "range": {
+        "line": 17,
+        "start": 11,
+        "length": 23
+      }
+    },
+    {
+      "name": "rpm-ostree/package",
+      "kind": "function",
+      "signature": "(rpm-ostree/package name field ...)",
+      "summary": "Create a catalog tool installed through rpm-ostree.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "name",
+          "summary": "RPM package name and default catalog tool name."
+        },
+        {
+          "name": "field",
+          "summary": "Additional tool fields that override defaults."
+        }
+      ],
+      "returns": "A tool with an rpm-ostree package action and `rpm -q` check.",
+      "group": "Distro packages",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/distro/rpm.scm",
+      "range": {
+        "line": 37,
+        "start": 11,
+        "length": 18
+      }
+    },
+    {
+      "name": "rpm-ostree/package-platform",
+      "kind": "function",
+      "signature": "(rpm-ostree/package-platform package-name field ...)",
+      "summary": "Create a Linux package/platform override that requires `rpm-ostree`.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "package-name",
+          "summary": "RPM package name."
+        },
+        {
+          "name": "field",
+          "summary": "Additional platform fields that override defaults."
+        }
+      ],
+      "returns": null,
+      "group": "Distro packages",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/distro/rpm.scm",
+      "range": {
+        "line": 93,
+        "start": 11,
+        "length": 27
+      }
+    },
+    {
+      "name": "rpm-ostree/package-tool",
+      "kind": "function",
+      "signature": "(rpm-ostree/package-tool name package-name bin-name field ...)",
+      "summary": "Create a catalog tool installed through an rpm-ostree package with a separate tool name.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "name",
+          "summary": "Catalog tool name."
+        },
+        {
+          "name": "package-name",
+          "summary": "RPM package name."
+        },
+        {
+          "name": "bin-name",
+          "summary": "Executable exposed by the package."
+        },
+        {
+          "name": "field",
+          "summary": "Additional tool fields that override defaults."
+        }
+      ],
+      "returns": null,
+      "group": "Distro packages",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/distro/rpm.scm",
+      "range": {
+        "line": 66,
+        "start": 11,
+        "length": 23
+      }
+    },
+    {
+      "name": "rpm-ostree/uninstall-argv",
+      "kind": "function",
+      "signature": "(rpm-ostree/uninstall-argv package ...)",
+      "summary": "Build argv for uninstalling packages with `sudo rpm-ostree uninstall -y`.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "package",
+          "summary": "RPM package names."
+        }
+      ],
+      "returns": "Vector argv suitable for uninstall metadata.",
+      "group": "Distro packages",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/distro/rpm.scm",
+      "range": {
+        "line": 27,
+        "start": 11,
+        "length": 25
+      }
+    },
+    {
+      "name": "deprecated",
+      "kind": "function",
+      "signature": "(deprecated text)",
+      "summary": "Record replacement guidance and mark completions as deprecated.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Documentation",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/config/documentation.scm",
+      "range": {
+        "line": 82,
+        "start": 14,
+        "length": 10
+      }
+    },
+    {
+      "name": "doc",
+      "kind": "function",
+      "signature": "(doc subject field ...)",
+      "summary": "Attach parseable documentation metadata to a value, macro, or DSL form.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "subject",
+          "summary": "Quoted symbol or string name of the documented entity."
+        },
+        {
+          "name": "field",
+          "summary": "Structured metadata created by helpers such as `summary`, `param`, `returns`, and `example`."
+        }
+      ],
+      "returns": "A documentation object ignored as catalog output and indexed by editor tooling.",
+      "group": "Documentation",
+      "see": [
+        "moduledoc",
+        "typedoc"
+      ],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/config/documentation.scm",
+      "range": {
+        "line": 90,
+        "start": 14,
+        "length": 3
+      }
+    },
+    {
+      "name": "doc-next",
+      "kind": "function",
+      "signature": "(doc-next field ...)",
+      "summary": "Attach documentation metadata to the following definition.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "field",
+          "summary": "Documentation metadata fields inherited by the following definition."
+        }
+      ],
+      "returns": "A documentation object indexed as if it documented the next binding.",
+      "group": "Documentation",
+      "see": [
+        "doc",
+        "extern-doc"
+      ],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/config/documentation.scm",
+      "range": {
+        "line": 102,
+        "start": 14,
+        "length": 8
+      }
+    },
+    {
+      "name": "effect",
+      "kind": "function",
+      "signature": "(effect name)",
+      "summary": "Record the effect category for a module or documented binding.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Documentation",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/config/documentation.scm",
+      "range": {
+        "line": 66,
+        "start": 14,
+        "length": 6
+      }
+    },
+    {
+      "name": "example",
+      "kind": "function",
+      "signature": "(example text)",
+      "summary": "Attach a Scheme example that tooling renders as a code block.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Documentation",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/config/documentation.scm",
+      "range": {
+        "line": 46,
+        "start": 14,
+        "length": 7
+      }
+    },
+    {
+      "name": "extern-doc",
+      "kind": "function",
+      "signature": "(extern-doc subject field ...)",
+      "summary": "Attach documentation metadata to a host-backed or generated binding.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "subject",
+          "summary": "Symbol or string name of the documented external binding."
+        },
+        {
+          "name": "field",
+          "summary": "Documentation metadata fields."
+        }
+      ],
+      "returns": "A documentation object normalized to a regular doc entry.",
+      "group": "Documentation",
+      "see": [
+        "doc-next"
+      ],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/config/documentation.scm",
+      "range": {
+        "line": 112,
+        "start": 14,
+        "length": 10
+      }
+    },
+    {
+      "name": "group",
+      "kind": "function",
+      "signature": "(group text)",
+      "summary": "Place a documented symbol into a tooling group.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Documentation",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/config/documentation.scm",
+      "range": {
+        "line": 58,
+        "start": 14,
+        "length": 5
+      }
+    },
+    {
+      "name": "hidden",
+      "kind": "function",
+      "signature": "(hidden)",
+      "summary": "Hide an internal doc entry from public completion lists.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Documentation",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/config/documentation.scm",
+      "range": {
+        "line": 86,
+        "start": 14,
+        "length": 6
+      }
+    },
+    {
+      "name": "markdown",
+      "kind": "function",
+      "signature": "(markdown text)",
+      "summary": "Add longer Markdown documentation for hover and generated references.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Documentation",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/config/documentation.scm",
+      "range": {
+        "line": 42,
+        "start": 14,
+        "length": 8
+      }
+    },
+    {
+      "name": "moduledoc",
+      "kind": "function",
+      "signature": "(moduledoc field ...)",
+      "summary": "Attach parseable documentation metadata to a Scheme file or library.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "field",
+          "summary": "Module-level metadata fields."
+        }
+      ],
+      "returns": "A documentation object for file and library tooling.",
+      "group": "Documentation",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/config/documentation.scm",
+      "range": {
+        "line": 120,
+        "start": 14,
+        "length": 9
+      }
+    },
+    {
+      "name": "param",
+      "kind": "function",
+      "signature": "(param name text)",
+      "summary": "Document one parameter for signature help and generated references.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Documentation",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/config/documentation.scm",
+      "range": {
+        "line": 50,
+        "start": 14,
+        "length": 5
+      }
+    },
+    {
+      "name": "requires-capability",
+      "kind": "function",
+      "signature": "(requires-capability name)",
+      "summary": "Record a host capability required by a module or documented binding.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Documentation",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/config/documentation.scm",
+      "range": {
+        "line": 70,
+        "start": 14,
+        "length": 19
+      }
+    },
+    {
+      "name": "returns",
+      "kind": "function",
+      "signature": "(returns text)",
+      "summary": "Document the result produced by a value or helper.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Documentation",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/config/documentation.scm",
+      "range": {
+        "line": 54,
+        "start": 14,
+        "length": 7
+      }
+    },
+    {
+      "name": "see",
+      "kind": "function",
+      "signature": "(see subject)",
+      "summary": "Link a doc entry to a related symbol.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Documentation",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/config/documentation.scm",
+      "range": {
+        "line": 62,
+        "start": 14,
+        "length": 3
+      }
+    },
+    {
+      "name": "signature",
+      "kind": "function",
+      "signature": "(signature text)",
+      "summary": "Declare the primary callable shape shown in completion and signature help.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Documentation",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/config/documentation.scm",
+      "range": {
+        "line": 32,
+        "start": 14,
+        "length": 9
+      }
+    },
+    {
+      "name": "since",
+      "kind": "function",
+      "signature": "(since text)",
+      "summary": "Record the Scaffold version that introduced the documented symbol.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Documentation",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/config/documentation.scm",
+      "range": {
+        "line": 78,
+        "start": 14,
+        "length": 5
+      }
+    },
+    {
+      "name": "stability",
+      "kind": "function",
+      "signature": "(stability text)",
+      "summary": "Record stability guidance such as experimental or stable.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Documentation",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/config/documentation.scm",
+      "range": {
+        "line": 74,
+        "start": 14,
+        "length": 9
+      }
+    },
+    {
+      "name": "summary",
+      "kind": "function",
+      "signature": "(summary text)",
+      "summary": "Provide the one-line summary used by completion lists and hover previews.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Documentation",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/config/documentation.scm",
+      "range": {
+        "line": 37,
+        "start": 14,
+        "length": 7
+      }
+    },
+    {
+      "name": "typedoc",
+      "kind": "function",
+      "signature": "(typedoc subject field ...)",
+      "summary": "Attach parseable documentation metadata to a type-like DSL concept.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Documentation",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/config/documentation.scm",
+      "range": {
+        "line": 126,
+        "start": 14,
+        "length": 7
+      }
+    },
+    {
+      "name": "directory/exists?",
+      "kind": "function",
+      "signature": "(directory/exists? path)",
+      "summary": "Return whether an absolute path exists and is a directory.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "path",
+          "summary": "Absolute path string to inspect."
+        }
+      ],
+      "returns": "`#t` when the path exists as a directory, otherwise `#f`.",
+      "group": "Filesystem",
+      "see": [],
+      "effect": "host-read-only",
+      "requires_capability": [
+        "scaffold.fs"
+      ],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/fs.scm",
+      "range": {
+        "line": 27,
+        "start": 10,
+        "length": 17
+      }
+    },
+    {
+      "name": "file/exists?",
+      "kind": "function",
+      "signature": "(file/exists? path)",
+      "summary": "Return whether an absolute path exists and is a regular file.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "path",
+          "summary": "Absolute path string to inspect."
+        }
+      ],
+      "returns": "`#t` when the path exists as a file, otherwise `#f`.",
+      "group": "Filesystem",
+      "see": [],
+      "effect": "host-read-only",
+      "requires_capability": [
+        "scaffold.fs"
+      ],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/fs.scm",
+      "range": {
+        "line": 19,
+        "start": 10,
+        "length": 12
+      }
+    },
+    {
+      "name": "path/exists?",
+      "kind": "function",
+      "signature": "(path/exists? path)",
+      "summary": "Return whether an absolute path exists on the host filesystem.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "path",
+          "summary": "Absolute path string to inspect."
+        }
+      ],
+      "returns": "`#t` when the path exists, otherwise `#f`.",
+      "group": "Filesystem",
+      "see": [],
+      "effect": "host-read-only",
+      "requires_capability": [
+        "scaffold.fs"
+      ],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/fs.scm",
+      "range": {
+        "line": 11,
+        "start": 10,
+        "length": 12
+      }
+    },
+    {
+      "name": "command/available?",
+      "kind": "function",
+      "signature": "(command/available? name)",
+      "summary": "Return whether a command is available on the current host.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "name",
+          "summary": "Command name to check."
+        }
+      ],
+      "returns": "`#t` when the command is detected, otherwise `#f`.",
+      "group": "Host",
+      "see": [],
+      "effect": "host-read-only",
+      "requires_capability": [
+        "scaffold.host"
+      ],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/host.scm",
+      "range": {
+        "line": 49,
+        "start": 10,
+        "length": 18
+      }
+    },
+    {
+      "name": "command/path",
+      "kind": "function",
+      "signature": "(command/path name)",
+      "summary": "Resolve a command name to an executable path on the current host.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "name",
+          "summary": "Command name to resolve."
+        }
+      ],
+      "returns": "The resolved executable path as a string, or `#f` when absent.",
+      "group": "Host",
+      "see": [],
+      "effect": "host-read-only",
+      "requires_capability": [
+        "scaffold.host"
+      ],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/host.scm",
+      "range": {
+        "line": 57,
+        "start": 10,
+        "length": 12
+      }
+    },
+    {
+      "name": "command/path?",
+      "kind": "function",
+      "signature": "(command/path? name)",
+      "summary": "Return whether a command resolves to an executable path.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "name",
+          "summary": "Command name to resolve."
+        }
+      ],
+      "returns": "`#t` when the command resolves, otherwise `#f`.",
+      "group": "Host",
+      "see": [],
+      "effect": "host-read-only",
+      "requires_capability": [
+        "scaffold.host"
+      ],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/host.scm",
+      "range": {
+        "line": 64,
+        "start": 11,
+        "length": 13
+      }
+    },
+    {
+      "name": "env/var",
+      "kind": "function",
+      "signature": "(env/var name)",
+      "summary": "Return an environment variable from the current Scaffold process.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "name",
+          "summary": "Environment variable name."
+        }
+      ],
+      "returns": "The variable value as a string, or `#f` when it is absent.",
+      "group": "Host",
+      "see": [],
+      "effect": "host-read-only",
+      "requires_capability": [
+        "scaffold.host"
+      ],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/host.scm",
+      "range": {
+        "line": 88,
+        "start": 10,
+        "length": 7
+      }
+    },
+    {
+      "name": "env/var?",
+      "kind": "function",
+      "signature": "(env/var? name)",
+      "summary": "Return whether an environment variable is set for the current Scaffold process.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "name",
+          "summary": "Environment variable name."
+        }
+      ],
+      "returns": "`#t` when the variable is set, otherwise `#f`.",
+      "group": "Host",
+      "see": [],
+      "effect": "host-read-only",
+      "requires_capability": [
+        "scaffold.host"
+      ],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/host.scm",
+      "range": {
+        "line": 96,
+        "start": 11,
+        "length": 8
+      }
+    },
+    {
+      "name": "host/arch",
+      "kind": "function",
+      "signature": "host/arch",
+      "summary": "Symbol for the current CPU architecture.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Host",
+      "see": [],
+      "effect": "host-read-only",
+      "requires_capability": [
+        "scaffold.host"
+      ],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/host.scm",
+      "range": {
+        "line": 27,
+        "start": 10,
+        "length": 9
+      }
+    },
+    {
+      "name": "host/matches?",
+      "kind": "function",
+      "signature": "(host/matches? target)",
+      "summary": "Return whether a platform target matches the current host.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "target",
+          "summary": "An OS symbol, a platform string, or a predicate object."
+        }
+      ],
+      "returns": "`#t` when the target matches the detected host, otherwise `#f`.",
+      "group": "Host",
+      "see": [],
+      "effect": "host-read-only",
+      "requires_capability": [
+        "scaffold.host"
+      ],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/host.scm",
+      "range": {
+        "line": 71,
+        "start": 11,
+        "length": 13
+      }
+    },
+    {
+      "name": "host/os",
+      "kind": "function",
+      "signature": "host/os",
+      "summary": "Symbol for the current operating system.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": "A host OS symbol such as `linux`, populated by Scaffold before evaluation.",
+      "group": "Host",
+      "see": [],
+      "effect": "host-read-only",
+      "requires_capability": [
+        "scaffold.host"
+      ],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/host.scm",
+      "range": {
+        "line": 21,
+        "start": 10,
+        "length": 7
+      }
+    },
+    {
+      "name": "host/platform",
+      "kind": "function",
+      "signature": "host/platform",
+      "summary": "String describing the detected host platform.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Host",
+      "see": [],
+      "effect": "host-read-only",
+      "requires_capability": [
+        "scaffold.host"
+      ],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/host.scm",
+      "range": {
+        "line": 33,
+        "start": 10,
+        "length": 13
+      }
+    },
+    {
+      "name": "begin",
+      "kind": "keyword",
+      "signature": "(begin expression ...)",
+      "summary": "Evaluate expressions in order and return the final value.",
+      "markdown": "Evaluate expressions in order and return the final value.",
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Language",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "scheme keyword",
+      "range": null
+    },
+    {
+      "name": "cond",
+      "kind": "keyword",
+      "signature": "(cond clause ...)",
+      "summary": "Branch across ordered test clauses.",
+      "markdown": "Branch across ordered test clauses.",
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Language",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "scheme keyword",
+      "range": null
+    },
+    {
+      "name": "define",
+      "kind": "keyword",
+      "signature": "(define name value)",
+      "summary": "Bind a Scheme value or procedure in the current scope.",
+      "markdown": "Bind a Scheme value or procedure in the current scope.",
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Language",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "scheme keyword",
+      "range": null
+    },
+    {
+      "name": "define-syntax",
+      "kind": "keyword",
+      "signature": "(define-syntax name transformer)",
+      "summary": "Bind a hygienic syntax transformer in the current scope.",
+      "markdown": "Bind a hygienic syntax transformer in the current scope.",
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Language",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "scheme keyword",
+      "range": null
+    },
+    {
+      "name": "export",
+      "kind": "keyword",
+      "signature": "(export binding ...)",
+      "summary": "Export bindings from a Scheme library.",
+      "markdown": "Export bindings from a Scheme library.",
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Language",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "scheme keyword",
+      "range": null
+    },
+    {
+      "name": "if",
+      "kind": "keyword",
+      "signature": "(if test consequent alternate)",
+      "summary": "Choose between consequent and alternate expressions.",
+      "markdown": "Choose between consequent and alternate expressions.",
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Language",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "scheme keyword",
+      "range": null
+    },
+    {
+      "name": "import",
+      "kind": "keyword",
+      "signature": "(import library ...)",
+      "summary": "Import Scheme libraries allowed by Scaffold's import policy.",
+      "markdown": "Import Scheme libraries allowed by Scaffold's import policy.",
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Language",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "scheme keyword",
+      "range": null
+    },
+    {
+      "name": "lambda",
+      "kind": "keyword",
+      "signature": "(lambda (arg ...) body ...)",
+      "summary": "Create a Scheme procedure.",
+      "markdown": "Create a Scheme procedure.",
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Language",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "scheme keyword",
+      "range": null
+    },
+    {
+      "name": "let",
+      "kind": "keyword",
+      "signature": "(let ((name value) ...) body ...)",
+      "summary": "Bind local values for a body expression.",
+      "markdown": "Bind local values for a body expression.",
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Language",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "scheme keyword",
+      "range": null
+    },
+    {
+      "name": "let*",
+      "kind": "keyword",
+      "signature": "(let* ((name value) ...) body ...)",
+      "summary": "Bind local values sequentially for a body expression.",
+      "markdown": "Bind local values sequentially for a body expression.",
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Language",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "scheme keyword",
+      "range": null
+    },
+    {
+      "name": "letrec",
+      "kind": "keyword",
+      "signature": "(letrec ((name value) ...) body ...)",
+      "summary": "Bind mutually recursive local values for a body expression.",
+      "markdown": "Bind mutually recursive local values for a body expression.",
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Language",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "scheme keyword",
+      "range": null
+    },
+    {
+      "name": "library",
+      "kind": "keyword",
+      "signature": "(library (name ...) declarations ...)",
+      "summary": "Define a Scheme library for a local Scaffold extension.",
+      "markdown": "Define a Scheme library for a local Scaffold extension.",
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Language",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "scheme keyword",
+      "range": null
+    },
+    {
+      "name": "quote",
+      "kind": "keyword",
+      "signature": "(quote datum)",
+      "summary": "Return datum without evaluating it.",
+      "markdown": "Return datum without evaluating it.",
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Language",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "scheme keyword",
+      "range": null
+    },
+    {
+      "name": "subject",
+      "kind": "function",
+      "signature": null,
+      "summary": null,
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Language",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/core/doc.scm",
+      "range": {
+        "line": 55,
+        "start": 15,
+        "length": 7
+      }
+    },
+    {
+      "name": "syntax-rules",
+      "kind": "keyword",
+      "signature": "(syntax-rules literals rule ...)",
+      "summary": "Define a hygienic Scheme macro.",
+      "markdown": "Define a hygienic Scheme macro.",
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Language",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "scheme keyword",
+      "range": null
+    },
+    {
+      "name": "nix/argv",
+      "kind": "function",
+      "signature": "(nix/argv argv ...)",
+      "summary": "Append Nix subcommands and flags to the shared Nix argv prefix.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "argv",
+          "summary": "Subcommand names, flags, and arguments."
+        }
+      ],
+      "returns": "Vector argv beginning with `nix --extra-experimental-features`.",
+      "group": "Nix",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/distro/nix/base.scm",
+      "range": {
+        "line": 24,
+        "start": 11,
+        "length": 8
+      }
+    },
+    {
+      "name": "nix/base-argv",
+      "kind": "function",
+      "signature": "nix/base-argv",
+      "summary": "Base argv prefix for all Nix helpers.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": "Vector argv for `nix --extra-experimental-features ...`.",
+      "group": "Nix",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/distro/nix/base.scm",
+      "range": {
+        "line": 15,
+        "start": 10,
+        "length": 13
+      }
+    },
+    {
+      "name": "nix/experimental-features",
+      "kind": "function",
+      "signature": "nix/experimental-features",
+      "summary": "Default Nix experimental feature string used by this module.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": "`\"nix-command flakes\"`.",
+      "group": "Nix",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/distro/nix/base.scm",
+      "range": {
+        "line": 9,
+        "start": 10,
+        "length": 25
+      }
+    },
+    {
+      "name": "nix/profile-add-argv",
+      "kind": "function",
+      "signature": "(nix/profile-add-argv package-ref ...)",
+      "summary": "Build argv for `nix profile add`.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "package-ref",
+          "summary": "Installable refs; defaults to `{{ package }}` when omitted."
+        }
+      ],
+      "returns": null,
+      "group": "Nix profiles",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/distro/nix/profile.scm",
+      "range": {
+        "line": 15,
+        "start": 11,
+        "length": 20
+      }
+    },
+    {
+      "name": "nix/profile-install-argv",
+      "kind": "function",
+      "signature": "(nix/profile-install-argv package-ref ...)",
+      "summary": "Build argv for `nix profile install`, an alias of `nix profile add`.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "package-ref",
+          "summary": "Installable refs; defaults to `{{ package }}` when omitted."
+        }
+      ],
+      "returns": null,
+      "group": "Nix profiles",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/distro/nix/profile.scm",
+      "range": {
+        "line": 25,
+        "start": 11,
+        "length": 24
+      }
+    },
+    {
+      "name": "nix/profile-package",
+      "kind": "function",
+      "signature": "(nix/profile-package name package-ref field ...)",
+      "summary": "Create a catalog tool installed by `nix profile add`.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "name",
+          "summary": "Catalog tool name."
+        },
+        {
+          "name": "package-ref",
+          "summary": "Nix installable such as `nixpkgs#hello`."
+        },
+        {
+          "name": "field",
+          "summary": "Additional tool fields that override defaults."
+        }
+      ],
+      "returns": "A tool with a package action and Nix profile uninstall metadata.",
+      "group": "Nix profiles",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/distro/nix/profile.scm",
+      "range": {
+        "line": 43,
+        "start": 11,
+        "length": 19
+      }
+    },
+    {
+      "name": "nix/profile-platform",
+      "kind": "function",
+      "signature": "(nix/profile-platform predicate package-ref field ...)",
+      "summary": "Create a package/platform override installed through `nix profile add`.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "predicate",
+          "summary": "Host predicate for this package rule."
+        },
+        {
+          "name": "package-ref",
+          "summary": "Nix installable such as `nixpkgs#hello`."
+        },
+        {
+          "name": "field",
+          "summary": "Additional platform fields that override defaults."
+        }
+      ],
+      "returns": null,
+      "group": "Nix profiles",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/distro/nix/profile.scm",
+      "range": {
+        "line": 61,
+        "start": 11,
+        "length": 20
+      }
+    },
+    {
+      "name": "nix/profile-remove-argv",
+      "kind": "function",
+      "signature": "(nix/profile-remove-argv name ...)",
+      "summary": "Build argv for `nix profile remove`.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Nix profiles",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/distro/nix/profile.scm",
+      "range": {
+        "line": 32,
+        "start": 11,
+        "length": 23
+      }
+    },
+    {
+      "name": "field",
+      "kind": "function",
+      "signature": "(field name value)",
+      "summary": "Create one object field pair.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "name",
+          "summary": "Symbol or string key to store in the object."
+        },
+        {
+          "name": "value",
+          "summary": "Any Scheme value that should become the field value."
+        }
+      ],
+      "returns": "A pair consumed by `object`, merge helpers, and catalog constructors.",
+      "group": "Objects",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/config/object.scm",
+      "range": {
+        "line": 37,
+        "start": 14,
+        "length": 5
+      }
+    },
+    {
+      "name": "field/name",
+      "kind": "function",
+      "signature": "(field/name field)",
+      "summary": "Return the name part of a field pair.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Objects",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/config/object.scm",
+      "range": {
+        "line": 44,
+        "start": 14,
+        "length": 10
+      }
+    },
+    {
+      "name": "field/value",
+      "kind": "function",
+      "signature": "(field/value field)",
+      "summary": "Return the value part of a field pair.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Objects",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/config/object.scm",
+      "range": {
+        "line": 48,
+        "start": 14,
+        "length": 11
+      }
+    },
+    {
+      "name": "object",
+      "kind": "function",
+      "signature": "(object field ...)",
+      "summary": "Create a Scaffold object from field pairs.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "field",
+          "summary": "A `(field name value)` pair."
+        }
+      ],
+      "returns": "A Scheme list of pairs that serializes as a JSON object.",
+      "group": "Objects",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/config/object.scm",
+      "range": {
+        "line": 52,
+        "start": 14,
+        "length": 6
+      }
+    },
+    {
+      "name": "object/append-field-vector",
+      "kind": "function",
+      "signature": "(object/append-field-vector obj name values)",
+      "summary": "Append vector values to an object field.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Objects",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/config/object.scm",
+      "range": {
+        "line": 99,
+        "start": 14,
+        "length": 26
+      }
+    },
+    {
+      "name": "object/append-vector",
+      "kind": "function",
+      "signature": "(object/append-vector obj name value ...)",
+      "summary": "Append values to an object vector field.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Objects",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/config/object.scm",
+      "range": {
+        "line": 103,
+        "start": 14,
+        "length": 20
+      }
+    },
+    {
+      "name": "object/has-field?",
+      "kind": "function",
+      "signature": "(object/has-field? obj name)",
+      "summary": "Return whether an object contains a field.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Objects",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/config/object.scm",
+      "range": {
+        "line": 58,
+        "start": 14,
+        "length": 17
+      }
+    },
+    {
+      "name": "object/inherit",
+      "kind": "function",
+      "signature": "(object/inherit base field ...)",
+      "summary": "Create a derived object by replacing fields on a base object.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Objects",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/config/object.scm",
+      "range": {
+        "line": 83,
+        "start": 14,
+        "length": 14
+      }
+    },
+    {
+      "name": "object/merge",
+      "kind": "function",
+      "signature": "(object/merge base override ...)",
+      "summary": "Merge objects with later fields replacing earlier fields.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Objects",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/config/object.scm",
+      "range": {
+        "line": 79,
+        "start": 14,
+        "length": 12
+      }
+    },
+    {
+      "name": "object/override",
+      "kind": "function",
+      "signature": "(object/override base proc)",
+      "summary": "Create a derived object from overrides computed from the base object.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "base",
+          "summary": "Object to derive from."
+        },
+        {
+          "name": "proc",
+          "summary": "Procedure that receives `base` and returns an object of replacement fields."
+        }
+      ],
+      "returns": null,
+      "group": "Objects",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/config/object.scm",
+      "range": {
+        "line": 87,
+        "start": 14,
+        "length": 15
+      }
+    },
+    {
+      "name": "object/ref",
+      "kind": "function",
+      "signature": "(object/ref obj name [default])",
+      "summary": "Read a field value from an object with an optional default.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "obj",
+          "summary": "Object created with `object` or a catalog helper."
+        },
+        {
+          "name": "name",
+          "summary": "Field name to find."
+        },
+        {
+          "name": "default",
+          "summary": "Optional value returned when the field is absent."
+        }
+      ],
+      "returns": "The field value, the optional default, or `#f` when no default is supplied.",
+      "group": "Objects",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/config/object.scm",
+      "range": {
+        "line": 62,
+        "start": 14,
+        "length": 10
+      }
+    },
+    {
+      "name": "object/remove-fields",
+      "kind": "function",
+      "signature": "(object/remove-fields obj name ...)",
+      "summary": "Return an object with named fields removed.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Objects",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/config/object.scm",
+      "range": {
+        "line": 71,
+        "start": 14,
+        "length": 20
+      }
+    },
+    {
+      "name": "object/replace-field",
+      "kind": "function",
+      "signature": "(object/replace-field obj name value)",
+      "summary": "Replace one named field on an object.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Objects",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/config/object.scm",
+      "range": {
+        "line": 95,
+        "start": 14,
+        "length": 20
+      }
+    },
+    {
+      "name": "object/replace-fields",
+      "kind": "function",
+      "signature": "(object/replace-fields obj field ...)",
+      "summary": "Return an object with fields replaced by name.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Objects",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/config/object.scm",
+      "range": {
+        "line": 75,
+        "start": 14,
+        "length": 21
+      }
+    },
+    {
+      "name": "path/absolute?",
+      "kind": "function",
+      "signature": "(path/absolute? path)",
+      "summary": "Return whether a path is absolute on the current host.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "path",
+          "summary": "Path string to inspect."
+        }
+      ],
+      "returns": null,
+      "group": "Paths",
+      "see": [],
+      "effect": "pure",
+      "requires_capability": [
+        "scaffold.path"
+      ],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/path.scm",
+      "range": {
+        "line": 59,
+        "start": 10,
+        "length": 14
+      }
+    },
+    {
+      "name": "path/extension",
+      "kind": "function",
+      "signature": "(path/extension path)",
+      "summary": "Return the final extension component of a path.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "path",
+          "summary": "Path string to inspect."
+        }
+      ],
+      "returns": "The extension as a string without a leading dot, or `#f`.",
+      "group": "Paths",
+      "see": [],
+      "effect": "pure",
+      "requires_capability": [
+        "scaffold.path"
+      ],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/path.scm",
+      "range": {
+        "line": 52,
+        "start": 10,
+        "length": 14
+      }
+    },
+    {
+      "name": "path/file-name",
+      "kind": "function",
+      "signature": "(path/file-name path)",
+      "summary": "Return the final file name component of a path.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "path",
+          "summary": "Path string to inspect."
+        }
+      ],
+      "returns": "The file name as a string, or `#f` when no file name exists.",
+      "group": "Paths",
+      "see": [],
+      "effect": "pure",
+      "requires_capability": [
+        "scaffold.path"
+      ],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/path.scm",
+      "range": {
+        "line": 44,
+        "start": 10,
+        "length": 14
+      }
+    },
+    {
+      "name": "path/join",
+      "kind": "function",
+      "signature": "(path/join first part ...)",
+      "summary": "Join path components using the current host path rules.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "first",
+          "summary": "First path component."
+        },
+        {
+          "name": "part",
+          "summary": "Additional path components."
+        }
+      ],
+      "returns": "A string path. Absolute later components may replace earlier components.",
+      "group": "Paths",
+      "see": [],
+      "effect": "pure",
+      "requires_capability": [
+        "scaffold.path"
+      ],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/path.scm",
+      "range": {
+        "line": 20,
+        "start": 10,
+        "length": 9
+      }
+    },
+    {
+      "name": "path/normalize",
+      "kind": "function",
+      "signature": "(path/normalize path)",
+      "summary": "Lexically normalize a path without reading the filesystem.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "path",
+          "summary": "Path string to normalize."
+        }
+      ],
+      "returns": "A normalized path string.",
+      "group": "Paths",
+      "see": [],
+      "effect": "pure",
+      "requires_capability": [
+        "scaffold.path"
+      ],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/path.scm",
+      "range": {
+        "line": 28,
+        "start": 10,
+        "length": 14
+      }
+    },
+    {
+      "name": "path/parent",
+      "kind": "function",
+      "signature": "(path/parent path)",
+      "summary": "Return the parent directory of a path.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "path",
+          "summary": "Path string to inspect."
+        }
+      ],
+      "returns": "The parent path as a string, or `#f` when no parent exists.",
+      "group": "Paths",
+      "see": [],
+      "effect": "pure",
+      "requires_capability": [
+        "scaffold.path"
+      ],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/path.scm",
+      "range": {
+        "line": 36,
+        "start": 10,
+        "length": 11
+      }
+    },
+    {
+      "name": "path/relative?",
+      "kind": "function",
+      "signature": "(path/relative? path)",
+      "summary": "Return whether a path is relative on the current host.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "path",
+          "summary": "Path string to inspect."
+        }
+      ],
+      "returns": null,
+      "group": "Paths",
+      "see": [],
+      "effect": "pure",
+      "requires_capability": [
+        "scaffold.path"
+      ],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/path.scm",
+      "range": {
+        "line": 66,
+        "start": 10,
+        "length": 14
+      }
+    },
+    {
+      "name": "path/separator",
+      "kind": "function",
+      "signature": "path/separator",
+      "summary": "Directory separator string for paths on the current host.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Paths",
+      "see": [],
+      "effect": "pure",
+      "requires_capability": [
+        "scaffold.path"
+      ],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/path.scm",
+      "range": {
+        "line": 72,
+        "start": 10,
+        "length": 14
+      }
+    },
+    {
+      "name": "package/platform",
+      "kind": "function",
+      "signature": "(package/platform predicate requires install-argv field ...)",
+      "summary": "Create a platform-specific package install rule with required commands.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Platforms",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/platform.scm",
+      "range": {
+        "line": 29,
+        "start": 11,
+        "length": 16
+      }
+    },
+    {
+      "name": "package/platform-argvs",
+      "kind": "function",
+      "signature": "(package/platform-argvs predicate requires install-argvs field ...)",
+      "summary": "Create a platform-specific package install rule with multiple commands.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "predicate",
+          "summary": "Host predicate for this package rule."
+        },
+        {
+          "name": "requires",
+          "summary": "Commands that must be available for this platform rule."
+        },
+        {
+          "name": "install-argvs",
+          "summary": "Vector of install command argv vectors."
+        },
+        {
+          "name": "field",
+          "summary": "Additional platform fields."
+        }
+      ],
+      "returns": null,
+      "group": "Platforms",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/platform.scm",
+      "range": {
+        "line": 45,
+        "start": 11,
+        "length": 22
+      }
+    },
+    {
+      "name": "platform/package",
+      "kind": "function",
+      "signature": "(platform/package predicate field ...)",
+      "summary": "Create a platform-specific package override.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Platforms",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/platform.scm",
+      "range": {
+        "line": 16,
+        "start": 11,
+        "length": 16
+      }
+    },
+    {
+      "name": "predicate",
+      "kind": "function",
+      "signature": "(predicate os arch field ...)",
+      "summary": "Create an OS/architecture predicate for platform-specific catalog data.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Platforms",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/platform.scm",
+      "range": {
+        "line": 9,
+        "start": 11,
+        "length": 9
+      }
+    },
+    {
+      "name": "tool/path",
+      "kind": "function",
+      "signature": "(tool/path predicate-value path)",
+      "summary": "Describe a platform-specific path where a tool may already exist.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Platforms",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/platform.scm",
+      "range": {
+        "line": 22,
+        "start": 11,
+        "length": 9
+      }
+    },
+    {
+      "name": "distrobox/enter-argv",
+      "kind": "function",
+      "signature": "(distrobox/enter-argv box argv)",
+      "summary": "Wrap argv so it runs through `distrobox enter <box> --`.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "box",
+          "summary": "Distrobox container name."
+        },
+        {
+          "name": "argv",
+          "summary": "Command vector to run inside the container."
+        }
+      ],
+      "returns": "Wrapped argv vector.",
+      "group": "Targets",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/target/distrobox.scm",
+      "range": {
+        "line": 15,
+        "start": 11,
+        "length": 20
+      }
+    },
+    {
+      "name": "distrobox/host-exec-argv",
+      "kind": "function",
+      "signature": "(distrobox/host-exec-argv argv)",
+      "summary": "Wrap argv so a Distrobox process runs it on the host.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "argv",
+          "summary": "Command vector to run through `distrobox-host-exec`."
+        }
+      ],
+      "returns": null,
+      "group": "Targets",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/target/distrobox.scm",
+      "range": {
+        "line": 22,
+        "start": 11,
+        "length": 24
+      }
+    },
+    {
+      "name": "distrobox/package",
+      "kind": "function",
+      "signature": "(distrobox/package box package-action)",
+      "summary": "Rewrite a package action so install commands run inside a Distrobox.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "box",
+          "summary": "Distrobox container name."
+        },
+        {
+          "name": "package-action",
+          "summary": "Package action to rewrite."
+        }
+      ],
+      "returns": "A package action with install argv fields wrapped for the container.",
+      "group": "Targets",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/target/distrobox.scm",
+      "range": {
+        "line": 31,
+        "start": 11,
+        "length": 17
+      }
+    },
+    {
+      "name": "distrobox/tool",
+      "kind": "function",
+      "signature": "(distrobox/tool box tool-value)",
+      "summary": "Rewrite a tool so install, check, and uninstall commands run inside a Distrobox.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "box",
+          "summary": "Distrobox container name."
+        },
+        {
+          "name": "tool-value",
+          "summary": "Tool object to rewrite."
+        }
+      ],
+      "returns": "A tool object with install, check, and uninstall argv wrapped.",
+      "group": "Targets",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/target/distrobox.scm",
+      "range": {
+        "line": 43,
+        "start": 11,
+        "length": 14
+      }
+    },
+    {
+      "name": "assert/equal",
+      "kind": "function",
+      "signature": "(assert/equal expected actual)",
+      "summary": "Assert that two Scheme values are equal.",
+      "markdown": "Raises an assertion violation containing both values when they differ.",
+      "example": null,
+      "params": [
+        {
+          "name": "expected",
+          "summary": "Expected value."
+        },
+        {
+          "name": "actual",
+          "summary": "Actual value produced by the code under test."
+        }
+      ],
+      "returns": "`#t` when the values compare with `equal?`.",
+      "group": "Testing",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/test.scm",
+      "range": {
+        "line": 22,
+        "start": 11,
+        "length": 12
+      }
+    },
+    {
+      "name": "assert/true",
+      "kind": "function",
+      "signature": "(assert/true value)",
+      "summary": "Assert that a value is truthy.",
+      "markdown": "Raises an assertion violation named `assert/true` when the value is false.",
+      "example": null,
+      "params": [
+        {
+          "name": "value",
+          "summary": "Expression result that must not be `#f`."
+        }
+      ],
+      "returns": "`#t` when the assertion passes.",
+      "group": "Testing",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/test.scm",
+      "range": {
+        "line": 12,
+        "start": 11,
+        "length": 11
+      }
+    },
+    {
+      "name": "argv/append",
+      "kind": "function",
+      "signature": "(argv/append prefix items)",
+      "summary": "Append a Scheme list of argv items to an argv vector.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Transformations",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/transform.scm",
+      "range": {
+        "line": 130,
+        "start": 11,
+        "length": 11
+      }
+    },
+    {
+      "name": "install-argv/prepend",
+      "kind": "function",
+      "signature": "(install-argv/prepend obj argv ...)",
+      "summary": "Prepend argv parts to an object's `install-argv` vector.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Transformations",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/transform.scm",
+      "range": {
+        "line": 122,
+        "start": 11,
+        "length": 20
+      }
+    },
+    {
+      "name": "package/map-install-argvs",
+      "kind": "function",
+      "signature": "(package/map-install-argvs package-action proc)",
+      "summary": "Apply a transformation to all install argv fields in a package action.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "package-action",
+          "summary": "Package action that may contain `install-argv`, `install-argvs`, or platform overrides."
+        },
+        {
+          "name": "proc",
+          "summary": "Procedure that receives and returns an argv vector."
+        }
+      ],
+      "returns": null,
+      "group": "Transformations",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/transform.scm",
+      "range": {
+        "line": 39,
+        "start": 11,
+        "length": 25
+      }
+    },
+    {
+      "name": "tool/map-check-argvs",
+      "kind": "function",
+      "signature": "(tool/map-check-argvs tool-value proc)",
+      "summary": "Transform each check argv vector in a tool.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Transformations",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/transform.scm",
+      "range": {
+        "line": 75,
+        "start": 11,
+        "length": 20
+      }
+    },
+    {
+      "name": "tool/map-package-install-argvs",
+      "kind": "function",
+      "signature": "(tool/map-package-install-argvs tool-value proc)",
+      "summary": "Transform package install argv fields inside a tool's action.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Transformations",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/transform.scm",
+      "range": {
+        "line": 67,
+        "start": 11,
+        "length": 30
+      }
+    },
+    {
+      "name": "tool/map-uninstall-command-argvs",
+      "kind": "function",
+      "signature": "(tool/map-uninstall-command-argvs tool-value proc)",
+      "summary": "Transform uninstall command argv fields inside a tool.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Transformations",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/transform.scm",
+      "range": {
+        "line": 110,
+        "start": 11,
+        "length": 32
+      }
+    },
+    {
+      "name": "uninstall/map-command-argvs",
+      "kind": "function",
+      "signature": "(uninstall/map-command-argvs uninstall-value proc)",
+      "summary": "Transform each uninstall command argv vector.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "uninstall-value",
+          "summary": "Uninstall metadata object."
+        },
+        {
+          "name": "proc",
+          "summary": "Procedure that receives and returns an argv vector."
+        }
+      ],
+      "returns": null,
+      "group": "Transformations",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/transform.scm",
+      "range": {
+        "line": 94,
+        "start": 11,
+        "length": 27
+      }
+    },
+    {
+      "name": "arr",
+      "kind": "function",
+      "signature": "(arr value ...)",
+      "summary": "Create a Scaffold vector value.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "value",
+          "summary": "Values to store in order."
+        }
+      ],
+      "returns": "A Scheme vector that serializes as a JSON array.",
+      "group": "Vectors",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/config/vector.scm",
+      "range": {
+        "line": 11,
+        "start": 14,
+        "length": 3
+      }
+    },
+    {
+      "name": "arr/append-list",
+      "kind": "function",
+      "signature": "(arr/append-list values suffix)",
+      "summary": "Append a Scheme list to a Scaffold vector.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Vectors",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/config/vector.scm",
+      "range": {
+        "line": 25,
+        "start": 14,
+        "length": 15
+      }
+    },
+    {
+      "name": "arr/prepend-list",
+      "kind": "function",
+      "signature": "(arr/prepend-list prefix values)",
+      "summary": "Prepend a Scheme list to a Scaffold vector.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Vectors",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/config/vector.scm",
+      "range": {
+        "line": 29,
+        "start": 14,
+        "length": 16
+      }
+    },
+    {
+      "name": "vector/append",
+      "kind": "function",
+      "signature": "(vector/append vector ...)",
+      "summary": "Append any number of vectors into one vector.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Vectors",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/config/vector.scm",
+      "range": {
+        "line": 21,
+        "start": 14,
+        "length": 13
+      }
+    },
+    {
+      "name": "vector/map",
+      "kind": "function",
+      "signature": "(vector/map proc values)",
+      "summary": "Map a procedure over a vector and return a vector.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Vectors",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/config/vector.scm",
+      "range": {
+        "line": 17,
+        "start": 14,
+        "length": 10
+      }
+    },
+    {
+      "name": "cmd/c-argv",
+      "kind": "function",
+      "signature": "(cmd/c-argv command)",
+      "summary": "Build argv for running a command through `cmd /C`.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "command",
+          "summary": "Command text passed to `cmd /C`."
+        }
+      ],
+      "returns": "Vector argv beginning with `cmd`.",
+      "group": "Windows tools",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/platform/windows/shell.scm",
+      "range": {
+        "line": 60,
+        "start": 11,
+        "length": 10
+      }
+    },
+    {
+      "name": "cmd/tool",
+      "kind": "function",
+      "signature": "(cmd/tool field ...)",
+      "summary": "Create a required descriptor for `cmd`.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Windows tools",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/platform/windows/shell.scm",
+      "range": {
+        "line": 30,
+        "start": 11,
+        "length": 8
+      }
+    },
+    {
+      "name": "powershell/command-argv",
+      "kind": "function",
+      "signature": "(powershell/command-argv script)",
+      "summary": "Build argv for running a legacy Windows PowerShell command without profile loading.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "script",
+          "summary": "PowerShell command text."
+        }
+      ],
+      "returns": "Vector argv beginning with `powershell`.",
+      "group": "Windows tools",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/platform/windows/shell.scm",
+      "range": {
+        "line": 44,
+        "start": 11,
+        "length": 23
+      }
+    },
+    {
+      "name": "powershell/tool",
+      "kind": "function",
+      "signature": "(powershell/tool field ...)",
+      "summary": "Create a required descriptor for legacy Windows PowerShell `powershell`.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Windows tools",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/platform/windows/shell.scm",
+      "range": {
+        "line": 17,
+        "start": 11,
+        "length": 15
+      }
+    },
+    {
+      "name": "pwsh/command-argv",
+      "kind": "function",
+      "signature": "(pwsh/command-argv script)",
+      "summary": "Build argv for running a modern PowerShell command without profile loading.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "script",
+          "summary": "PowerShell command text."
+        }
+      ],
+      "returns": "Vector argv beginning with `pwsh`.",
+      "group": "Windows tools",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/platform/windows/shell.scm",
+      "range": {
+        "line": 53,
+        "start": 11,
+        "length": 17
+      }
+    },
+    {
+      "name": "pwsh/tool",
+      "kind": "function",
+      "signature": "(pwsh/tool field ...)",
+      "summary": "Create a required descriptor for modern cross-platform PowerShell `pwsh`.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Windows tools",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/platform/windows/shell.scm",
+      "range": {
+        "line": 24,
+        "start": 11,
+        "length": 9
+      }
+    },
+    {
+      "name": "reg/add-argv",
+      "kind": "function",
+      "signature": "(reg/add-argv key value-name type data)",
+      "summary": "Build argv for adding or replacing one Windows Registry value.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "key",
+          "summary": "Registry key path."
+        },
+        {
+          "name": "value-name",
+          "summary": "Registry value name."
+        },
+        {
+          "name": "type",
+          "summary": "Registry data type such as `REG_SZ` or `REG_DWORD`."
+        },
+        {
+          "name": "data",
+          "summary": "Value data."
+        }
+      ],
+      "returns": "Vector argv for `reg add /f`.",
+      "group": "Windows tools",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/platform/windows/registry.scm",
+      "range": {
+        "line": 27,
+        "start": 11,
+        "length": 12
+      }
+    },
+    {
+      "name": "reg/query-argv",
+      "kind": "function",
+      "signature": "(reg/query-argv key value-name)",
+      "summary": "Build argv for querying one Windows Registry value.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "key",
+          "summary": "Registry key path."
+        },
+        {
+          "name": "value-name",
+          "summary": "Registry value name."
+        }
+      ],
+      "returns": "Vector argv for `reg query`.",
+      "group": "Windows tools",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/platform/windows/registry.scm",
+      "range": {
+        "line": 17,
+        "start": 11,
+        "length": 14
+      }
+    },
+    {
+      "name": "reg/tool",
+      "kind": "function",
+      "signature": "(reg/tool field ...)",
+      "summary": "Create a required descriptor for Windows Registry CLI `reg`.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Windows tools",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/platform/windows/registry.scm",
+      "range": {
+        "line": 9,
+        "start": 11,
+        "length": 8
+      }
+    },
+    {
+      "name": "where/argv",
+      "kind": "function",
+      "signature": "(where/argv command)",
+      "summary": "Build argv for locating a command on Windows PATH.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "command",
+          "summary": "Command name to locate."
+        }
+      ],
+      "returns": "Vector argv for `where`.",
+      "group": "Windows tools",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/platform/windows/shell.scm",
+      "range": {
+        "line": 67,
+        "start": 11,
+        "length": 10
+      }
+    },
+    {
+      "name": "where/tool",
+      "kind": "function",
+      "signature": "(where/tool field ...)",
+      "summary": "Create a required descriptor for command lookup tool `where`.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Windows tools",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/platform/windows/shell.scm",
+      "range": {
+        "line": 36,
+        "start": 11,
+        "length": 10
+      }
+    },
+    {
+      "name": "windows/command-tool",
+      "kind": "function",
+      "signature": "(windows/command-tool command field ...)",
+      "summary": "Create a Windows-only required command descriptor.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "command",
+          "summary": "Command name expected on Windows."
+        },
+        {
+          "name": "field",
+          "summary": "Additional tool fields."
+        }
+      ],
+      "returns": "A required catalog tool constrained to Windows.",
+      "group": "Windows tools",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/platform/windows/base.scm",
+      "range": {
+        "line": 12,
+        "start": 11,
+        "length": 20
+      }
+    },
+    {
+      "name": "source/dir",
+      "kind": "function",
+      "signature": "source/dir",
+      "summary": "Directory of the Scheme source currently being evaluated.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": "A path string, or `#f` when no source path is available.",
+      "group": "Workspace",
+      "see": [],
+      "effect": "context-read-only",
+      "requires_capability": [
+        "scaffold.workspace"
+      ],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/workspace.scm",
+      "range": {
+        "line": 24,
+        "start": 10,
+        "length": 10
+      }
+    },
+    {
+      "name": "source/path",
+      "kind": "function",
+      "signature": "source/path",
+      "summary": "Path of the Scheme source currently being evaluated.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": "A path string, or `#f` when no source path is available.",
+      "group": "Workspace",
+      "see": [],
+      "effect": "context-read-only",
+      "requires_capability": [
+        "scaffold.workspace"
+      ],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/workspace.scm",
+      "range": {
+        "line": 17,
+        "start": 10,
+        "length": 11
+      }
+    },
+    {
+      "name": "workspace/path",
+      "kind": "function",
+      "signature": "(workspace/path)",
+      "summary": "Join path components under `workspace/root`.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "part",
+          "summary": "Path component appended under the workspace root."
+        }
+      ],
+      "returns": "A path string under `workspace/root`.",
+      "group": "Workspace",
+      "see": [],
+      "effect": "context-read-only",
+      "requires_capability": [
+        "scaffold.workspace"
+      ],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/workspace.scm",
+      "range": {
+        "line": 31,
+        "start": 11,
+        "length": 14
+      }
+    },
+    {
+      "name": "workspace/root",
+      "kind": "function",
+      "signature": "workspace/root",
+      "summary": "Root directory used for the current Scaffold evaluation.",
+      "markdown": null,
+      "example": null,
+      "params": [],
+      "returns": "A path string, or `#f` when no workspace root is available.",
+      "group": "Workspace",
+      "see": [],
+      "effect": "context-read-only",
+      "requires_capability": [
+        "scaffold.workspace"
+      ],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/workspace.scm",
+      "range": {
+        "line": 10,
+        "start": 10,
+        "length": 14
+      }
+    },
+    {
+      "name": "macos/command-tool",
+      "kind": "function",
+      "signature": "(macos/command-tool command field ...)",
+      "summary": "Create a macOS-only required command descriptor.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "command",
+          "summary": "Command name expected on macOS."
+        },
+        {
+          "name": "field",
+          "summary": "Additional tool fields."
+        }
+      ],
+      "returns": "A required catalog tool constrained to macOS.",
+      "group": "macOS tools",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/platform/macos/base.scm",
+      "range": {
+        "line": 12,
+        "start": 11,
+        "length": 18
+      }
+    },
+    {
+      "name": "npm/global-install-argv",
+      "kind": "function",
+      "signature": "(npm/global-install-argv package-name flag ...)",
+      "summary": "Build argv for globally installing an npm package.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "package-name",
+          "summary": "npm package name."
+        },
+        {
+          "name": "flag",
+          "summary": "Additional npm install flags placed before the package name."
+        }
+      ],
+      "returns": "Vector argv for `npm install --global`.",
+      "group": "npm",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/ecosystem/npm.scm",
+      "range": {
+        "line": 17,
+        "start": 11,
+        "length": 23
+      }
+    },
+    {
+      "name": "npm/global-package-platform",
+      "kind": "function",
+      "signature": "(npm/global-package-platform predicate package-name option ...)",
+      "summary": "Create a package/platform override that installs with global npm.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "predicate",
+          "summary": "Host predicate for this package rule."
+        },
+        {
+          "name": "package-name",
+          "summary": "npm package name."
+        },
+        {
+          "name": "option",
+          "summary": "Additional npm install flags or package platform fields. Field values are applied after defaults."
+        }
+      ],
+      "returns": null,
+      "group": "npm",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/ecosystem/npm.scm",
+      "range": {
+        "line": 80,
+        "start": 11,
+        "length": 27
+      }
+    },
+    {
+      "name": "npm/global-tool",
+      "kind": "function",
+      "signature": "(npm/global-tool name package-name bin-name option ...)",
+      "summary": "Create a catalog tool installed globally with npm.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "name",
+          "summary": "Catalog tool name."
+        },
+        {
+          "name": "package-name",
+          "summary": "npm package to install."
+        },
+        {
+          "name": "bin-name",
+          "summary": "Executable exposed by the package."
+        },
+        {
+          "name": "option",
+          "summary": "Additional npm install flags or tool fields. Field values are applied after defaults."
+        }
+      ],
+      "returns": null,
+      "group": "npm",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/ecosystem/npm.scm",
+      "range": {
+        "line": 53,
+        "start": 11,
+        "length": 15
+      }
+    },
+    {
+      "name": "npm/global-uninstall-argv",
+      "kind": "function",
+      "signature": "(npm/global-uninstall-argv package-name)",
+      "summary": "Build argv for uninstalling a global npm package.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "package-name",
+          "summary": "npm package name."
+        }
+      ],
+      "returns": "Vector argv for `npm uninstall --global`.",
+      "group": "npm",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/ecosystem/npm.scm",
+      "range": {
+        "line": 28,
+        "start": 11,
+        "length": 25
+      }
+    },
+    {
+      "name": "npx/argv",
+      "kind": "function",
+      "signature": "(npx/argv package-name argv ...)",
+      "summary": "Build argv for running a package through `npx`.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "package-name",
+          "summary": "npm package passed to npx."
+        },
+        {
+          "name": "argv",
+          "summary": "Arguments forwarded to the package command."
+        }
+      ],
+      "returns": null,
+      "group": "npm",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/ecosystem/npm.scm",
+      "range": {
+        "line": 97,
+        "start": 11,
+        "length": 8
+      }
+    },
+    {
+      "name": "uv/tool",
+      "kind": "function",
+      "signature": "(uv/tool name option ...)",
+      "summary": "Create a catalog tool installed with `uv tool install`.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "name",
+          "summary": "Python package name and default catalog tool name."
+        },
+        {
+          "name": "option",
+          "summary": "Additional `uv tool install` flags or tool fields. Field values are applied after defaults."
+        }
+      ],
+      "returns": null,
+      "group": "uv",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/ecosystem/uv.scm",
+      "range": {
+        "line": 45,
+        "start": 11,
+        "length": 7
+      }
+    },
+    {
+      "name": "uv/tool-install-argv",
+      "kind": "function",
+      "signature": "(uv/tool-install-argv package-name flag ...)",
+      "summary": "Build argv for installing or upgrading a Python tool with uv.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "package-name",
+          "summary": "Package name passed to `uv tool install`."
+        },
+        {
+          "name": "flag",
+          "summary": "Additional `uv tool install` flags placed before the package name."
+        }
+      ],
+      "returns": "Vector argv using `uv tool install --upgrade --force`.",
+      "group": "uv",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/ecosystem/uv.scm",
+      "range": {
+        "line": 12,
+        "start": 11,
+        "length": 20
+      }
+    },
+    {
+      "name": "uv/tool-platform",
+      "kind": "function",
+      "signature": "(uv/tool-platform predicate package-name option ...)",
+      "summary": "Create a package/platform override that installs with `uv tool install`.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "predicate",
+          "summary": "Host predicate for this package rule."
+        },
+        {
+          "name": "package-name",
+          "summary": "Python package name."
+        },
+        {
+          "name": "option",
+          "summary": "Additional `uv tool install` flags or package platform fields. Field values are applied after defaults."
+        }
+      ],
+      "returns": null,
+      "group": "uv",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/ecosystem/uv.scm",
+      "range": {
+        "line": 72,
+        "start": 11,
+        "length": 16
+      }
+    },
+    {
+      "name": "uv/tool-uninstall-argv",
+      "kind": "function",
+      "signature": "(uv/tool-uninstall-argv tool-name)",
+      "summary": "Build argv for uninstalling a Python tool with uv.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "tool-name",
+          "summary": "Tool name passed to `uv tool uninstall`."
+        }
+      ],
+      "returns": "Vector argv for `uv tool uninstall`.",
+      "group": "uv",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/ecosystem/uv.scm",
+      "range": {
+        "line": 23,
+        "start": 11,
+        "length": 22
+      }
+    },
+    {
+      "name": "uvx/argv",
+      "kind": "function",
+      "signature": "(uvx/argv package-name argv ...)",
+      "summary": "Build argv for running a Python package through `uvx`.",
+      "markdown": null,
+      "example": null,
+      "params": [
+        {
+          "name": "package-name",
+          "summary": "Package passed to uvx."
+        },
+        {
+          "name": "argv",
+          "summary": "Arguments forwarded to the package command."
+        }
+      ],
+      "returns": null,
+      "group": "uv",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/ecosystem/uv.scm",
+      "range": {
+        "line": 89,
+        "start": 11,
+        "length": 8
+      }
+    }
+  ]
+}

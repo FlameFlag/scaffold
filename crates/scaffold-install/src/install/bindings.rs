@@ -47,17 +47,16 @@ impl ToolBindings {
         bindings
     }
 
-    pub(super) fn for_package(tool: &Tool, package: &str) -> Self {
-        Self {
-            home: std::env::var("HOME").unwrap_or_default(),
-            root_dir: String::new(),
-            bin_dir: String::new(),
-            state_dir: String::new(),
-            prefix: None,
-            source_dir: None,
-            tool: Some(tool.name.clone()),
-            package: Some(package.to_owned()),
-        }
+    pub(super) fn for_package(ctx: &Context, tool: &Tool, package: &str) -> Self {
+        let mut bindings = Self::for_context(ctx);
+        bindings.prefix = Some(
+            ctx.install_prefix(&tool.name)
+                .to_string_lossy()
+                .into_owned(),
+        );
+        bindings.tool = Some(tool.name.clone());
+        bindings.package = Some(package.to_owned());
+        bindings
     }
 
     pub(super) fn for_build(ctx: &Context, tool: &Tool, source_dir: &Path) -> Self {
@@ -86,5 +85,47 @@ impl ToolBindings {
             let _previous = bindings.insert("package", package.as_str());
         }
         bindings
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::path::PathBuf;
+
+    use scaffold_catalog::Tool;
+
+    use super::*;
+
+    #[test]
+    fn package_bindings_include_install_context_paths() {
+        let root = PathBuf::from("/tmp/scaffold-bindings-test");
+        let ctx = Context {
+            catalog_path: root.join("catalog.scm"),
+            root_dir: root.join("repo"),
+            bin_dir: root.join("bin"),
+            state_dir: root.join("state"),
+        };
+        let tool: Tool = serde_json::from_value(serde_json::json!({
+            "name": "demo",
+            "action": {
+                "type": "package",
+                "name": "demo-package",
+                "install_argv": ["install", "{{ package }}", "{{ bin_dir }}"]
+            }
+        }))
+        .expect("tool");
+
+        let bindings = ToolBindings::for_package(&ctx, &tool, "demo-package");
+        let map = bindings.as_map();
+
+        assert_eq!(map["tool"], "demo");
+        assert_eq!(map["package"], "demo-package");
+        assert_eq!(map["root_dir"], "/tmp/scaffold-bindings-test/repo");
+        assert_eq!(map["bin_dir"], "/tmp/scaffold-bindings-test/bin");
+        assert_eq!(map["state_dir"], "/tmp/scaffold-bindings-test/state");
+        assert_eq!(
+            map["prefix"],
+            "/tmp/scaffold-bindings-test/state/tools/demo/latest"
+        );
     }
 }

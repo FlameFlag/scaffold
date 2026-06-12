@@ -42,7 +42,7 @@ pub(super) fn install_tool(ctx: &Context, tool: &Tool, policy: Policy) -> Result
                 .ok_or_else(|| InstallError::NoInstaller {
                     tool: tool.name.clone(),
                 })?;
-            let tool_bindings = ToolBindings::for_package(tool, package.name);
+            let tool_bindings = ToolBindings::for_package(ctx, tool, package.name);
             let bindings = tool_bindings.as_map();
             for install_argv in package.install_argvs {
                 let argv = template::render_slice(install_argv, &bindings);

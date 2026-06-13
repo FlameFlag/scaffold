@@ -99,6 +99,26 @@ pub fn values_from_path(path: impl AsRef<Path>) -> Result<Vec<serde_json::Value>
     )
 }
 
+pub fn values_from_path_with_catalog_path(
+    path: impl AsRef<Path>,
+    catalog_path: impl AsRef<Path>,
+) -> Result<Vec<serde_json::Value>> {
+    let path = path.as_ref();
+    let catalog_path = catalog_path.as_ref();
+    let root = parent_dir(catalog_path);
+    let extension_dirs = libraries::extension_dirs_for_catalog_path(catalog_path);
+    let source = std::fs::read_to_string(path)?;
+    let root = absolute_lexical_path(root)?;
+    let path = absolute_lexical_path(path)?;
+    let source_name = path.to_string_lossy().into_owned();
+    eval::values_from_str_with_context(
+        &source,
+        Some(source_name.as_ref()),
+        &extension_dirs,
+        eval::DslEvalContext::new(Some(root), Some(path)),
+    )
+}
+
 pub fn values_from_path_with_extension_root(
     path: impl AsRef<Path>,
     extension_root: impl AsRef<Path>,
@@ -115,6 +135,21 @@ pub fn values_from_path_with_extension_root(
         Some(source_name.as_ref()),
         &extension_dirs,
         eval::DslEvalContext::new(Some(context_root), Some(context_path)),
+    )
+}
+
+pub fn session_with_catalog_path(
+    catalog_path: impl AsRef<Path>,
+    default_imports: bool,
+) -> Result<DslSession> {
+    let catalog_path = catalog_path.as_ref();
+    let root = parent_dir(catalog_path);
+    let extension_dirs = libraries::extension_dirs_for_catalog_path(catalog_path);
+    let context_root = absolute_lexical_path(root)?;
+    DslSession::with_context(
+        &extension_dirs,
+        default_imports,
+        eval::DslEvalContext::new(Some(context_root), None),
     )
 }
 
@@ -139,7 +174,7 @@ pub fn catalog_value_from_path(path: impl AsRef<Path>) -> Result<serde_json::Val
 pub fn catalog_document_from_path(path: impl AsRef<Path>) -> Result<CatalogDocument> {
     let path = path.as_ref();
     let root = parent_dir(path);
-    let extension_dirs = libraries::extension_dirs_for_root(root);
+    let extension_dirs = libraries::extension_dirs_for_catalog_path(path);
     let source = std::fs::read_to_string(path)?;
     let root = absolute_lexical_path(root)?;
     let path = absolute_lexical_path(path)?;

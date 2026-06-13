@@ -163,7 +163,7 @@ fn run_with_context(command: Command, catalog: Option<PathBuf>) -> Result<(), Cl
             }
         }
         Command::Eval(args) => {
-            let session = dsl::session_with_extension_root(&ctx.root_dir, true)?;
+            let session = dsl::session_with_catalog_path(&ctx.catalog_path, true)?;
             print_json_values(session.eval_json(&args.expression, Some("<eval>"))?)?;
         }
         Command::Install(args) => {
@@ -235,7 +235,7 @@ fn run_with_context(command: Command, catalog: Option<PathBuf>) -> Result<(), Cl
                 return Err(CliError::message("no test files found"));
             }
             for path in files {
-                let _values = dsl::values_from_path_with_extension_root(&path, &ctx.root_dir)?;
+                let _values = dsl::values_from_path_with_catalog_path(&path, &ctx.catalog_path)?;
                 println!("ok\t{}", path.display());
             }
         }

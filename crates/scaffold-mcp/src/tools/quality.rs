@@ -49,7 +49,7 @@ impl ScaffoldMcp {
 
         let mut results = Vec::new();
         for path in files {
-            match dsl::values_from_path_with_extension_root(&path, &ctx.root_dir) {
+            match dsl::values_from_path_with_catalog_path(&path, &ctx.catalog_path) {
                 Ok(_) => results.push(json!({
                     "path": path.display().to_string(),
                     "ok": true,

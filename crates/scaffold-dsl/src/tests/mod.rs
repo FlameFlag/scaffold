@@ -471,6 +471,14 @@ fn local_scheme_extension_libraries_can_import_each_other() {
 }
 
 #[test]
+fn catalog_stem_directory_is_a_local_library_root() {
+    let value =
+        catalog_value_from_path(fixture_path("local/catalog-stem/scaffold.scm")).expect("catalog");
+
+    assert_eq!(value["tools"][0]["name"], "demo");
+}
+
+#[test]
 fn bundled_extension_tests_live_with_extensions() {
     for path in [
         "distro/nix/tests/base/test.scm",

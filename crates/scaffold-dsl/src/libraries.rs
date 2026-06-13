@@ -8,7 +8,11 @@ use super::stdlib::SchemeLibrary;
 use super::{DslError, Result, bundled};
 
 pub(super) fn extension_dirs_for_root(root: &Path) -> Vec<PathBuf> {
-    scaffold_context::extension_dirs_for_root(root).into()
+    scaffold_context::extension_dirs_for_root(root)
+}
+
+pub(super) fn extension_dirs_for_catalog_path(catalog_path: &Path) -> Vec<PathBuf> {
+    scaffold_context::extension_dirs_for_catalog_path(catalog_path)
 }
 
 pub(super) fn load_bundled_libraries() -> Result<Vec<SchemeLibrary>> {

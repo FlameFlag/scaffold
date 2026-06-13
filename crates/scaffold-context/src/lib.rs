@@ -64,14 +64,33 @@ impl Context {
     }
 
     #[must_use]
-    pub fn extension_dirs(&self) -> [PathBuf; 2] {
-        extension_dirs_for_root(&self.root_dir)
+    pub fn extension_dirs(&self) -> Vec<PathBuf> {
+        extension_dirs_for_catalog_path(&self.catalog_path)
     }
 }
 
 #[must_use]
-pub fn extension_dirs_for_root(root: &Path) -> [PathBuf; 2] {
-    [
+pub fn extension_dirs_for_catalog_path(catalog_path: &Path) -> Vec<PathBuf> {
+    let root = catalog_path
+        .parent()
+        .map_or_else(|| PathBuf::from("."), Path::to_path_buf);
+    let mut dirs = Vec::new();
+    if let Some(stem) = catalog_path.file_stem().and_then(|stem| stem.to_str())
+        && !stem.is_empty()
+    {
+        dirs.push(root.join(stem));
+    }
+    for dir in extension_dirs_for_root(&root) {
+        if !dirs.contains(&dir) {
+            dirs.push(dir);
+        }
+    }
+    dirs
+}
+
+#[must_use]
+pub fn extension_dirs_for_root(root: &Path) -> Vec<PathBuf> {
+    vec![
         root.join("extensions"),
         root.join(".scaffold").join("extensions"),
     ]
@@ -172,6 +191,18 @@ mod tests {
             vec![
                 fixture_path("local/library/extensions/acme/test.scm"),
                 fixture_path("local/library/test.scm"),
+            ]
+        );
+    }
+
+    #[test]
+    fn catalog_stem_is_extension_root() {
+        assert_eq!(
+            extension_dirs_for_catalog_path(Path::new("/workspace/scaffold.scm")),
+            vec![
+                PathBuf::from("/workspace/scaffold"),
+                PathBuf::from("/workspace/extensions"),
+                PathBuf::from("/workspace/.scaffold/extensions"),
             ]
         );
     }

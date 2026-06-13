@@ -16,7 +16,7 @@ use scaffold_dsl as dsl;
 use validation::ReplValidator;
 
 pub(super) fn run_repl(ctx: &Context) -> Result<(), CliError> {
-    let session = dsl::session_with_extension_root(&ctx.root_dir, true)?;
+    let session = dsl::session_with_catalog_path(&ctx.catalog_path, true)?;
     let docs = DocIndex::scaffold();
     let mut editor = repl_editor(&docs, &ctx.state_dir)?;
     let prompt = DefaultPrompt::new(

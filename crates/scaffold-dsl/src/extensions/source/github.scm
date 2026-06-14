@@ -2,9 +2,7 @@
   (scaffold extensions source github)
   (export
     github/latest-targz-bin-platform
-    github/latest-zip-bin-platform
-    github-latest-targz-bin-platform
-    github-latest-zip-bin-platform)
+    github/latest-zip-bin-platform)
   (import (rnrs) (scaffold catalog base) (scaffold extensions support download))
 
   (doc-next
@@ -86,10 +84,6 @@
         "mkdir -p \"${extract_dir}\"\n"
         "tar -xzf \"${archive}\" -C \"${extract_dir}\"\n"
         "install -m 0755 \"${extract_dir}/${source_path}\" \"${bin_dir}/${bin_name}\"\n")))
-
-  (define github-latest-zip-bin-platform github/latest-zip-bin-platform)
-
-  (define github-latest-targz-bin-platform github/latest-targz-bin-platform)
 
   (moduledoc
     (summary "GitHub release asset package platform helpers.")

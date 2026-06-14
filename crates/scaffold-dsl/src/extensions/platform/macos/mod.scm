@@ -3,9 +3,7 @@
   (export
     macos/command-tool
     macos/xcode-command-line-tools-platform
-    macos/zip-app-bin-platform
-    xcode-command-line-tools-platform
-    zip-app-bin-platform)
+    macos/zip-app-bin-platform)
   (import (rnrs) (scaffold catalog base) (scaffold extensions platform macos base))
 
   (moduledoc

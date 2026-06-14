@@ -3,9 +3,7 @@
   (export
     macos/command-tool
     macos/xcode-command-line-tools-platform
-    macos/zip-app-bin-platform
-    xcode-command-line-tools-platform
-    zip-app-bin-platform)
+    macos/zip-app-bin-platform)
   (import (rnrs) (scaffold catalog base) (scaffold extensions support download))
 
   (doc-next
@@ -72,10 +70,6 @@
             "-sfn"
             (string-append app-path "/" bin-relative-path)
             (string-append "{{ bin_dir }}/" bin-name))))))
-
-  (define xcode-command-line-tools-platform macos/xcode-command-line-tools-platform)
-
-  (define zip-app-bin-platform macos/zip-app-bin-platform)
 
   (moduledoc
     (summary "Shared macOS command and installer helpers.")

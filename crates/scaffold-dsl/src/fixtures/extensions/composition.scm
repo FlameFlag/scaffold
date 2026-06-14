@@ -12,7 +12,9 @@
   (scaffold extensions ecosystem bun)
   (scaffold extensions ecosystem cargo)
   (scaffold extensions ecosystem npm)
-  (scaffold extensions ecosystem uv))
+  (scaffold extensions ecosystem uv)
+  (scaffold extensions source github)
+  (scaffold extensions support download))
 
 (define tools
   (object/ref
@@ -47,6 +49,21 @@
   (host/package-platform-argvs
     (arr "toolctl")
     (arr (arr "toolctl" "prepare") (arr "toolctl" "install"))))
+
+(doc-next (summary "Fixture direct download platform."))
+
+(define download-platform (download-bin/platform 'linux "https://example.test/demo" "demo"))
+
+(doc-next (summary "Fixture GitHub latest release archive platform."))
+
+(define github-platform
+  (github/latest-targz-bin-platform
+    'linux
+    "demo"
+    "owner/repo"
+    "demo-${version}.tar.gz"
+    "demo-${version}/demo"
+    "demo"))
 
 (doc-next (summary "Fixture ecosystem package platforms."))
 
@@ -84,6 +101,16 @@
 (assert/equal
   (arr "toolctl" "install")
   (vector-ref (object/ref host-multi-install-platform 'install-argvs) 1))
+
+(assert/equal "{{ state_dir }}/tools/demo/latest" (tool-cache-dir "demo"))
+
+(assert/equal
+  (arr "mkdir" "-p" "{{ bin_dir }}")
+  (vector-ref (object/ref download-platform 'install-argvs) 0))
+
+(assert/equal
+  (arr "curl" "head" "install" "mkdir" "rm" "sed" "tar")
+  (object/ref github-platform 'requires-commands))
 
 (assert/equal
   (arr

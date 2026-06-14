@@ -9,3 +9,7 @@ workspace = true
 
 [dependencies]
 thiserror = "2.0.18"
+walkdir = "2.5.0"
+
+[dev-dependencies]
+tempfile = "3.27.0"

@@ -12,6 +12,7 @@ bzip2 = "0.6.1"
 flate2 = "1.1.9"
 scaffold-process = { path = "../scaffold-process" }
 tar = { version = "0.4.46", default-features = false }
+tempfile = "3.27.0"
 thiserror = "2.0.18"
 xz2 = { version = "0.1.7", features = ["static"] }
 zip = { version = "8.6.0", default-features = false, features = ["deflate-flate2"] }

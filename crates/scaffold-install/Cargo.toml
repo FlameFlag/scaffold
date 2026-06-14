@@ -8,6 +8,7 @@ publish = false
 workspace = true
 
 [dependencies]
+petgraph = "0.8.3"
 scaffold-archive = { path = "../scaffold-archive" }
 scaffold-catalog = { path = "../scaffold-catalog" }
 scaffold-context = { path = "../scaffold-context" }
@@ -18,3 +19,4 @@ thiserror = "2.0.18"
 
 [dev-dependencies]
 serde_json = "1.0.150"
+tempfile = "3.27.0"

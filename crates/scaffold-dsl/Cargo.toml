@@ -19,3 +19,10 @@ scaffold-scheme = { path = "../scaffold-scheme" }
 scheme-rs = { version = "0.2.0", default-features = false }
 serde_json = "1.0.150"
 thiserror = "2.0.18"
+walkdir = "2.5.0"
+
+[build-dependencies]
+walkdir = "2.5.0"
+
+[dev-dependencies]
+tempfile = "3.27.0"

@@ -9,10 +9,15 @@ workspace = true
 
 [dependencies]
 miette = { version = "7.6.0", default-features = false, features = ["fancy-no-backtrace", "derive"] }
+petgraph = "0.8.3"
 scaffold-diagnostic = { path = "../scaffold-diagnostic" }
 scaffold-dsl = { path = "../scaffold-dsl", features = ["test-support"] }
 scaffold-platform = { path = "../scaffold-platform" }
 scaffold-process = { path = "../scaffold-process" }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.150"
+serde_path_to_error = "0.1.20"
 thiserror = "2.0.18"
+
+[dev-dependencies]
+tempfile = "3.27.0"

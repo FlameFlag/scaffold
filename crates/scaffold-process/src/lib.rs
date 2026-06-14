@@ -36,10 +36,7 @@ pub fn path_of(bin: &str) -> Option<PathBuf> {
         return is_command_file(&path).then_some(path);
     }
 
-    let paths = env::var_os("PATH")?;
-    env::split_paths(&paths)
-        .map(|dir| dir.join(executable_name(bin)))
-        .find(|path| is_command_file(path))
+    which::which(bin).ok()
 }
 
 pub fn available_commands() -> Vec<String> {
@@ -180,11 +177,10 @@ mod tests {
         let Some(shell) = path_of("sh") else {
             return;
         };
-        let root = unique_test_dir("process-run-in");
-        std::fs::create_dir_all(&root).expect("root");
+        let root = tempfile::tempdir().expect("root");
 
         run_in(
-            Some(&root),
+            Some(root.path()),
             &[
                 shell.to_string_lossy().into_owned(),
                 "-c".to_owned(),
@@ -193,19 +189,17 @@ mod tests {
         )
         .expect("run in cwd");
 
-        let pwd = std::fs::read_to_string(root.join("pwd.txt")).expect("pwd");
+        let pwd = std::fs::read_to_string(root.path().join("pwd.txt")).expect("pwd");
         assert_eq!(
             canonical_test_path(Path::new(pwd.trim())),
-            canonical_test_path(&root)
+            canonical_test_path(root.path())
         );
-        drop(std::fs::remove_dir_all(root));
     }
 
     #[test]
     fn resolves_direct_executable_path() {
-        let root = unique_test_dir("process-path-of");
-        std::fs::create_dir_all(&root).expect("root");
-        let executable = root.join(executable_name("demo"));
+        let root = tempfile::tempdir().expect("root");
+        let executable = root.path().join(executable_name("demo"));
         std::fs::write(&executable, "#!/bin/sh\nexit 0\n").expect("executable");
         make_executable(&executable);
 
@@ -213,7 +207,6 @@ mod tests {
             path_of(executable.to_string_lossy().as_ref()),
             Some(executable.clone())
         );
-        drop(std::fs::remove_dir_all(root));
     }
 
     #[cfg(unix)]
@@ -227,14 +220,6 @@ mod tests {
 
     #[cfg(not(unix))]
     fn make_executable(_path: &Path) {}
-
-    fn unique_test_dir(name: &str) -> PathBuf {
-        env::temp_dir().join(format!(
-            "scaffold-{name}-{}-{:?}",
-            std::process::id(),
-            std::thread::current().id()
-        ))
-    }
 
     fn canonical_test_path(path: &Path) -> PathBuf {
         let canonical = std::fs::canonicalize(path).expect("canonical path");

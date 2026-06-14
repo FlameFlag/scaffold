@@ -20,14 +20,7 @@ fn extracts_doc_forms_from_scheme_source() {
 
 #[test]
 fn extracts_doc_next_from_following_definition() {
-    let docs = docs_from_source(
-        "doc-next.scm",
-        r#"(moduledoc (summary "Module docs.") (group "Fixtures") (effect 'pure))
-(doc-next
-  (summary "Create a demo.")
-  (param 'name "Name for the demo."))
-(define (demo name) name)"#,
-    );
+    let docs = docs_from_source("doc-next.scm", include_str!("../fixtures/doc-next.scm"));
 
     assert_eq!(docs.len(), 1);
     assert_eq!(docs[0].name, "demo");
@@ -40,18 +33,7 @@ fn extracts_doc_next_from_following_definition() {
 
 #[test]
 fn extracts_extern_doc_and_structured_signature() {
-    let docs = docs_from_source(
-        "extern-doc.scm",
-        r#"(moduledoc (summary "Path docs.") (group "Paths") (requires-capability 'scaffold.path))
-(extern-doc path/join
-  (signature (path/join first part ...))
-  (summary "Join path components."))
-(define path/join %path/join)
-(extern-doc path/separator
-  (signature value path/separator)
-  (summary "Host path separator."))
-(define path/separator %path/separator)"#,
-    );
+    let docs = docs_from_source("extern-doc.scm", include_str!("../fixtures/extern-doc.scm"));
 
     assert_eq!(docs.len(), 2);
     assert_eq!(docs[0].name, "path/join");
@@ -71,12 +53,7 @@ fn extracts_extern_doc_and_structured_signature() {
 fn extracts_doc_forms_from_sources_with_scaffold_keywords() {
     let docs = docs_from_source(
         "keyword-doc.scm",
-        r#"(tool #:name "demo")
-(doc 'local-helper
-  (signature "(local-helper value)")
-  (summary "Project-local docs.")
-  (param 'value "Input value."))
-(define (local-helper value) value)"#,
+        include_str!("../fixtures/keyword-doc.scm"),
     );
 
     assert_eq!(docs.len(), 1);
@@ -107,11 +84,7 @@ fn editor_docs_index_undocumented_definitions_as_symbols() {
 fn editor_docs_keep_definition_location_when_docs_exist() {
     let docs = source_docs_with_definitions(
         "keyword-doc.scm",
-        r#"(tool #:name "demo")
-(doc 'local-helper
-  (signature "(local-helper value)")
-  (summary "Project-local docs."))
-(define (local-helper value) value)"#,
+        include_str!("../fixtures/keyword-doc-location.scm"),
     )
     .entries;
 

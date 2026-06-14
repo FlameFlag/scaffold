@@ -65,13 +65,7 @@ fn signature_help_includes_parameter_docs() {
 fn signature_help_selects_active_argument() {
     let index = DocIndex::with_language_keywords().merged_with_document(
         "two-param-doc.scm",
-        concat!(
-            "(doc 'demo\n",
-            "  (signature \"(demo name value)\")\n",
-            "  (summary \"Create a demo.\")\n",
-            "  (param 'name \"Name for the demo.\")\n",
-            "  (param 'value \"Demo value.\"))",
-        ),
+        include_str!("../fixtures/two-param-doc.scm"),
     );
     let help = signature_help_for_symbol(&index, "demo", 1).expect("signature help");
 
@@ -101,13 +95,7 @@ fn semantic_tokens_distinguish_keyword_std_doc_and_user_functions() {
     let index = DocIndex::scaffold();
     let tokens = semantic_tokens(
         &index,
-        concat!(
-            "(import (rnrs) (scaffold catalog))\n",
-            "(define (local-helper value) value)\n",
-            "(doc 'local-helper (summary \"Local helper.\"))\n",
-            "(tool \"demo\" (required))\n",
-            "(local-helper \"demo\")\n",
-        ),
+        include_str!("../fixtures/semantic-keyword-stdlib-user.scm"),
     );
 
     assert!(tokens.data.iter().any(|token| {
@@ -134,11 +122,7 @@ fn semantic_tokens_keep_user_symbols_in_files_with_scaffold_keywords() {
     let index = DocIndex::scaffold();
     let tokens = semantic_tokens(
         &index,
-        concat!(
-            "(tool #:name \"demo\")\n",
-            "(define (local-helper value) value)\n",
-            "(local-helper 1)\n",
-        ),
+        include_str!("../fixtures/semantic-user-symbols.scm"),
     );
 
     assert!(
@@ -172,14 +156,7 @@ fn emits_doc_driven_parameter_inlay_hints() {
 
 #[test]
 fn emits_inlay_hints_in_files_with_scaffold_keywords() {
-    let text = concat!(
-        "(tool #:name \"demo\")\n",
-        "(doc 'local-helper\n",
-        "  (signature \"(local-helper value)\")\n",
-        "  (summary \"Docs.\")\n",
-        "  (param 'value \"Input value.\"))\n",
-        "(local-helper 1)\n",
-    );
+    let text = include_str!("../fixtures/keyword-inlay.scm");
     let index = DocIndex::with_language_keywords().merged_with_document("keyword-inlay.scm", text);
     let hints = inlay_hints(
         &index,

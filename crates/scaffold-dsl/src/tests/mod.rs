@@ -272,21 +272,12 @@ fn catalog_loading_dedupes_symlinked_extension_libraries() {
     std::fs::create_dir_all(&scaffold_dot_extensions).expect("dot extensions");
     std::fs::write(
         root.path().join("scaffold.scm"),
-        r#"(import (rnrs) (scaffold catalog) (entries demo))
-
-(catalog demo)
-"#,
+        include_str!("../fixtures/local/symlinked-extension/scaffold.scm"),
     )
     .expect("catalog");
     std::fs::write(
         entries.join("demo.scm"),
-        r#"(library
-  (entries demo)
-  (export demo)
-  (import (rnrs) (scaffold catalog))
-
-  (define demo (tool "demo" (required))))
-"#,
+        include_str!("../fixtures/local/symlinked-extension/entries/demo.scm"),
     )
     .expect("entry");
     std::os::unix::fs::symlink(
@@ -302,27 +293,8 @@ fn catalog_loading_dedupes_symlinked_extension_libraries() {
 
 #[test]
 fn supports_scoped_r6rs_import_sets_for_scaffold_libraries() {
-    let value = catalog_value_from_str(
-        r#"(import
-  (rnrs)
-  (only (scaffold catalog root) catalog)
-  (only (scaffold catalog action) required)
-  (only (scaffold catalog tool) tool bin override)
-  (only (scaffold config vector) arr)
-  (only (scaffold config object) object field object/ref))
-
-(define base
-  (tool "demo" (required) (field 'bins (arr (bin "demo")))))
-
-(catalog
-  (override
-    base
-    (lambda (old)
-      (object
-        (field 'name (string-append (object/ref old 'name) "-scoped"))
-        (field 'bins (arr (bin (string-append (object/ref old 'name) "-scoped"))))))))"#,
-    )
-    .expect("catalog");
+    let value = catalog_value_from_str(include_str!("../fixtures/catalog/scoped-imports.scm"))
+        .expect("catalog");
 
     assert_eq!(value["tools"][0]["name"], "demo-scoped");
     assert_eq!(value["tools"][0]["bins"][0]["name"], "demo-scoped");
@@ -330,26 +302,9 @@ fn supports_scoped_r6rs_import_sets_for_scaffold_libraries() {
 
 #[test]
 fn supports_r6rs_rename_prefix_and_records_in_catalog_dsl() {
-    let value = catalog_value_from_str(
-        r#"(import
-  (rnrs)
-  (rename (scaffold catalog root) (catalog make-catalog))
-  (rename (scaffold catalog action) (required action-required))
-  (prefix (scaffold catalog tool) tool:)
-  (only (scaffold config vector) arr)
-  (only (scaffold config object) field))
-
-(define-record-type tool-spec
-  (fields name bin))
-
-(define spec (make-tool-spec "demo" "democtl"))
-
-(make-catalog
-  (tool:tool
-    (tool-spec-name spec)
-    (action-required)
-    (field 'bins (arr (tool:bin (tool-spec-bin spec))))))"#,
-    )
+    let value = catalog_value_from_str(include_str!(
+        "../fixtures/catalog/rename-prefix-records.scm"
+    ))
     .expect("catalog");
 
     assert_eq!(value["tools"][0]["name"], "demo");
@@ -380,6 +335,24 @@ fn bundled_scheme_extensions_can_import_each_other() {
         "../fixtures/extensions/import-dependencies.scm"
     ))
     .expect("scheme test");
+}
+
+#[test]
+fn github_release_archive_helpers_clean_download_work_files() {
+    let targz_argv = single_value(include_str!(
+        "../fixtures/extensions/github-release-cleanup-targz.scm"
+    ));
+    let zip_argv = single_value(include_str!(
+        "../fixtures/extensions/github-release-cleanup-zip.scm"
+    ));
+
+    for argv in [targz_argv, zip_argv] {
+        let script = argv[2].as_str().expect("generated shell script");
+        assert!(
+            script.contains("rm -rf \"${extract_dir}\"\nrm -f \"${archive}\"\n"),
+            "archive helper should clean downloaded work files:\n{script}"
+        );
+    }
 }
 
 #[test]
@@ -426,24 +399,8 @@ fn supports_catalog_macros() {
 
 #[test]
 fn supports_catalog_metadata_helpers() {
-    let value = catalog_value_from_str(
-        r#"(import (rnrs) (scaffold catalog))
-
-(catalog
-  (tool "demo"
-    (required)
-    (meta
-      (home-page "https://example.test/demo")
-      (description "Demo tool.")
-      (license "MIT")
-      (maintainers "flame")
-      (tags "cli" "demo")
-      (main-program "demo")
-      (source "https://example.test/demo.git"))
-    (passthru (field 'updater "manual"))))
-"#,
-    )
-    .expect("catalog");
+    let value = catalog_value_from_str(include_str!("../fixtures/catalog/metadata-helpers.scm"))
+        .expect("catalog");
 
     assert_eq!(
         value["tools"][0]["meta"]["home_page"],
@@ -456,26 +413,9 @@ fn supports_catalog_metadata_helpers() {
 
 #[test]
 fn supports_tool_override_helpers() {
-    let value = catalog_value_from_str(
-        r#"(import (rnrs) (scaffold catalog))
-
-(define base-tool
-  (tool
-    "demo"
-    (required)
-    (field 'bins (arr (bin "demo")))))
-
-(catalog
-  (tool/override
-    base-tool
-    (lambda (old)
-      (object
-        (field 'name (string-append (object/ref old 'name) "-nightly"))
-        (field
-          'bins
-          (arr (bin (string-append (object/ref old 'name) "-nightly"))))))))
-"#,
-    )
+    let value = catalog_value_from_str(include_str!(
+        "../fixtures/catalog/tool-override-helpers.scm"
+    ))
     .expect("catalog");
 
     assert_eq!(value["tools"][0]["name"], "demo-nightly");

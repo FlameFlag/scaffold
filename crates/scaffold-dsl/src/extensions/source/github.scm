@@ -43,7 +43,9 @@
         "rm -rf \"${extract_dir}\"\n"
         "mkdir -p \"${extract_dir}\"\n"
         "unzip -q \"${archive}\" -d \"${extract_dir}\"\n"
-        "install -m 0755 \"${extract_dir}/${source_path}\" \"${bin_dir}/${bin_name}\"\n")))
+        "install -m 0755 \"${extract_dir}/${source_path}\" \"${bin_dir}/${bin_name}\"\n"
+        "rm -rf \"${extract_dir}\"\n"
+        "rm -f \"${archive}\"\n")))
 
   (doc-next
     (summary "Create an installer for a latest GitHub release tar.gz binary.")
@@ -83,7 +85,9 @@
         "rm -rf \"${extract_dir}\"\n"
         "mkdir -p \"${extract_dir}\"\n"
         "tar -xzf \"${archive}\" -C \"${extract_dir}\"\n"
-        "install -m 0755 \"${extract_dir}/${source_path}\" \"${bin_dir}/${bin_name}\"\n")))
+        "install -m 0755 \"${extract_dir}/${source_path}\" \"${bin_dir}/${bin_name}\"\n"
+        "rm -rf \"${extract_dir}\"\n"
+        "rm -f \"${archive}\"\n")))
 
   (moduledoc
     (summary "GitHub release asset package platform helpers.")

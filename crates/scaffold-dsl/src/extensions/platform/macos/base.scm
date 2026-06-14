@@ -65,6 +65,8 @@
           (arr "mkdir" "-p" extract-dir)
           (arr "ditto" "-x" "-k" archive extract-dir)
           (arr "ditto" (string-append extract-dir "/" app-name) app-path)
+          (arr "rm" "-rf" extract-dir)
+          (arr "rm" "-f" archive)
           (arr
             "ln"
             "-sfn"

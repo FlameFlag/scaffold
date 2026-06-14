@@ -398,7 +398,7 @@ mod tests {
     #[test]
     fn skips_strings_and_comments_when_finding_ranges() {
         let ranges = symbol_ranges(
-            "(define (local-helper value) value)\n\"local-helper\"\n; local-helper\n(local-helper 1)",
+            include_str!("fixtures/reference-ranges.scm"),
             "local-helper",
         );
 
@@ -416,7 +416,7 @@ mod tests {
         let documents = vec![
             (
                 "file:///b.scm",
-                "(local-helper 1)\n\"local-helper\"\n; local-helper",
+                include_str!("fixtures/reference-document-b.scm"),
             ),
             ("file:///a.scm", "(define (local-helper value) value)"),
             ("file:///a.scm", "(define (local-helper value) value)"),
@@ -438,7 +438,7 @@ mod tests {
 
     #[test]
     fn extracts_symbols_at_utf16_positions() {
-        let text = "(define café 1)\n\"café\"\n; café";
+        let text = include_str!("fixtures/utf16-symbol-filtering.scm");
 
         assert_eq!(symbol_at_position(text, 0, 8).as_deref(), Some("café"));
         assert_eq!(symbol_at_position(text, 1, 1), None);

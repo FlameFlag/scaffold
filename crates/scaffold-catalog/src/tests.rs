@@ -160,16 +160,9 @@ fn package_platform_support_requires_matching_installer() {
 
 #[test]
 fn archive_actions_load_from_catalog_dsl() {
-    let value = scaffold_dsl::catalog_value_from_str(
-        r#"(import (rnrs) (scaffold catalog))
-
-(catalog
-  (tool "demo"
-    (archive/strip-components "archives/demo.tar.gz" 1)
-    (field 'bins (arr (bin "demo")))))
-"#,
-    )
-    .expect("catalog value");
+    let value =
+        scaffold_dsl::catalog_value_from_str(include_str!("fixtures/catalog/archive-action.scm"))
+            .expect("catalog value");
     let catalog = Catalog::from_value(value).expect("catalog");
 
     let super::Action::Archive(action) = &catalog.tools[0].action else {
@@ -181,16 +174,9 @@ fn archive_actions_load_from_catalog_dsl() {
 
 #[test]
 fn dmg_actions_load_from_catalog_dsl() {
-    let value = scaffold_dsl::catalog_value_from_str(
-        r#"(import (rnrs) (scaffold catalog))
-
-(catalog
-  (tool "demo"
-    (dmg "archives/demo.dmg")
-    (field 'bins (arr (bin "demo")))))
-"#,
-    )
-    .expect("catalog value");
+    let value =
+        scaffold_dsl::catalog_value_from_str(include_str!("fixtures/catalog/dmg-action.scm"))
+            .expect("catalog value");
     let catalog = Catalog::from_value(value).expect("catalog");
 
     let super::Action::Archive(action) = &catalog.tools[0].action else {
@@ -202,23 +188,9 @@ fn dmg_actions_load_from_catalog_dsl() {
 
 #[test]
 fn metadata_and_passthru_load_from_catalog_dsl() {
-    let value = scaffold_dsl::catalog_value_from_str(
-        r#"(import (rnrs) (scaffold catalog))
-
-(catalog
-  (tool "demo"
-    (required)
-    (meta
-      (home-page "https://example.test/demo")
-      (description "Demo tool.")
-      (license "MIT")
-      (maintainers "flame" "team")
-      (tags "cli")
-      (main-program "demo")
-      (source "https://example.test/demo.git"))
-    (passthru (field 'updater "manual"))))
-"#,
-    )
+    let value = scaffold_dsl::catalog_value_from_str(include_str!(
+        "fixtures/catalog/metadata-and-passthru.scm"
+    ))
     .expect("catalog value");
     let catalog = Catalog::from_value(value).expect("catalog");
 
@@ -327,12 +299,7 @@ fn load_reports_catalog_validation_with_source_span() {
     let (_root, path) = temp_path("source-aware-catalog.scm");
     std::fs::write(
         &path,
-        r#"(import (rnrs) (scaffold catalog))
-
-(tool "ok" (required))
-
-(tool "bad" (required) (field 'surprise #t))
-"#,
+        include_str!("fixtures/catalog/source-aware-catalog.scm"),
     )
     .expect("write catalog");
 
@@ -347,12 +314,7 @@ fn load_reports_catalog_validation_with_nested_span_in_catalog_form() {
     let (_root, path) = temp_path("source-aware-catalog-form.scm");
     std::fs::write(
         &path,
-        r#"(import (rnrs) (scaffold catalog))
-
-(catalog
-  (tool "ok" (required))
-  (tool "bad" (required) (field 'surprise #t)))
-"#,
+        include_str!("fixtures/catalog/source-aware-catalog-form.scm"),
     )
     .expect("write catalog");
 

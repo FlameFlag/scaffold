@@ -90,7 +90,7 @@ mod tests {
 
     #[test]
     fn ignores_symbols_in_strings_and_comments() {
-        let text = "\"tool\"\n; tool\n(tool)";
+        let text = include_str!("fixtures/symbol-filtering.scm");
         let document = Document::new(text.to_owned());
 
         assert_eq!(document.word_at(position_of(text, "\"tool\"")), None);

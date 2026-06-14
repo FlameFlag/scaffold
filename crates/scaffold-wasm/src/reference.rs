@@ -401,21 +401,11 @@ mod tests {
         let workspace = vec![
             WorkspaceDocument {
                 uri: "file:///workspace/acme.scm".to_owned(),
-                text: concat!(
-                    "(library (acme tools)\n",
-                    "  (export acme-tool)\n",
-                    "  (doc 'acme-tool (signature \"(acme-tool name)\") (summary \"Acme.\")))",
-                )
-                .to_owned(),
+                text: include_str!("fixtures/reference-workspace-acme.scm").to_owned(),
             },
             WorkspaceDocument {
                 uri: "file:///workspace/other.scm".to_owned(),
-                text: concat!(
-                    "(library (other tools)\n",
-                    "  (export other-tool)\n",
-                    "  (doc 'other-tool (summary \"Other.\")))",
-                )
-                .to_owned(),
+                text: include_str!("fixtures/reference-workspace-other.scm").to_owned(),
             },
         ];
         let index =
@@ -429,12 +419,7 @@ mod tests {
     fn workspace_imports_include_undocumented_definitions() {
         let workspace = vec![WorkspaceDocument {
             uri: "file:///workspace/acme.scm".to_owned(),
-            text: concat!(
-                "(library (acme tools)\n",
-                "  (export acme-helper)\n",
-                "  (define (acme-helper value) value))",
-            )
-            .to_owned(),
+            text: include_str!("fixtures/reference-workspace-undocumented.scm").to_owned(),
         }];
         let index = reference_index_for_document(
             "(import (acme tools))\n(acme-helper \"demo\")",
@@ -453,15 +438,8 @@ mod tests {
 
     #[test]
     fn signature_help_uses_signature_parameters_and_param_docs() {
-        let index = reference_index_for_document(
-            concat!(
-                "(doc 'demo\n",
-                "  (signature \"(demo name [mode] rest ...)\")\n",
-                "  (summary \"Demo helper.\")\n",
-                "  (param 'name \"Name docs.\"))",
-            ),
-            &[],
-        );
+        let index =
+            reference_index_for_document(include_str!("fixtures/reference-signature-doc.scm"), &[]);
         let help = signature_help(&index, "demo").expect("signature help");
 
         assert_eq!(help.label, "(demo name [mode] rest ...)");

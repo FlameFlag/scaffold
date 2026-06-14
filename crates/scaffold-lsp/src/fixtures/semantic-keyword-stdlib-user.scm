@@ -1,0 +1,5 @@
+(import (rnrs) (scaffold catalog))
+(define (local-helper value) value)
+(doc 'local-helper (summary "Local helper."))
+(tool "demo" (required))
+(local-helper "demo")

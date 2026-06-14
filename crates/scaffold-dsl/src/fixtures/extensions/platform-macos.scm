@@ -42,4 +42,14 @@
   (arr "mkdir" "-p" "{{ state_dir }}/tools/demo/latest" "{{ bin_dir }}")
   (vector-ref (object/ref app-platform 'install-argvs) 0))
 
+(assert/equal 9 (vector-length (object/ref app-platform 'install-argvs)))
+
+(assert/equal
+  (arr "rm" "-rf" "{{ state_dir }}/tools/demo/latest/extract")
+  (vector-ref (object/ref app-platform 'install-argvs) 6))
+
+(assert/equal
+  (arr "rm" "-f" "{{ state_dir }}/tools/demo/latest/demo.zip")
+  (vector-ref (object/ref app-platform 'install-argvs) 7))
+
 (moduledoc (summary "Fixture for macOS platform helpers."))

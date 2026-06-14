@@ -63,9 +63,7 @@ fn accepts_documented_definitions_for_wasm_diagnostics() {
 
 #[test]
 fn returns_json_semantic_tokens() {
-    let tokens = semantic_tokens_scaffold_scheme(
-        "(define (local-helper value) value)\n(if #t (tool #:name \"demo\") (local-helper \"demo\"))\n(doc 'local-helper (summary \"Docs\"))",
-    );
+    let tokens = semantic_tokens_scaffold_scheme(include_str!("fixtures/semantic-tokens.scm"));
 
     assert!(tokens.contains("\"token_type\":\"keyword\""));
     assert!(tokens.contains("\"defaultLibrary\""));
@@ -132,14 +130,7 @@ fn returns_workspace_aware_signature_help() {
     let workspace_json = serde_json::json!([
         {
             "uri": "file:///workspace/acme.scm",
-            "text": concat!(
-                "(library (acme tools)\n",
-                "  (export acme-tool)\n",
-                "  (doc 'acme-tool\n",
-                "    (signature \"(acme-tool name [mode])\")\n",
-                "    (summary \"Acme.\")\n",
-                "    (param 'name \"Name docs.\")))",
-            )
+            "text": include_str!("fixtures/workspace-signature-acme.scm")
         }
     ])
     .to_string();
@@ -243,11 +234,7 @@ fn form_context_ignores_strings_and_comments() {
 
 #[test]
 fn discovers_nested_definitions_and_docs() {
-    let source = concat!(
-        "(begin\n",
-        "  (define (nested-helper value) value)\n",
-        "  (doc 'nested-helper (summary \"Docs\")))",
-    );
+    let source = include_str!("fixtures/nested-definitions.scm");
     let symbols = document_reference_symbols_scaffold_scheme(source);
     let tokens = semantic_tokens_scaffold_scheme(source);
 
@@ -258,7 +245,7 @@ fn discovers_nested_definitions_and_docs() {
 #[test]
 fn returns_reference_backed_inlay_hints() {
     let hints = inlay_hints_scaffold_scheme(
-        "(tool \"demo\" (required))\n\"tool ignored\"\n; (tool \"ignored\")",
+        include_str!("fixtures/inlay-hints-ignore-strings-comments.scm"),
         0,
         0,
         10,
@@ -299,11 +286,7 @@ fn returns_workspace_aware_completion_hover_semantics_and_definition() {
 
 #[test]
 fn local_definition_uses_document_uri() {
-    let text = concat!(
-        "(doc 'local-helper (summary \"Docs\"))\n",
-        "(define (local-helper value) value)\n",
-        "(local-helper 1)"
-    );
+    let text = include_str!("fixtures/local-definition.scm");
 
     let definition = definition_scaffold_scheme(text, "file:///workspace/main.scm", 2, 2, "[]");
 

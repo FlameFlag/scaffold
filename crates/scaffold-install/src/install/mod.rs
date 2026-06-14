@@ -214,15 +214,7 @@ mod tests {
         let catalog_path = root.path().join("catalog.scm");
         std::fs::write(
             &catalog_path,
-            r#"(import (rnrs) (scaffold catalog))
-
-(catalog
-  (tool "demo"
-    (required)
-    (field 'uninstall
-      (uninstall
-        (field 'paths (arr (uninstall/path "{{ root_dir }}/trash")))))))
-"#,
+            include_str!("../fixtures/install/uninstall-removes-declared-paths.scm"),
         )
         .expect("catalog");
         let ctx = Context {
@@ -245,15 +237,7 @@ mod tests {
         let catalog_path = root.path().join("catalog.scm");
         std::fs::write(
             &catalog_path,
-            r#"(import (rnrs) (scaffold catalog))
-
-(catalog
-  (tool "demo"
-    (required)
-    (field 'uninstall
-      (uninstall
-        (field 'paths (arr (uninstall/path "{{ root_dir }}/trash")))))))
-"#,
+            include_str!("../fixtures/install/uninstall-removes-declared-paths.scm"),
         )
         .expect("catalog");
         let ctx = Context {
@@ -274,15 +258,7 @@ mod tests {
         let catalog_path = root.path().join("catalog.scm");
         std::fs::write(
             &catalog_path,
-            r#"(import (rnrs) (scaffold catalog))
-
-(catalog
-  (tool "demo"
-    (required)
-    (field 'uninstall
-      (uninstall
-        (field 'paths (arr (uninstall/path "/")))))))
-"#,
+            include_str!("../fixtures/install/uninstall-rejects-unsafe-paths.scm"),
         )
         .expect("catalog");
         let ctx = Context {

@@ -14,7 +14,6 @@
     "Linters"
   ],
   "activationEvents": [
-    "onLanguage:scaffold-scheme",
     "onLanguage:scheme",
     "workspaceContains:**/*.scm",
     "onStartupFinished"

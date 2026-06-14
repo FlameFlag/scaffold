@@ -132,7 +132,7 @@ mod tests {
         assert_format_with_options(
             "(tool #:name \"demo\" #:bins '(\"demo\" \"democtl\"))",
             FormatOptions { width: 30 },
-            "(tool\n  #:name\n  \"demo\"\n  #:bins\n  '(\"demo\" \"democtl\"))\n",
+            include_str!("fixtures/width-30.scm"),
         );
     }
 
@@ -146,12 +146,7 @@ mod tests {
         assert_eq!(
             format_text("(doc 'x (summary \"X\"))(define x 1)(doc 'y (summary \"Y\"))(define y 2)")
                 .unwrap(),
-            concat!(
-                "(doc 'x (summary \"X\"))\n\n",
-                "(define x 1)\n\n",
-                "(doc 'y (summary \"Y\"))\n\n",
-                "(define y 2)\n",
-            )
+            include_str!("fixtures/doc-separated.scm")
         );
     }
 
@@ -162,15 +157,7 @@ mod tests {
                 "(library (demo) (export x y) (import (rnrs)) (doc 'x (summary \"X\")) (define x 1) (define y 2))"
             )
             .unwrap(),
-            concat!(
-                "(library\n",
-                "  (demo)\n",
-                "  (export x y)\n",
-                "  (import (rnrs))\n\n",
-                "  (doc 'x (summary \"X\"))\n\n",
-                "  (define x 1)\n\n",
-                "  (define y 2))\n",
-            )
+            include_str!("fixtures/library-definition-blocks.scm")
         );
     }
 
@@ -181,14 +168,7 @@ mod tests {
                 "(library (demo) (export x) (import (rnrs)) (define x 1) (doc 'x (summary \"X\")))"
             )
             .unwrap(),
-            concat!(
-                "(library\n",
-                "  (demo)\n",
-                "  (export x)\n",
-                "  (import (rnrs))\n\n",
-                "  (doc 'x (summary \"X\"))\n\n",
-                "  (define x 1))\n",
-            )
+            include_str!("fixtures/library-doc-before-definition.scm")
         );
     }
 
@@ -217,13 +197,7 @@ mod tests {
 
     #[test]
     fn preserves_format_off_regions() {
-        let source = concat!(
-            "(define x 1)(define y 2)\n",
-            "; scaffold-fmt: off\n",
-            "(define     hand-aligned       '(1  2  3))\n",
-            "; scaffold-fmt: on\n",
-            "(define z 3)(define q 4)"
-        );
+        let source = include_str!("fixtures/format-off-source.scm");
         let formatted = format_text(source).unwrap();
 
         assert!(formatted.starts_with("(define x 1)\n\n(define y 2)\n"));
@@ -233,12 +207,7 @@ mod tests {
 
     #[test]
     fn preserves_next_form_when_directed() {
-        let source = concat!(
-            "(define x 1)(define y 2)\n",
-            "; scaffold-fmt: ignore-next\n",
-            "(define     hand-aligned       '(1  2  3))\n",
-            "(define z 3)(define q 4)",
-        );
+        let source = include_str!("fixtures/ignore-next-source.scm");
 
         let formatted = format_text(source).unwrap();
 

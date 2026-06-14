@@ -2,6 +2,7 @@ use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
 use thiserror::Error;
+use walkdir::{DirEntry, WalkDir};
 
 #[derive(Debug, Error)]
 pub enum ContextError {
@@ -155,22 +156,10 @@ fn collect_scheme_paths(
     seen_dirs: &mut HashSet<PathBuf>,
     seen_files: &mut HashSet<PathBuf>,
 ) {
-    let Ok(canonical_dir) = std::fs::canonicalize(dir) else {
-        return;
-    };
-    if !seen_dirs.insert(canonical_dir) {
-        return;
-    }
-
-    let Ok(entries) = std::fs::read_dir(dir) else {
-        return;
-    };
-    for entry in entries.filter_map(Result::ok) {
+    for entry in scheme_walk(dir, seen_dirs, |_| true) {
         let path = entry.path();
-        if path.is_dir() {
-            collect_scheme_paths(&path, output, filter, seen_dirs, seen_files);
-        } else if matches_scheme_filter(&path, filter) {
-            push_unique_path(&path, output, seen_files);
+        if entry.file_type().is_file() && matches_scheme_filter(path, filter) {
+            push_unique_path(path, output, seen_files);
         }
     }
 }
@@ -191,30 +180,41 @@ fn collect_workspace_scheme_paths(
     seen_dirs: &mut HashSet<PathBuf>,
     seen_files: &mut HashSet<PathBuf>,
 ) {
-    let Ok(canonical_dir) = std::fs::canonicalize(dir) else {
-        return;
-    };
-    if !seen_dirs.insert(canonical_dir) {
-        return;
-    }
-
-    let Ok(entries) = std::fs::read_dir(dir) else {
-        return;
-    };
-    for entry in entries.filter_map(Result::ok) {
+    for entry in scheme_walk(dir, seen_dirs, |entry| {
+        entry.depth() == 0
+            || !entry
+                .path()
+                .file_name()
+                .and_then(|name| name.to_str())
+                .is_some_and(|name| matches!(name, ".git" | "target" | "node_modules" | "out"))
+    }) {
         let path = entry.path();
-        let Some(name) = path.file_name().and_then(|name| name.to_str()) else {
-            continue;
-        };
-        if path.is_dir() {
-            if matches!(name, ".git" | "target" | "node_modules" | "out") {
-                continue;
-            }
-            collect_workspace_scheme_paths(&path, output, seen_dirs, seen_files);
-        } else if path.extension().is_some_and(|extension| extension == "scm") {
-            push_unique_path(&path, output, seen_files);
+        if entry.file_type().is_file()
+            && path.extension().is_some_and(|extension| extension == "scm")
+        {
+            push_unique_path(path, output, seen_files);
         }
     }
+}
+
+fn scheme_walk<'a>(
+    dir: &'a Path,
+    seen_dirs: &'a mut HashSet<PathBuf>,
+    mut descend: impl FnMut(&DirEntry) -> bool + 'a,
+) -> impl Iterator<Item = DirEntry> + 'a {
+    WalkDir::new(dir)
+        .follow_links(true)
+        .into_iter()
+        .filter_entry(move |entry| {
+            if !entry.file_type().is_dir() {
+                return true;
+            }
+            if !descend(entry) {
+                return false;
+            }
+            std::fs::canonicalize(entry.path()).is_ok_and(|path| seen_dirs.insert(path))
+        })
+        .filter_map(Result::ok)
 }
 
 fn push_unique_path(path: &Path, output: &mut Vec<PathBuf>, seen_files: &mut HashSet<PathBuf>) {
@@ -261,12 +261,12 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn source_paths_dedupe_symlinked_extension_trees() {
-        let root = unique_test_dir("source-paths-dedupe-symlinked-extension-trees");
-        let entries = root.join("scaffold").join("entries");
-        let scaffold_dot_extensions = root.join(".scaffold").join("extensions");
+        let root = tempfile::tempdir().expect("root");
+        let entries = root.path().join("scaffold").join("entries");
+        let scaffold_dot_extensions = root.path().join(".scaffold").join("extensions");
         std::fs::create_dir_all(&entries).expect("entries");
         std::fs::create_dir_all(&scaffold_dot_extensions).expect("dot extensions");
-        std::fs::write(root.join("scaffold.scm"), "(import (rnrs))\n").expect("catalog");
+        std::fs::write(root.path().join("scaffold.scm"), "(import (rnrs))\n").expect("catalog");
         std::fs::write(
             entries.join("demo.scm"),
             "(library (entries demo) (export demo) (import (rnrs)) (define demo 'ok))\n",
@@ -279,10 +279,10 @@ mod tests {
         .expect("symlink");
 
         let ctx = Context {
-            catalog_path: root.join("scaffold.scm"),
-            root_dir: root.clone(),
-            bin_dir: root.join("bin"),
-            state_dir: root.join("state"),
+            catalog_path: root.path().join("scaffold.scm"),
+            root_dir: root.path().to_path_buf(),
+            bin_dir: root.path().join("bin"),
+            state_dir: root.path().join("state"),
         };
 
         let source_paths = ctx.source_paths();
@@ -292,7 +292,6 @@ mod tests {
             .count();
 
         assert_eq!(demo_paths, 1);
-        drop(std::fs::remove_dir_all(root));
     }
 
     #[test]
@@ -317,13 +316,5 @@ mod tests {
             .join("src")
             .join("fixtures")
             .join(path)
-    }
-
-    fn unique_test_dir(name: &str) -> PathBuf {
-        std::env::temp_dir().join(format!(
-            "scaffold-context-{name}-{}-{:?}",
-            std::process::id(),
-            std::thread::current().id()
-        ))
     }
 }

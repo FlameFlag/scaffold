@@ -40,11 +40,3 @@ pub(super) fn assert_platform_extension_files(platform: &str, expected: &[&str])
 
     assert_eq!(actual, expected, "unexpected {platform} platform helpers");
 }
-
-pub(super) fn unique_test_dir(name: &str) -> PathBuf {
-    std::env::temp_dir().join(format!(
-        "scaffold-dsl-{name}-{}-{:?}",
-        std::process::id(),
-        std::thread::current().id()
-    ))
-}

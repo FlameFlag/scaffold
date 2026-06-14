@@ -1,6 +1,8 @@
 use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
 
+use walkdir::WalkDir;
+
 fn main() {
     let root = PathBuf::from("src").join("extensions");
     println!("cargo:rerun-if-changed={}", root.display());
@@ -29,17 +31,13 @@ fn main() {
 }
 
 fn collect_scheme_files(dir: &Path, output: &mut Vec<PathBuf>) {
-    let Ok(entries) = std::fs::read_dir(dir) else {
-        return;
-    };
-    for entry in entries {
-        let path = entry.expect("read extension dir entry").path();
-        if path.is_dir() {
-            collect_scheme_files(&path, output);
-        } else if path.extension().is_some_and(|extension| extension == "scm")
+    for entry in WalkDir::new(dir).into_iter().filter_map(Result::ok) {
+        let path = entry.path();
+        if entry.file_type().is_file()
+            && path.extension().is_some_and(|extension| extension == "scm")
             && path.file_name().is_none_or(|name| name != "test.scm")
         {
-            output.push(path);
+            output.push(path.to_path_buf());
         }
     }
 }

@@ -6,6 +6,7 @@ use super::stdlib::SchemeLibrary;
 use super::{DslError, Result, bundled};
 use scaffold_scheme::{identifier_text, is_identifier, parse_source, proper_list};
 use scheme_rs::syntax::Syntax;
+use walkdir::{DirEntry, WalkDir};
 
 pub(super) fn extension_dirs_for_root(root: &Path) -> Vec<PathBuf> {
     scaffold_context::extension_dirs_for_root(root)
@@ -72,37 +73,38 @@ fn collect_scheme_files(
     seen_files: &mut HashSet<PathBuf>,
 ) -> Result<()> {
     match canonical_path(dir) {
-        Ok(canonical_dir) => {
-            if !seen_dirs.insert(canonical_dir) {
-                return Ok(());
-            }
-        }
+        Ok(_) => {}
         Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(()),
         Err(err) => return Err(err.into()),
     }
 
-    match std::fs::read_dir(dir) {
-        Ok(entries) => {
-            for entry in entries {
-                let path = entry?.path();
-                if path.is_dir() {
-                    collect_scheme_files(&path, output, seen_dirs, seen_files)?;
-                } else if path.extension().is_some_and(|extension| extension == "scm")
-                    && path.file_name().is_none_or(|name| name != "test.scm")
-                    && seen_files.insert(canonical_path(&path)?)
-                {
-                    output.push(path);
-                }
-            }
-            Ok(())
+    for entry in WalkDir::new(dir)
+        .follow_links(true)
+        .into_iter()
+        .filter_entry(|entry| visit_dir_once(entry, seen_dirs))
+    {
+        let entry = entry.map_err(std::io::Error::other)?;
+        let path = entry.path();
+        if entry.file_type().is_file()
+            && path.extension().is_some_and(|extension| extension == "scm")
+            && path.file_name().is_none_or(|name| name != "test.scm")
+            && seen_files.insert(canonical_path(path)?)
+        {
+            output.push(path.to_path_buf());
         }
-        Err(err) if err.kind() == std::io::ErrorKind::NotFound => Ok(()),
-        Err(err) => Err(err.into()),
     }
+    Ok(())
 }
 
 fn canonical_path(path: &Path) -> std::io::Result<PathBuf> {
     std::fs::canonicalize(path)
+}
+
+fn visit_dir_once(entry: &DirEntry, seen_dirs: &mut HashSet<PathBuf>) -> bool {
+    if !entry.file_type().is_dir() {
+        return true;
+    }
+    canonical_path(entry.path()).is_ok_and(|path| seen_dirs.insert(path))
 }
 
 fn library_name_from_source(source: &str, path: &Path) -> Result<Vec<String>> {

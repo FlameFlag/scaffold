@@ -324,7 +324,7 @@ fn exposes_catalog_schema_metadata() {
 
 #[test]
 fn load_reports_catalog_validation_with_source_span() {
-    let path = temp_path("source-aware-catalog.scm");
+    let (_root, path) = temp_path("source-aware-catalog.scm");
     std::fs::write(
         &path,
         r#"(import (rnrs) (scaffold catalog))
@@ -344,7 +344,7 @@ fn load_reports_catalog_validation_with_source_span() {
 
 #[test]
 fn load_reports_catalog_validation_with_nested_span_in_catalog_form() {
-    let path = temp_path("source-aware-catalog-form.scm");
+    let (_root, path) = temp_path("source-aware-catalog-form.scm");
     std::fs::write(
         &path,
         r#"(import (rnrs) (scaffold catalog))
@@ -385,13 +385,8 @@ fn catalog_error_labeled_source(path: &std::path::Path, error: super::CatalogErr
     labeled_source.to_owned()
 }
 
-fn temp_path(name: &str) -> std::path::PathBuf {
-    std::env::temp_dir().join(format!(
-        "scaffold-catalog-{name}-{}-{}.scm",
-        std::process::id(),
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .expect("time")
-            .as_nanos()
-    ))
+fn temp_path(name: &str) -> (tempfile::TempDir, std::path::PathBuf) {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let path = dir.path().join(name);
+    (dir, path)
 }

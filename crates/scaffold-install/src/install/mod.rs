@@ -151,74 +151,67 @@ mod tests {
 
     #[test]
     fn install_all_skips_unsupported_tools() {
-        let root = unique_test_dir("install-all-skips-unsupported-tools");
-        std::fs::create_dir_all(&root).expect("root");
-        let catalog_path = root.join("catalog.scm");
+        let root = test_root("install-all-skips-unsupported-tools");
+        let catalog_path = root.path().join("catalog.scm");
         write_catalog_fixture(
             &catalog_path,
             include_str!("../fixtures/install/all-with-unsupported.scm"),
         );
         let ctx = Context {
             catalog_path,
-            root_dir: root.clone(),
-            bin_dir: root.join("bin"),
-            state_dir: root.join("state"),
+            root_dir: root.path().to_path_buf(),
+            bin_dir: root.path().join("bin"),
+            state_dir: root.path().join("state"),
         };
 
         install_catalog(&ctx, Policy::Missing, &[]).expect("install all");
-        drop(std::fs::remove_dir_all(root));
     }
 
     #[test]
     fn install_all_skips_package_tools_without_matching_installer() {
-        let root = unique_test_dir("install-all-skips-package-tools-without-matching-installer");
-        std::fs::create_dir_all(&root).expect("root");
-        let catalog_path = root.join("catalog.scm");
+        let root = test_root("install-all-skips-package-tools-without-matching-installer");
+        let catalog_path = root.path().join("catalog.scm");
         write_catalog_fixture(
             &catalog_path,
             include_str!("../fixtures/install/all-with-package-platform-unsupported.scm"),
         );
         let ctx = Context {
             catalog_path,
-            root_dir: root.clone(),
-            bin_dir: root.join("bin"),
-            state_dir: root.join("state"),
+            root_dir: root.path().to_path_buf(),
+            bin_dir: root.path().join("bin"),
+            state_dir: root.path().join("state"),
         };
 
         install_catalog(&ctx, Policy::Missing, &[]).expect("install all");
-        drop(std::fs::remove_dir_all(root));
     }
 
     #[test]
     fn explicit_install_rejects_unsupported_tools() {
-        let root = unique_test_dir("explicit-install-rejects-unsupported-tools");
-        std::fs::create_dir_all(&root).expect("root");
-        let catalog_path = root.join("catalog.scm");
+        let root = test_root("explicit-install-rejects-unsupported-tools");
+        let catalog_path = root.path().join("catalog.scm");
         write_catalog_fixture(
             &catalog_path,
             include_str!("../fixtures/install/unsupported-only.scm"),
         );
         let ctx = Context {
             catalog_path,
-            root_dir: root.clone(),
-            bin_dir: root.join("bin"),
-            state_dir: root.join("state"),
+            root_dir: root.path().to_path_buf(),
+            bin_dir: root.path().join("bin"),
+            state_dir: root.path().join("state"),
         };
 
         assert!(matches!(
             install_catalog(&ctx, Policy::Missing, &["unsupported".to_owned()]),
             Err(InstallError::UnsupportedHost { tool }) if tool == "unsupported"
         ));
-        drop(std::fs::remove_dir_all(root));
     }
 
     #[test]
     fn uninstall_removes_declared_paths() {
-        let root = unique_test_dir("uninstall-removes-declared-paths");
-        std::fs::create_dir_all(&root).expect("root");
-        let trash = root.join("trash");
+        let root = test_root("uninstall-removes-declared-paths");
+        let trash = root.path().join("trash");
         std::fs::write(&trash, "remove me").expect("trash");
-        let catalog_path = root.join("catalog.scm");
+        let catalog_path = root.path().join("catalog.scm");
         std::fs::write(
             &catalog_path,
             r#"(import (rnrs) (scaffold catalog))
@@ -234,24 +227,22 @@ mod tests {
         .expect("catalog");
         let ctx = Context {
             catalog_path,
-            root_dir: root.clone(),
-            bin_dir: root.join("bin"),
-            state_dir: root.join("state"),
+            root_dir: root.path().to_path_buf(),
+            bin_dir: root.path().join("bin"),
+            state_dir: root.path().join("state"),
         };
 
         uninstall_catalog(&ctx, &["demo".to_owned()], false).expect("uninstall");
 
         assert!(!trash.exists());
-        drop(std::fs::remove_dir_all(root));
     }
 
     #[test]
     fn uninstall_dry_run_keeps_declared_paths() {
-        let root = unique_test_dir("uninstall-dry-run-keeps-paths");
-        std::fs::create_dir_all(&root).expect("root");
-        let trash = root.join("trash");
+        let root = test_root("uninstall-dry-run-keeps-paths");
+        let trash = root.path().join("trash");
         std::fs::write(&trash, "keep me").expect("trash");
-        let catalog_path = root.join("catalog.scm");
+        let catalog_path = root.path().join("catalog.scm");
         std::fs::write(
             &catalog_path,
             r#"(import (rnrs) (scaffold catalog))
@@ -267,22 +258,20 @@ mod tests {
         .expect("catalog");
         let ctx = Context {
             catalog_path,
-            root_dir: root.clone(),
-            bin_dir: root.join("bin"),
-            state_dir: root.join("state"),
+            root_dir: root.path().to_path_buf(),
+            bin_dir: root.path().join("bin"),
+            state_dir: root.path().join("state"),
         };
 
         uninstall_catalog(&ctx, &["demo".to_owned()], true).expect("dry-run uninstall");
 
         assert!(trash.exists());
-        drop(std::fs::remove_dir_all(root));
     }
 
     #[test]
     fn uninstall_rejects_unsafe_declared_paths() {
-        let root = unique_test_dir("uninstall-rejects-unsafe-paths");
-        std::fs::create_dir_all(&root).expect("root");
-        let catalog_path = root.join("catalog.scm");
+        let root = test_root("uninstall-rejects-unsafe-paths");
+        let catalog_path = root.path().join("catalog.scm");
         std::fs::write(
             &catalog_path,
             r#"(import (rnrs) (scaffold catalog))
@@ -298,9 +287,9 @@ mod tests {
         .expect("catalog");
         let ctx = Context {
             catalog_path,
-            root_dir: root.clone(),
-            bin_dir: root.join("bin"),
-            state_dir: root.join("state"),
+            root_dir: root.path().to_path_buf(),
+            bin_dir: root.path().join("bin"),
+            state_dir: root.path().join("state"),
         };
 
         assert!(matches!(
@@ -308,15 +297,13 @@ mod tests {
             Err(InstallError::UnsafeUninstallPath { tool, path })
                 if tool == "demo" && path == *"/"
         ));
-        drop(std::fs::remove_dir_all(root));
     }
 
-    fn unique_test_dir(name: &str) -> PathBuf {
-        std::env::temp_dir().join(format!(
-            "scaffold-{name}-{}-{:?}",
-            std::process::id(),
-            std::thread::current().id()
-        ))
+    fn test_root(name: &str) -> tempfile::TempDir {
+        tempfile::Builder::new()
+            .prefix(&format!("scaffold-{name}-"))
+            .tempdir()
+            .expect("root")
     }
 
     const fn unsupported_host_os_symbol() -> &'static str {

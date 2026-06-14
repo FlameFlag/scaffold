@@ -250,7 +250,7 @@ mod tests {
 
     #[test]
     fn formats_path_in_check_mode_without_writing() {
-        let path = temp_path("format-path-check.scm");
+        let (_root, path) = temp_path("format-path-check.scm");
         std::fs::write(&path, "(define x 1)(define y 2)").expect("write fixture");
 
         let changed = format_path(&path, FormatMode::Check).expect("format check");
@@ -264,7 +264,7 @@ mod tests {
 
     #[test]
     fn formats_path_in_write_mode() {
-        let path = temp_path("format-path-write.scm");
+        let (_root, path) = temp_path("format-path-write.scm");
         std::fs::write(&path, "(define x 1)(define y 2)").expect("write fixture");
 
         let changed = format_path(&path, FormatMode::Write).expect("format write");
@@ -293,13 +293,9 @@ mod tests {
             .expect("formatted source should parse");
     }
 
-    fn temp_path(name: &str) -> std::path::PathBuf {
-        let dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("..")
-            .join("..")
-            .join("target")
-            .join("test-tmp");
-        std::fs::create_dir_all(&dir).expect("create temp dir");
-        dir.join(name)
+    fn temp_path(name: &str) -> (tempfile::TempDir, std::path::PathBuf) {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let path = dir.path().join(name);
+        (dir, path)
     }
 }

@@ -173,9 +173,10 @@ fn extract_dmg(
         return Err(ArchiveError::UnsupportedDmgStripComponents);
     }
 
-    let mountpoint = unique_temp_path("scaffold-dmg-mount");
-    std::fs::create_dir_all(&mountpoint)?;
-    let mountpoint_text = mountpoint.to_string_lossy().into_owned();
+    let mountpoint = tempfile::Builder::new()
+        .prefix("scaffold-dmg-mount-")
+        .tempdir()?;
+    let mountpoint_text = mountpoint.path().to_string_lossy().into_owned();
     let archive_text = archive_path.to_string_lossy().into_owned();
     process::run(&[
         "hdiutil".to_owned(),
@@ -205,7 +206,7 @@ fn extract_dmg(
 
 #[cfg(target_os = "macos")]
 struct DmgMount {
-    mountpoint: PathBuf,
+    mountpoint: tempfile::TempDir,
 }
 
 #[cfg(target_os = "macos")]
@@ -215,10 +216,9 @@ impl Drop for DmgMount {
             std::process::Command::new("hdiutil")
                 .arg("detach")
                 .arg("-quiet")
-                .arg(&self.mountpoint)
+                .arg(self.mountpoint.path())
                 .status(),
         );
-        drop(std::fs::remove_dir(&self.mountpoint));
     }
 }
 
@@ -259,24 +259,15 @@ fn safe_join(destination: &Path, path: &Path) -> Result<PathBuf, ArchiveError> {
     Ok(destination.join(path))
 }
 
-#[cfg(target_os = "macos")]
-fn unique_temp_path(prefix: &str) -> PathBuf {
-    let nanos = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map_or(0, |duration| duration.as_nanos());
-    std::env::temp_dir().join(format!("{prefix}-{}-{nanos}", std::process::id()))
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn extracts_tar_gz_with_stripped_root() {
-        let root = unique_test_dir("archive-tar-gz-strip");
-        std::fs::create_dir_all(&root).expect("root");
-        let archive_path = root.join("demo.tar.gz");
-        let output_dir = root.join("out");
+        let root = tempfile::tempdir().expect("root");
+        let archive_path = root.path().join("demo.tar.gz");
+        let output_dir = root.path().join("out");
 
         {
             let file = File::create(&archive_path).expect("archive");
@@ -298,7 +289,6 @@ mod tests {
             std::fs::read_to_string(output_dir.join("bin/tool")).expect("tool"),
             "hello"
         );
-        drop(std::fs::remove_dir_all(root));
     }
 
     #[test]
@@ -311,10 +301,9 @@ mod tests {
 
     #[test]
     fn rejects_unsafe_zip_paths() {
-        let root = unique_test_dir("archive-zip-unsafe");
-        std::fs::create_dir_all(&root).expect("root");
-        let archive_path = root.join("escape.zip");
-        let output_dir = root.join("out");
+        let root = tempfile::tempdir().expect("root");
+        let archive_path = root.path().join("escape.zip");
+        let output_dir = root.path().join("out");
 
         {
             let file = File::create(&archive_path).expect("archive");
@@ -330,8 +319,7 @@ mod tests {
             extract_archive(&archive_path, &output_dir, 0),
             Err(ArchiveError::UnsafePath { .. })
         ));
-        assert!(!root.join("escape").exists());
-        drop(std::fs::remove_dir_all(root));
+        assert!(!root.path().join("escape").exists());
     }
 
     #[test]
@@ -359,10 +347,10 @@ mod tests {
             return;
         }
 
-        let root = unique_test_dir("archive-dmg");
-        let source_dir = root.join("source");
-        let output_dir = root.join("out");
-        let archive_path = root.join("demo.dmg");
+        let root = tempfile::tempdir().expect("root");
+        let source_dir = root.path().join("source");
+        let output_dir = root.path().join("out");
+        let archive_path = root.path().join("demo.dmg");
         std::fs::create_dir_all(&source_dir).expect("source");
         std::fs::write(source_dir.join("hello.txt"), "hello dmg").expect("fixture");
 
@@ -386,14 +374,12 @@ mod tests {
         if let Err(error) = extract_result {
             if is_hdiutil_command_failure(&error) {
                 eprintln!("skipping DMG extraction test: hdiutil failed on this host");
-                drop(std::fs::remove_dir_all(root));
                 return;
             }
             panic!("extract dmg: {error:?}");
         }
 
         assert!(path_exists_below(&output_dir, Path::new("hello.txt")));
-        drop(std::fs::remove_dir_all(root));
     }
 
     #[cfg(target_os = "macos")]
@@ -403,14 +389,6 @@ mod tests {
             ArchiveError::Process(process::ProcessError::CommandFailed { program, .. })
                 if program == "hdiutil"
         )
-    }
-
-    fn unique_test_dir(name: &str) -> PathBuf {
-        std::env::temp_dir().join(format!(
-            "scaffold-{name}-{}-{:?}",
-            std::process::id(),
-            std::thread::current().id()
-        ))
     }
 
     #[cfg(target_os = "macos")]

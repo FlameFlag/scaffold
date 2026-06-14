@@ -1,5 +1,8 @@
 use std::collections::{HashMap, HashSet};
 
+use petgraph::Direction;
+use petgraph::algo::toposort;
+use petgraph::graphmap::DiGraphMap;
 use scaffold_catalog::{Catalog, Phase, Tool};
 
 use super::InstallError;
@@ -34,9 +37,9 @@ pub(super) fn resolve_install_order<'a>(
         }
     }
 
-    let mut edges = HashMap::<usize, HashSet<usize>>::new();
+    let mut graph = DiGraphMap::<usize, ()>::new();
     for &index in &selected {
-        let _targets = edges.entry(index).or_default();
+        graph.add_node(index);
     }
 
     for &index in &selected {
@@ -49,7 +52,7 @@ pub(super) fn resolve_install_order<'a>(
                 });
             };
             if selected.contains(&dependency_index) {
-                let _inserted = edges.entry(dependency_index).or_default().insert(index);
+                graph.add_edge(dependency_index, index, ());
             }
         }
         for target in &tool.after {
@@ -60,7 +63,7 @@ pub(super) fn resolve_install_order<'a>(
                 });
             };
             if selected.contains(&target_index) {
-                let _inserted = edges.entry(target_index).or_default().insert(index);
+                graph.add_edge(target_index, index, ());
             }
         }
         for target in tool
@@ -75,23 +78,24 @@ pub(super) fn resolve_install_order<'a>(
                 });
             };
             if selected.contains(&target_index) {
-                let _inserted = edges.entry(index).or_default().insert(target_index);
+                graph.add_edge(index, target_index, ());
             }
         }
     }
 
-    let mut indegree = selected
-        .iter()
-        .copied()
-        .map(|index| (index, 0usize))
-        .collect::<HashMap<_, _>>();
-    for targets in edges.values() {
-        for &target in targets {
-            if let Some(count) = indegree.get_mut(&target) {
-                *count += 1;
-            }
-        }
+    if toposort(&graph, None).is_err() {
+        return Err(InstallError::CyclicInstallOrder);
     }
+
+    let mut indegree = graph
+        .nodes()
+        .map(|index| {
+            (
+                index,
+                graph.neighbors_directed(index, Direction::Incoming).count(),
+            )
+        })
+        .collect::<HashMap<_, _>>();
 
     let mut ready = indegree
         .iter()
@@ -102,21 +106,17 @@ pub(super) fn resolve_install_order<'a>(
         ready.sort_by_key(|&index| install_sort_key(&catalog.tools[index], index));
         let index = ready.remove(0);
         ordered.push(index);
-        if let Some(targets) = edges.get(&index) {
-            let mut targets = targets.iter().copied().collect::<Vec<_>>();
-            targets.sort_by_key(|&target| install_sort_key(&catalog.tools[target], target));
-            for target in targets {
-                let count = indegree.get_mut(&target).expect("target indegree");
-                *count -= 1;
-                if *count == 0 {
-                    ready.push(target);
-                }
+        let mut targets = graph
+            .neighbors_directed(index, Direction::Outgoing)
+            .collect::<Vec<_>>();
+        targets.sort_by_key(|&target| install_sort_key(&catalog.tools[target], target));
+        for target in targets {
+            let count = indegree.get_mut(&target).expect("target indegree");
+            *count -= 1;
+            if *count == 0 {
+                ready.push(target);
             }
         }
-    }
-
-    if ordered.len() != selected.len() {
-        return Err(InstallError::CyclicInstallOrder);
     }
 
     Ok(ordered

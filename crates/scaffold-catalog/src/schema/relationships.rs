@@ -1,5 +1,7 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 
+use petgraph::algo::toposort;
+use petgraph::graphmap::DiGraphMap;
 use serde_json::Value;
 
 pub(super) fn validate_tool_references(
@@ -39,56 +41,30 @@ pub(super) fn validate_install_order(
     tools: &[Value],
     names: &BTreeMap<String, usize>,
 ) -> Result<(), String> {
-    let mut edges = BTreeMap::<usize, BTreeSet<usize>>::new();
+    let mut graph = DiGraphMap::<usize, ()>::new();
     for index in 0..tools.len() {
-        let _targets = edges.entry(index).or_default();
+        graph.add_node(index);
     }
 
     for (index, tool) in tools.iter().enumerate() {
         let object = tool.as_object().expect("tool shape already validated");
         for (_, dependency) in string_array_items(object, "depends") {
-            let _inserted = edges.entry(names[dependency]).or_default().insert(index);
+            graph.add_edge(names[dependency], index, ());
         }
         for (_, target) in string_array_items(object, "after") {
-            let _inserted = edges.entry(names[target]).or_default().insert(index);
+            graph.add_edge(names[target], index, ());
         }
         for (_, target) in string_array_items(object, "before") {
             if !matches!(target, "first" | "none") {
-                let _inserted = edges.entry(index).or_default().insert(names[target]);
+                graph.add_edge(index, names[target], ());
             }
         }
     }
 
-    let mut visiting = BTreeSet::new();
-    let mut visited = BTreeSet::new();
-    for index in 0..tools.len() {
-        if visit_install_order(index, &edges, &mut visiting, &mut visited) {
-            return Err("catalog install order contains a dependency cycle".to_owned());
-        }
+    if toposort(&graph, None).is_err() {
+        return Err("catalog install order contains a dependency cycle".to_owned());
     }
     Ok(())
-}
-
-fn visit_install_order(
-    index: usize,
-    edges: &BTreeMap<usize, BTreeSet<usize>>,
-    visiting: &mut BTreeSet<usize>,
-    visited: &mut BTreeSet<usize>,
-) -> bool {
-    if visited.contains(&index) {
-        return false;
-    }
-    if !visiting.insert(index) {
-        return true;
-    }
-    for target in edges.get(&index).into_iter().flatten() {
-        if visit_install_order(*target, edges, visiting, visited) {
-            return true;
-        }
-    }
-    let _removed = visiting.remove(&index);
-    let _inserted = visited.insert(index);
-    false
 }
 
 fn string_array_items<'a>(

@@ -59,8 +59,8 @@ impl Catalog {
     }
 
     fn from_validated_value(value: serde_json::Value) -> Result<Self, CatalogError> {
-        let mut catalog: Self =
-            serde_json::from_value(value).map_err(|err| CatalogError::Invalid(err.to_string()))?;
+        let mut catalog: Self = serde_path_to_error::deserialize(value)
+            .map_err(|err| CatalogError::Invalid(err.to_string()))?;
         catalog.apply_defaults()?;
         Ok(catalog)
     }

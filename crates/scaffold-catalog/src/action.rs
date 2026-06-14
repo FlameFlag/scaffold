@@ -1,5 +1,7 @@
 use serde::Deserialize;
 
+use scaffold_platform::Host;
+
 use super::{ArchiveAction, PackageAction};
 
 #[derive(Debug, Deserialize)]
@@ -19,6 +21,14 @@ impl Action {
             Self::Package(_) => Phase::Packages,
             Self::Build(_) => Phase::Builds,
             Self::Archive(_) => Phase::Builds,
+        }
+    }
+
+    #[must_use]
+    pub fn supports_host(&self, host: Host) -> bool {
+        match self {
+            Self::Package(action) => action.supports_host(host),
+            Self::Required | Self::Build(_) | Self::Archive(_) => true,
         }
     }
 }

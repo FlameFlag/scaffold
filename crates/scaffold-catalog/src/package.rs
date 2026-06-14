@@ -1,6 +1,6 @@
 use serde::Deserialize;
 
-use scaffold_platform::{Host, Predicate};
+use scaffold_platform::{Host, HostOs, Predicate};
 use scaffold_process as process;
 
 #[derive(Debug, Deserialize)]
@@ -51,6 +51,29 @@ impl PackageAction {
             name: &self.name,
             install_argvs,
         })
+    }
+
+    #[must_use]
+    pub fn supports_host(&self, host: Host) -> bool {
+        self.for_host(host).is_some()
+    }
+
+    #[must_use]
+    pub fn inferred_platforms(&self) -> Vec<HostOs> {
+        if !self.install_argv.is_empty() || !self.install_argvs.is_empty() {
+            return Vec::new();
+        }
+
+        let mut platforms = Vec::new();
+        for platform in &self.platforms {
+            let Some(os) = platform.when.os else {
+                return Vec::new();
+            };
+            if !platforms.contains(&os) {
+                platforms.push(os);
+            }
+        }
+        platforms
     }
 }
 

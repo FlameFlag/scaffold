@@ -170,6 +170,26 @@ mod tests {
     }
 
     #[test]
+    fn install_all_skips_package_tools_without_matching_installer() {
+        let root = unique_test_dir("install-all-skips-package-tools-without-matching-installer");
+        std::fs::create_dir_all(&root).expect("root");
+        let catalog_path = root.join("catalog.scm");
+        write_catalog_fixture(
+            &catalog_path,
+            include_str!("../fixtures/install/all-with-package-platform-unsupported.scm"),
+        );
+        let ctx = Context {
+            catalog_path,
+            root_dir: root.clone(),
+            bin_dir: root.join("bin"),
+            state_dir: root.join("state"),
+        };
+
+        install_catalog(&ctx, Policy::Missing, &[]).expect("install all");
+        drop(std::fs::remove_dir_all(root));
+    }
+
+    #[test]
     fn explicit_install_rejects_unsupported_tools() {
         let root = unique_test_dir("explicit-install-rejects-unsupported-tools");
         std::fs::create_dir_all(&root).expect("root");
@@ -317,7 +337,16 @@ mod tests {
                 "{{ current_exe }}",
                 &escape_scheme_string(&current_exe.to_string_lossy()),
             )
+            .replace("{{ current_host_os }}", current_host_os_symbol())
             .replace("{{ unsupported_host_os }}", unsupported_host_os_symbol());
         std::fs::write(path, source).expect("catalog");
+    }
+
+    const fn current_host_os_symbol() -> &'static str {
+        match Host::current().os {
+            HostOs::Linux => "linux",
+            HostOs::Macos => "macos",
+            HostOs::Windows => "windows",
+        }
     }
 }

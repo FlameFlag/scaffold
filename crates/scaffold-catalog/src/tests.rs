@@ -1,5 +1,6 @@
 use super::Catalog;
 use miette::Diagnostic as _;
+use scaffold_platform::{Host, HostOs};
 
 #[test]
 fn loads_extension_composition_fixture() {
@@ -54,11 +55,11 @@ fn build_actions_support_multiple_commands() {
 
 #[test]
 fn package_platforms_support_multiple_install_commands() {
-    let host = scaffold_platform::Host::current();
+    let host = Host::current();
     let host_os = match host.os {
-        scaffold_platform::HostOs::Linux => "linux",
-        scaffold_platform::HostOs::Macos => "macos",
-        scaffold_platform::HostOs::Windows => "windows",
+        HostOs::Linux => "linux",
+        HostOs::Macos => "macos",
+        HostOs::Windows => "windows",
     };
     let value = serde_json::json!({
         "tools": [{
@@ -93,6 +94,68 @@ fn package_platforms_support_multiple_install_commands() {
         package.install_argvs[1],
         ["pkg", "install", "{{ package }}"]
     );
+}
+
+#[test]
+fn package_platforms_infer_tool_platforms() {
+    let value = serde_json::json!({
+        "tools": [{
+            "name": "native",
+            "action": {
+                "type": "package",
+                "platforms": [
+                    {
+                        "when": "linux",
+                        "install_argv": ["apt-get", "install", "{{ package }}"]
+                    },
+                    {
+                        "when": "macos-aarch64",
+                        "install_argv": ["brew", "install", "{{ package }}"]
+                    },
+                    {
+                        "when": "macos-x86_64",
+                        "install_argv": ["brew", "install", "{{ package }}"]
+                    },
+                    {
+                        "when": "windows",
+                        "install_argv": ["winget", "install", "{{ package }}"]
+                    }
+                ]
+            }
+        }]
+    });
+    let catalog = Catalog::from_value(value).expect("catalog");
+
+    assert_eq!(
+        catalog.tools[0].platforms,
+        vec![HostOs::Linux, HostOs::Macos, HostOs::Windows]
+    );
+}
+
+#[test]
+fn package_platform_support_requires_matching_installer() {
+    let host = Host::current();
+    let host_os = match host.os {
+        HostOs::Linux => "linux",
+        HostOs::Macos => "macos",
+        HostOs::Windows => "windows",
+    };
+    let value = serde_json::json!({
+        "tools": [{
+            "name": "native",
+            "action": {
+                "type": "package",
+                "platforms": [{
+                    "when": host_os,
+                    "requires_commands": ["definitely-not-a-real-scaffold-installer"],
+                    "install_argv": ["definitely-not-a-real-scaffold-installer", "install"]
+                }]
+            }
+        }]
+    });
+    let catalog = Catalog::from_value(value).expect("catalog");
+
+    assert!(!catalog.tools[0].supports_host(host));
 }
 
 #[test]

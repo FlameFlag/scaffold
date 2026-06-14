@@ -77,6 +77,11 @@ impl Tool {
             Action::Build(action) => action.apply_defaults(),
             Action::Archive(action) => action.apply_defaults(),
         }
+        if self.platforms.is_empty()
+            && let Action::Package(action) = &self.action
+        {
+            self.platforms = action.inferred_platforms();
+        }
         Ok(())
     }
 
@@ -88,6 +93,7 @@ impl Tool {
                 .iter()
                 .copied()
                 .all(|predicate| host.matches(predicate))
+            && self.action.supports_host(host)
     }
 
     #[must_use]

@@ -15,6 +15,7 @@ miette = { version = "7.6.0", default-features = false, features = ["fancy-no-ba
 scaffold-context = { path = "../scaffold-context" }
 scaffold-diagnostic = { path = "../scaffold-diagnostic" }
 scaffold-process = { path = "../scaffold-process" }
+scaffold-scheme = { path = "../scaffold-scheme" }
 scheme-rs = { version = "0.2.0", default-features = false }
 serde_json = "1.0.150"
 thiserror = "2.0.18"

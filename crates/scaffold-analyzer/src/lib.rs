@@ -3,15 +3,15 @@ use std::{
     path::PathBuf,
 };
 
-use scheme_rs::syntax::{
-    Syntax,
-    parse::{LexerError, ParseSyntaxError},
-};
-use scheme_rs::value::UnpackedValue;
+use scheme_rs::syntax::Syntax;
 
 use scaffold_diagnostic::SourceDiagnostic;
 use scaffold_docs::DocIndex;
 use scaffold_editor::diagnostics::missing_doc_message;
+use scaffold_scheme::{
+    identifier_text, is_identifier, parse_error_offset, parse_source, proper_list,
+    wrapped_string_text,
+};
 
 pub fn analyze_paths(paths: &[PathBuf]) -> std::io::Result<Vec<SourceDiagnostic>> {
     let sources = paths
@@ -45,7 +45,7 @@ fn analyze_source_with_docs(
     source: &str,
     docs: &DocIndex,
 ) -> Vec<SourceDiagnostic> {
-    let syntax = match Syntax::from_str(source, Some(source_name)) {
+    let syntax = match parse_source(source, source_name) {
         Ok(syntax) => syntax,
         Err(error) => {
             return vec![SourceDiagnostic::syntax(
@@ -221,7 +221,7 @@ fn collect_doc_entries(source: &str, syntax: &Syntax, output: &mut Vec<DocEntry>
 
 fn doc_entry_from_form(source: &str, form: &Syntax) -> Option<DocEntry> {
     let items = proper_list(form)?;
-    let head = ident_text(items.first()?)?;
+    let head = identifier_text(items.first()?)?;
     if head != "doc" && head != "typedoc" && head != "extern-doc" {
         return None;
     }
@@ -244,11 +244,13 @@ fn doc_entry_from_form(source: &str, form: &Syntax) -> Option<DocEntry> {
         let Some(field_items) = proper_list(field) else {
             continue;
         };
-        let Some(field_name) = field_items.first().and_then(ident_text) else {
+        let Some(field_name) = field_items.first().and_then(identifier_text) else {
             continue;
         };
         match field_name.as_str() {
-            "summary" => entry.has_summary = field_items.get(1).and_then(string_text).is_some(),
+            "summary" => {
+                entry.has_summary = field_items.get(1).and_then(wrapped_string_text).is_some();
+            }
             "hidden" => entry.hidden = true,
             _ => {}
         }
@@ -261,7 +263,7 @@ fn doc_next_entry_from_items(source: &str, items: &[Syntax], index: usize) -> Op
     let doc_next_items = proper_list(items.get(index)?)?;
     if doc_next_items
         .first()
-        .and_then(ident_text)
+        .and_then(identifier_text)
         .is_none_or(|head| head != "doc-next")
     {
         return None;
@@ -281,11 +283,13 @@ fn doc_next_entry_from_items(source: &str, items: &[Syntax], index: usize) -> Op
         let Some(field_items) = proper_list(field) else {
             continue;
         };
-        let Some(field_name) = field_items.first().and_then(ident_text) else {
+        let Some(field_name) = field_items.first().and_then(identifier_text) else {
             continue;
         };
         match field_name.as_str() {
-            "summary" => entry.has_summary = field_items.get(1).and_then(string_text).is_some(),
+            "summary" => {
+                entry.has_summary = field_items.get(1).and_then(wrapped_string_text).is_some();
+            }
             "hidden" => entry.hidden = true,
             _ => {}
         }
@@ -295,19 +299,19 @@ fn doc_next_entry_from_items(source: &str, items: &[Syntax], index: usize) -> Op
 
 fn definition_from_form(source: &str, form: &Syntax) -> Option<Definition> {
     let items = proper_list(form)?;
-    let head = ident_text(items.first()?)?;
+    let head = identifier_text(items.first()?)?;
     if head != "define" && head != "define-syntax" {
         return None;
     }
 
     let subject = items.get(1)?;
-    if let Some(name) = ident_text(subject) {
+    if let Some(name) = identifier_text(subject) {
         return Some(definition(source, subject, name));
     }
 
     let signature = proper_list(subject)?;
     let name_syntax = signature.first()?;
-    let name = ident_text(name_syntax)?;
+    let name = identifier_text(name_syntax)?;
     Some(definition(source, name_syntax, name))
 }
 
@@ -333,39 +337,19 @@ fn byte_offset_for_span(source: &str, line: u32, column: usize) -> usize {
             .map_or(0, |(offset, _)| offset)
 }
 
-fn proper_list(syntax: &Syntax) -> Option<&[Syntax]> {
-    let items = syntax.as_list()?;
-    let (end, body) = items.split_last()?;
-    end.is_null().then_some(body)
-}
-
-fn ident_text(syntax: &Syntax) -> Option<String> {
-    syntax.as_ident().map(|ident| ident.symbol().to_string())
-}
-
 fn subject_text(syntax: &Syntax) -> Option<String> {
-    if let Some(text) = ident_text(syntax) {
+    if let Some(text) = identifier_text(syntax) {
         return Some(text);
     }
-    if let Some(text) = string_text(syntax) {
+    if let Some(text) = wrapped_string_text(syntax) {
         return Some(text);
     }
 
     let items = proper_list(syntax)?;
     match items {
-        [head, subject] if ident_text(head).is_some_and(|head| head == "quote") => {
-            ident_text(subject).or_else(|| string_text(subject))
+        [head, subject] if is_identifier(head, "quote") => {
+            identifier_text(subject).or_else(|| wrapped_string_text(subject))
         }
-        _ => None,
-    }
-}
-
-fn string_text(syntax: &Syntax) -> Option<String> {
-    let Syntax::Wrapped { value, .. } = syntax else {
-        return None;
-    };
-    match value.clone().unpack() {
-        UnpackedValue::String(value) => Some(value.into()),
         _ => None,
     }
 }
@@ -375,30 +359,8 @@ fn quote_prefix_len(syntax: &Syntax) -> usize {
         return 0;
     };
     match items {
-        [head, _] if ident_text(head).is_some_and(|head| head == "quote") => 1,
+        [head, _] if is_identifier(head, "quote") => 1,
         _ => 0,
-    }
-}
-
-fn parse_error_offset(error: &ParseSyntaxError, source: &str) -> usize {
-    match error {
-        ParseSyntaxError::ExpectedClosingParen { span }
-        | ParseSyntaxError::UnexpectedClosingParen { span }
-        | ParseSyntaxError::InvalidPeriodLocation { span }
-        | ParseSyntaxError::NonByte { span }
-        | ParseSyntaxError::UnclosedParen { span } => span.offset,
-        ParseSyntaxError::Lex(
-            LexerError::InvalidCharacterInHexEscape { span, .. }
-            | LexerError::UnexpectedCharacter { span, .. }
-            | LexerError::BadEscapeCharacter { span, .. },
-        ) => span.offset,
-        ParseSyntaxError::UnexpectedToken { token } => token.span.offset,
-        ParseSyntaxError::UnexpectedEof | ParseSyntaxError::Lex(LexerError::UnexpectedEof) => {
-            source.len().saturating_sub(1)
-        }
-        ParseSyntaxError::CharTryFrom(_)
-        | ParseSyntaxError::Lex(LexerError::ReadError(_))
-        | ParseSyntaxError::ParseNumberError(_) => 0,
     }
 }
 

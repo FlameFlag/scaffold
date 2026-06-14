@@ -4,11 +4,12 @@ use scheme_rs::{
     env::{ImportPolicy, TopLevelEnvironment},
     exceptions::Exception,
     runtime::Runtime,
-    syntax::{Syntax, parse::LexerError, parse::ParseSyntaxError},
+    syntax::Syntax,
     value::Value,
 };
 
 use scaffold_diagnostic::SourceDiagnostic;
+use scaffold_scheme::{parse_error_offset, parse_source};
 
 use super::json::{is_top_level_syntax_definition, top_level_forms, value_is_null, value_to_json};
 use super::libraries::{load_bundled_libraries, load_user_libraries};
@@ -325,7 +326,7 @@ fn is_top_level_doc_form(form: &Syntax) -> bool {
 }
 
 fn parse_syntax(text: &str, source_name: &str) -> Result<Syntax> {
-    Syntax::from_str(text, Some(source_name)).map_err(|err| {
+    parse_source(text, source_name).map_err(|err| {
         SourceDiagnostic::syntax(
             source_name,
             text.to_owned(),
@@ -335,28 +336,6 @@ fn parse_syntax(text: &str, source_name: &str) -> Result<Syntax> {
         )
         .into()
     })
-}
-
-fn parse_error_offset(error: &ParseSyntaxError, text: &str) -> usize {
-    match error {
-        ParseSyntaxError::ExpectedClosingParen { span }
-        | ParseSyntaxError::UnexpectedClosingParen { span }
-        | ParseSyntaxError::InvalidPeriodLocation { span }
-        | ParseSyntaxError::NonByte { span }
-        | ParseSyntaxError::UnclosedParen { span } => span.offset,
-        ParseSyntaxError::Lex(
-            LexerError::InvalidCharacterInHexEscape { span, .. }
-            | LexerError::UnexpectedCharacter { span, .. }
-            | LexerError::BadEscapeCharacter { span, .. },
-        ) => span.offset,
-        ParseSyntaxError::UnexpectedToken { token } => token.span.offset,
-        ParseSyntaxError::UnexpectedEof | ParseSyntaxError::Lex(LexerError::UnexpectedEof) => {
-            text.len().saturating_sub(1)
-        }
-        ParseSyntaxError::CharTryFrom(_)
-        | ParseSyntaxError::Lex(LexerError::ReadError(_))
-        | ParseSyntaxError::ParseNumberError(_) => 0,
-    }
 }
 
 fn eval_diagnostic(error: Exception, source_name: &str, text: &str, form: &Syntax) -> DslError {

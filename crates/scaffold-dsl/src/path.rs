@@ -1,6 +1,7 @@
 use std::path::{Component, MAIN_SEPARATOR, Path, PathBuf};
 
-use scheme_rs::{exceptions::Exception, registry::bridge, strings::WideString, value::Value};
+use scaffold_scheme::value_to_string;
+use scheme_rs::{exceptions::Exception, registry::bridge, value::Value};
 
 #[bridge(name = "%path/join", lib = "(scaffold path builtins)")]
 pub fn path_join(first: &Value, rest: &[Value]) -> Result<Vec<Value>, Exception> {
@@ -58,11 +59,6 @@ pub fn path_relative(path: &Value) -> Result<Vec<Value>, Exception> {
 #[bridge(name = "%path/separator", lib = "(scaffold path builtins)")]
 pub fn path_separator() -> Result<Vec<Value>, Exception> {
     Ok(vec![Value::from(MAIN_SEPARATOR.to_string())])
-}
-
-fn value_to_string(value: &Value) -> Result<String, Exception> {
-    let value: WideString = value.clone().try_into()?;
-    Ok(value.into())
 }
 
 fn optional_path(path: Option<&Path>) -> Value {

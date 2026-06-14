@@ -2,31 +2,27 @@ use scheme_rs::{
     lists::{List, Pair},
     symbols::Symbol,
     syntax::Syntax,
-    value::{UnpackedValue, Value},
+    value::{Value, ValueType},
     vectors::Vector,
 };
 use serde_json::{Map, Number};
 
 use super::{DslError, Result};
+use scaffold_scheme::{proper_list, value_to_string};
 
 pub(super) fn top_level_forms(syntax: &Syntax) -> Result<&[Syntax]> {
-    let Some([forms @ .., end]) = syntax.as_list() else {
-        return Err(DslError::Shape {
-            path: "$".to_owned(),
-            message: "expected a Scheme source file".to_owned(),
-        });
-    };
-    if !end.is_null() {
-        return Err(DslError::Shape {
-            path: "$".to_owned(),
-            message: "expected a proper top-level form list".to_owned(),
-        });
-    }
-    Ok(forms)
+    proper_list(syntax).ok_or_else(|| DslError::Shape {
+        path: "$".to_owned(),
+        message: if syntax.as_list().is_some() {
+            "expected a proper top-level form list".to_owned()
+        } else {
+            "expected a Scheme source file".to_owned()
+        },
+    })
 }
 
 pub(super) fn value_is_null(value: &Value) -> bool {
-    matches!(value.clone().unpack(), UnpackedValue::Null)
+    value.is_null()
 }
 
 pub(super) fn is_top_level_syntax_definition(form: &Syntax) -> bool {
@@ -37,19 +33,48 @@ pub(super) fn is_top_level_syntax_definition(form: &Syntax) -> bool {
 }
 
 pub(super) fn value_to_json(value: Value, path: &str) -> Result<serde_json::Value> {
-    match value.clone().unpack() {
-        UnpackedValue::Null => Ok(serde_json::Value::Null),
-        UnpackedValue::Boolean(value) => Ok(serde_json::Value::Bool(value)),
-        UnpackedValue::Character(value) => Ok(serde_json::Value::String(value.to_string())),
-        UnpackedValue::Number(_) => number_to_json(value, path),
-        UnpackedValue::String(value) => Ok(serde_json::Value::String(value.into())),
-        UnpackedValue::Symbol(value) => Ok(serde_json::Value::String(value.to_string())),
-        UnpackedValue::Vector(value) => vector_to_json(value, path),
-        UnpackedValue::Pair(value) => pair_to_json(value, path),
-        other => Err(DslError::Shape {
+    match value.type_of() {
+        ValueType::Null => Ok(serde_json::Value::Null),
+        ValueType::Boolean => Ok(serde_json::Value::Bool(bool::from(value))),
+        ValueType::Character => Ok(serde_json::Value::String(
+            value
+                .try_to_scheme_type::<char>()
+                .map_err(|err| scheme_value_error(path, err))?
+                .to_string(),
+        )),
+        ValueType::Number => number_to_json(value, path),
+        ValueType::String => Ok(serde_json::Value::String(
+            value_to_string(&value).map_err(|err| scheme_value_error(path, err))?,
+        )),
+        ValueType::Symbol => Ok(serde_json::Value::String(
+            value
+                .try_to_scheme_type::<Symbol>()
+                .map_err(|err| scheme_value_error(path, err))?
+                .to_string(),
+        )),
+        ValueType::Vector => vector_to_json(
+            value
+                .try_to_scheme_type::<Vector>()
+                .map_err(|err| scheme_value_error(path, err))?,
+            path,
+        ),
+        ValueType::Pair => pair_to_json(
+            value
+                .try_to_scheme_type::<Pair>()
+                .map_err(|err| scheme_value_error(path, err))?,
+            path,
+        ),
+        _ => Err(DslError::Shape {
             path: path.to_owned(),
-            message: format!("unsupported Scheme value type {}", other.type_name()),
+            message: format!("unsupported Scheme value type {}", value.type_name()),
         }),
+    }
+}
+
+fn scheme_value_error(path: &str, error: scheme_rs::exceptions::Exception) -> DslError {
+    DslError::Shape {
+        path: path.to_owned(),
+        message: error.to_string(),
     }
 }
 
@@ -108,10 +133,9 @@ fn object_from_alist(
 ) -> Result<Option<Map<String, serde_json::Value>>> {
     let mut object = Map::new();
     for (index, value) in values.iter().enumerate() {
-        let UnpackedValue::Pair(pair) = value.clone().unpack() else {
+        let Some((key, entry_value)) = value.cast_to_scheme_type::<(Value, Value)>() else {
             return Ok(None);
         };
-        let (key, entry_value) = pair.into();
         let Some(key) = object_key(key) else {
             return Ok(None);
         };
@@ -121,9 +145,9 @@ fn object_from_alist(
 }
 
 fn object_key(value: Value) -> Option<String> {
-    match value.unpack() {
-        UnpackedValue::String(value) => Some(value.into()),
-        UnpackedValue::Symbol(value) => Some(symbol_key(value)),
+    match value.type_of() {
+        ValueType::String => value_to_string(&value).ok(),
+        ValueType::Symbol => value.cast_to_scheme_type::<Symbol>().map(symbol_key),
         _ => None,
     }
 }

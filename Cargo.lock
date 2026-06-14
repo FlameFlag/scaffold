@@ -2138,6 +2138,7 @@ dependencies = [
  "scaffold-lsp",
  "scaffold-mcp",
  "scaffold-platform",
+ "scaffold-scheme",
  "scheme-rs",
  "serde_json",
  "termimad",
@@ -2152,6 +2153,7 @@ dependencies = [
  "scaffold-diagnostic",
  "scaffold-docs",
  "scaffold-editor",
+ "scaffold-scheme",
  "scheme-rs",
 ]
 
@@ -2217,6 +2219,7 @@ dependencies = [
  "scaffold-context",
  "scaffold-diagnostic",
  "scaffold-process",
+ "scaffold-scheme",
  "scheme-rs",
  "serde_json",
  "thiserror",
@@ -2298,6 +2301,13 @@ name = "scaffold-process"
 version = "0.0.1"
 dependencies = [
  "thiserror",
+]
+
+[[package]]
+name = "scaffold-scheme"
+version = "0.0.1"
+dependencies = [
+ "scheme-rs",
 ]
 
 [[package]]

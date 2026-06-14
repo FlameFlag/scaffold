@@ -1,0 +1,11 @@
+[package]
+name = "scaffold-scheme"
+version = "0.0.1"
+edition = "2024"
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+scheme-rs = { version = "0.2.0", default-features = false }

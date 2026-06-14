@@ -2,10 +2,10 @@ use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
-use scheme_rs::syntax::Syntax;
-
 use super::stdlib::SchemeLibrary;
 use super::{DslError, Result, bundled};
+use scaffold_scheme::{identifier_text, is_identifier, parse_source, proper_list};
+use scheme_rs::syntax::Syntax;
 
 pub(super) fn extension_dirs_for_root(root: &Path) -> Vec<PathBuf> {
     scaffold_context::extension_dirs_for_root(root)
@@ -107,20 +107,14 @@ fn canonical_path(path: &Path) -> std::io::Result<PathBuf> {
 
 fn library_name_from_source(source: &str, path: &Path) -> Result<Vec<String>> {
     let path_text = path.to_string_lossy();
-    let syntax = Syntax::from_str(source, Some(path_text.as_ref()))
-        .map_err(|err| DslError::Eval(err.to_string()))?;
-    let Some([form, end]) = syntax.as_list() else {
+    let syntax =
+        parse_source(source, path_text.as_ref()).map_err(|err| DslError::Eval(err.to_string()))?;
+    let Some([form]) = proper_list(&syntax) else {
         return Err(DslError::Shape {
             path: path.display().to_string(),
             message: "expected a single Scheme library form".to_owned(),
         });
     };
-    if !end.is_null() {
-        return Err(DslError::Shape {
-            path: path.display().to_string(),
-            message: "expected a single Scheme library form".to_owned(),
-        });
-    }
 
     let Some([head, name, ..]) = form.as_list() else {
         return Err(DslError::Shape {
@@ -128,7 +122,7 @@ fn library_name_from_source(source: &str, path: &Path) -> Result<Vec<String>> {
             message: "expected a Scheme library form".to_owned(),
         });
     };
-    if !head.as_ident().is_some_and(|ident| ident == "library") {
+    if !is_identifier(head, "library") {
         return Err(DslError::Shape {
             path: path.display().to_string(),
             message: "expected a Scheme library form".to_owned(),
@@ -139,34 +133,24 @@ fn library_name_from_source(source: &str, path: &Path) -> Result<Vec<String>> {
 }
 
 fn library_name_from_syntax(name: &Syntax, path: &Path) -> Result<Vec<String>> {
-    let Some(items) = name.as_list() else {
+    let Some(components) = proper_list(name) else {
+        let message = if name.as_list().is_some() {
+            "expected proper library name list"
+        } else {
+            "expected library name list"
+        };
         return Err(DslError::Shape {
             path: path.display().to_string(),
-            message: "expected library name list".to_owned(),
+            message: message.to_owned(),
         });
     };
-    let Some((end, components)) = items.split_last() else {
-        return Err(DslError::Shape {
-            path: path.display().to_string(),
-            message: "expected library name list".to_owned(),
-        });
-    };
-    if !end.is_null() {
-        return Err(DslError::Shape {
-            path: path.display().to_string(),
-            message: "expected proper library name list".to_owned(),
-        });
-    }
     components
         .iter()
         .map(|component| {
-            component
-                .as_ident()
-                .map(|ident| ident.symbol().to_string())
-                .ok_or_else(|| DslError::Shape {
-                    path: path.display().to_string(),
-                    message: "library name components must be identifiers".to_owned(),
-                })
+            identifier_text(component).ok_or_else(|| DslError::Shape {
+                path: path.display().to_string(),
+                message: "library name components must be identifiers".to_owned(),
+            })
         })
         .collect()
 }

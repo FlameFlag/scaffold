@@ -1,6 +1,7 @@
 use std::path::{Path, PathBuf};
 
-use scheme_rs::{exceptions::Exception, registry::bridge, strings::WideString, value::Value};
+use scaffold_scheme::value_to_string;
+use scheme_rs::{exceptions::Exception, registry::bridge, value::Value};
 
 #[bridge(name = "%path/exists?", lib = "(scaffold fs builtins)")]
 pub fn path_exists(path: &Value) -> Result<Vec<Value>, Exception> {
@@ -30,7 +31,5 @@ fn absolute_path(value: &Value) -> Result<PathBuf, Exception> {
 }
 
 fn value_to_path(value: &Value) -> Result<PathBuf, Exception> {
-    let value: WideString = value.clone().try_into()?;
-    let value: String = value.into();
-    Ok(Path::new(&value).to_path_buf())
+    value_to_string(value).map(|value| Path::new(&value).to_path_buf())
 }

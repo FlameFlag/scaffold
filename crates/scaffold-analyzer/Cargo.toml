@@ -11,4 +11,5 @@ workspace = true
 scaffold-diagnostic = { path = "../scaffold-diagnostic" }
 scaffold-docs = { path = "../scaffold-docs" }
 scaffold-editor = { path = "../scaffold-editor" }
+scaffold-scheme = { path = "../scaffold-scheme" }
 scheme-rs = { version = "0.2.0", default-features = false }

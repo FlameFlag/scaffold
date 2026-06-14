@@ -4,7 +4,6 @@ use nucleo_matcher::{
     Config as FuzzyConfig, Matcher, Utf32Str,
     pattern::{CaseMatching, Normalization, Pattern},
 };
-use scheme_rs::syntax::parse::{LexerError, ParseSyntaxError};
 use termimad::{
     CompoundStyle, MadSkin,
     crossterm::style::{Attribute, Color},
@@ -416,16 +415,6 @@ fn doc_entry_search_text(entry: &DocEntry) -> String {
     parts.extend(entry.params.iter().map(|param| param.summary.as_str()));
     parts.extend(entry.see.iter().map(String::as_str));
     parts.join(" ")
-}
-
-pub(super) const fn parse_error_is_incomplete(error: &ParseSyntaxError) -> bool {
-    matches!(
-        error,
-        ParseSyntaxError::UnexpectedEof
-            | ParseSyntaxError::ExpectedClosingParen { .. }
-            | ParseSyntaxError::UnclosedParen { .. }
-            | ParseSyntaxError::Lex(LexerError::UnexpectedEof)
-    )
 }
 
 pub(super) struct ReplCommandSpec {

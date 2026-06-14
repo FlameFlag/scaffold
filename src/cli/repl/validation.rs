@@ -1,7 +1,5 @@
 use reedline::{ValidationResult, Validator};
-use scheme_rs::syntax::Syntax;
-
-use super::commands::parse_error_is_incomplete;
+use scaffold_scheme::{parse_error_is_incomplete, parse_source};
 
 pub(super) struct ReplValidator;
 
@@ -11,7 +9,7 @@ impl Validator for ReplValidator {
         if trimmed.is_empty() || trimmed.starts_with(':') || matches!(trimmed, "(exit)" | ",q") {
             return ValidationResult::Complete;
         }
-        match Syntax::from_str(line, Some("<repl>")) {
+        match parse_source(line, "<repl>") {
             Ok(_) => ValidationResult::Complete,
             Err(error) if parse_error_is_incomplete(&error) => ValidationResult::Incomplete,
             Err(_) => ValidationResult::Complete,

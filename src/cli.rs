@@ -244,6 +244,16 @@ fn run_with_context(command: Command, catalog: Option<PathBuf>) -> Result<(), Cl
             println!("root\t{}", ctx.root_dir.display());
             println!("bin\t{}", ctx.bin_dir.display());
             println!("state\t{}", ctx.state_dir.display());
+            for dir in ctx.extension_dirs() {
+                let canonical = std::fs::canonicalize(&dir).ok();
+                if let Some(canonical) = canonical
+                    && canonical != dir
+                {
+                    println!("extension\t{}\t{}", dir.display(), canonical.display());
+                    continue;
+                }
+                println!("extension\t{}", dir.display());
+            }
         }
         Command::Completions(args) => {
             let mut command = Cli::command();

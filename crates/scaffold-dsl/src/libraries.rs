@@ -1,5 +1,5 @@
 use std::borrow::Cow;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
 use scheme_rs::syntax::Syntax;
@@ -16,7 +16,7 @@ pub(super) fn extension_dirs_for_catalog_path(catalog_path: &Path) -> Vec<PathBu
 }
 
 pub(super) fn load_bundled_libraries() -> Result<Vec<SchemeLibrary>> {
-    let mut names = HashSet::new();
+    let mut names = HashSet::<Vec<String>>::new();
     let mut libraries = Vec::new();
     for source in bundled::BUNDLED_EXTENSION_SOURCES {
         let name = library_name_from_source(source.source, Path::new(source.path))?;
@@ -36,20 +36,25 @@ pub(super) fn load_bundled_libraries() -> Result<Vec<SchemeLibrary>> {
 
 pub(super) fn load_user_libraries(extension_dirs: &[PathBuf]) -> Result<Vec<SchemeLibrary>> {
     let mut paths = Vec::new();
+    let mut seen_dirs = HashSet::new();
+    let mut seen_files = HashSet::new();
     for dir in extension_dirs {
-        collect_scheme_files(dir, &mut paths)?;
+        collect_scheme_files(dir, &mut paths, &mut seen_dirs, &mut seen_files)?;
     }
     paths.sort();
 
-    let mut names = HashSet::new();
+    let mut names = HashMap::<Vec<String>, String>::new();
     let mut libraries = Vec::new();
     for path in paths {
         let source = std::fs::read_to_string(&path)?;
         let name = library_name_from_source(&source, &path)?;
-        if !names.insert(name.clone()) {
+        if let Some(previous_path) = names.insert(name.clone(), path.display().to_string()) {
             return Err(DslError::Shape {
                 path: path.display().to_string(),
-                message: format!("duplicate Scheme library ({})", name.join(" ")),
+                message: format!(
+                    "duplicate Scheme library ({}) already defined at {previous_path}",
+                    name.join(" ")
+                ),
             });
         }
         libraries.push(SchemeLibrary {
@@ -60,15 +65,31 @@ pub(super) fn load_user_libraries(extension_dirs: &[PathBuf]) -> Result<Vec<Sche
     Ok(libraries)
 }
 
-fn collect_scheme_files(dir: &Path, output: &mut Vec<PathBuf>) -> Result<()> {
+fn collect_scheme_files(
+    dir: &Path,
+    output: &mut Vec<PathBuf>,
+    seen_dirs: &mut HashSet<PathBuf>,
+    seen_files: &mut HashSet<PathBuf>,
+) -> Result<()> {
+    match canonical_path(dir) {
+        Ok(canonical_dir) => {
+            if !seen_dirs.insert(canonical_dir) {
+                return Ok(());
+            }
+        }
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(()),
+        Err(err) => return Err(err.into()),
+    }
+
     match std::fs::read_dir(dir) {
         Ok(entries) => {
             for entry in entries {
                 let path = entry?.path();
                 if path.is_dir() {
-                    collect_scheme_files(&path, output)?;
+                    collect_scheme_files(&path, output, seen_dirs, seen_files)?;
                 } else if path.extension().is_some_and(|extension| extension == "scm")
                     && path.file_name().is_none_or(|name| name != "test.scm")
+                    && seen_files.insert(canonical_path(&path)?)
                 {
                     output.push(path);
                 }
@@ -78,6 +99,10 @@ fn collect_scheme_files(dir: &Path, output: &mut Vec<PathBuf>) -> Result<()> {
         Err(err) if err.kind() == std::io::ErrorKind::NotFound => Ok(()),
         Err(err) => Err(err.into()),
     }
+}
+
+fn canonical_path(path: &Path) -> std::io::Result<PathBuf> {
+    std::fs::canonicalize(path)
 }
 
 fn library_name_from_source(source: &str, path: &Path) -> Result<Vec<String>> {

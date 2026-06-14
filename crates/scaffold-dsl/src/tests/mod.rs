@@ -4,7 +4,9 @@ use super::*;
 
 mod helpers;
 
-use helpers::{assert_platform_extension_files, extension_path, fixture_path, single_value};
+use helpers::{
+    assert_platform_extension_files, extension_path, fixture_path, single_value, unique_test_dir,
+};
 
 #[test]
 fn reads_basic_scheme_data() {
@@ -257,6 +259,45 @@ fn evaluates_catalog_domain_helpers() {
 fn supports_focused_catalog_module_imports() {
     let _values = values_from_str(include_str!("../fixtures/catalog/focused-imports.scm"))
         .expect("scheme test");
+}
+
+#[cfg(unix)]
+#[test]
+fn catalog_loading_dedupes_symlinked_extension_libraries() {
+    let root = unique_test_dir("catalog-loading-dedupes-symlinked-extension-libraries");
+    let entries = root.join("scaffold").join("entries");
+    let scaffold_dot_extensions = root.join(".scaffold").join("extensions");
+    std::fs::create_dir_all(&entries).expect("entries");
+    std::fs::create_dir_all(&scaffold_dot_extensions).expect("dot extensions");
+    std::fs::write(
+        root.join("scaffold.scm"),
+        r#"(import (rnrs) (scaffold catalog) (entries demo))
+
+(catalog demo)
+"#,
+    )
+    .expect("catalog");
+    std::fs::write(
+        entries.join("demo.scm"),
+        r#"(library
+  (entries demo)
+  (export demo)
+  (import (rnrs) (scaffold catalog))
+
+  (define demo (tool "demo" (required))))
+"#,
+    )
+    .expect("entry");
+    std::os::unix::fs::symlink(
+        "../../scaffold/entries",
+        scaffold_dot_extensions.join("entries"),
+    )
+    .expect("symlink");
+
+    let value = catalog_value_from_path(root.join("scaffold.scm")).expect("catalog");
+
+    assert_eq!(value["tools"][0]["name"], "demo");
+    drop(std::fs::remove_dir_all(root));
 }
 
 #[test]

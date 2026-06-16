@@ -9,7 +9,7 @@ let { title, entryCount, groupCount, capabilityCount } = $props<{
 
 <header class="siteHeader">
   <p class="kicker">Scaffold docs</p>
-  <h1>{title}</h1>
+  <h2>{title}</h2>
   <p class="lede">
     A compact reference for the Scheme forms Scaffold understands.
   </p>

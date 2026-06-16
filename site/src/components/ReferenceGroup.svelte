@@ -8,11 +8,15 @@ let { group, entries } = $props<{
 }>();
 </script>
 
-<section class="referenceGroup" id={anchor(group)} aria-labelledby={`${anchor(group)}-title`}>
-  <header>
+<details
+  class="referenceGroup searchExpandable"
+  id={anchor(group)}
+  aria-labelledby={`${anchor(group)}-title`}
+>
+  <summary class="groupSummary">
     <h2 id={`${anchor(group)}-title`}>{group}</h2>
     <p>{entries.length} entries</p>
-  </header>
+  </summary>
   <ol class="entryList" aria-label={`${group} reference entries`}>
     {#each entries as entry}
       <li>
@@ -20,4 +24,4 @@ let { group, entries } = $props<{
       </li>
     {/each}
   </ol>
-</section>
+</details>

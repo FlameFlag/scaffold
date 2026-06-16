@@ -1,30 +1,48 @@
 @layer components {
-  .referenceGroup > header {
+  .groupSummary {
     display: flex;
     justify-content: space-between;
     gap: 1rem;
-    align-items: baseline;
-    border-bottom: 1px solid var(--line);
-    margin-bottom: 0.75rem;
-    padding-bottom: 0.35rem;
+    align-items: center;
+    cursor: pointer;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--surface);
+    padding: 0.75rem 0.9rem;
+    list-style: none;
+  }
+
+  .groupSummary::-webkit-details-marker {
+    display: none;
+  }
+
+  .groupSummary::before {
+    content: "▸";
+    color: var(--muted);
+    font-size: 0.75rem;
+  }
+
+  .referenceGroup[open] .groupSummary::before {
+    content: "▾";
   }
 
   .referenceGroup h2 {
     margin: 0;
+    margin-right: auto;
   }
 
-  .referenceGroup > header p {
+  .groupSummary p {
     margin: 0;
     color: var(--muted);
-    font-family: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    font-family: var(--mono-font);
     font-size: 0.78rem;
   }
 
   .entryList {
     display: grid;
-    gap: 0.65rem;
+    gap: 0.45rem;
     min-width: 0;
-    margin: 0;
+    margin: 0.5rem 0 0.8rem 1rem;
     padding: 0;
     list-style: none;
   }
@@ -36,23 +54,67 @@
   .entry {
     min-width: 0;
     border: 1px solid var(--line);
-    border-radius: 3px;
+    border-radius: 6px;
     background: var(--surface);
-    padding: 0.85rem;
     scroll-margin-top: 6rem;
   }
 
-  .entry header {
-    display: flex;
-    justify-content: space-between;
-    gap: 1rem;
-    align-items: flex-start;
+  .entry:hover {
+    border-color: var(--line-strong);
   }
 
-  .entry header span,
-  .entry footer span {
+  .entrySummary {
+    display: grid;
+    grid-template-columns: auto minmax(12rem, 0.42fr) minmax(0, 1fr);
+    gap: 0.75rem;
+    align-items: baseline;
+    cursor: pointer;
+    padding: 0.65rem 0.8rem;
+    list-style: none;
+  }
+
+  .entrySummary::-webkit-details-marker {
+    display: none;
+  }
+
+  .entrySummary::before {
+    content: "▸";
+    align-self: center;
     color: var(--muted);
     font-size: 0.72rem;
+  }
+
+  .entry[open] .entrySummary::before {
+    content: "▾";
+  }
+
+  .entryTitle {
+    display: flex;
+    gap: 0.55rem;
+    align-items: baseline;
+    min-width: 0;
+  }
+
+  .entrySummary > .summary {
+    grid-column: 3;
+  }
+
+  .entryBody {
+    border-top: 1px solid var(--line);
+    padding: 0.75rem 0.85rem 0.85rem;
+  }
+
+  .entry h3 code {
+    background: transparent;
+    border-color: transparent;
+    color: var(--ink);
+  }
+
+  .entryTitle > span,
+  .entry footer span {
+    color: var(--muted-strong);
+    font-size: 0.72rem;
+    font-weight: 700;
     text-transform: uppercase;
   }
 
@@ -63,7 +125,9 @@
   }
 
   .summary {
-    margin-bottom: 0;
+    margin: 0;
+    color: var(--muted-strong);
+    font-size: 0.9rem;
   }
 
   .markdown {
@@ -81,15 +145,15 @@
   .params {
     display: grid;
     grid-template-columns: minmax(7rem, max-content) minmax(0, 1fr);
-    gap: 0.2rem 0.8rem;
-    margin: 0.85rem 0;
-    padding-top: 0.85rem;
+    gap: 0.25rem 0.85rem;
+    margin: 0.75rem 0;
+    padding-top: 0.75rem;
     border-top: 1px solid var(--line);
   }
 
   .params dt {
-    color: #7a3d2e;
-    font-weight: 650;
+    color: #9b4d28;
+    font-weight: 720;
   }
 
   .params dd {
@@ -97,17 +161,72 @@
     color: var(--muted);
   }
 
+  .copyBlock {
+    position: relative;
+  }
+
+  .copyBlock pre {
+    margin-top: 0;
+  }
+
+  .copyToolbar,
+  .sourceToolbar {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .copyToolbar {
+    position: absolute;
+    top: 0.35rem;
+    right: 0.35rem;
+    z-index: 1;
+  }
+
+  .copyToolbar + pre {
+    padding-right: 4.75rem;
+  }
+
+  .copyButton {
+    min-height: 1.65rem;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.86);
+    color: var(--muted-strong);
+    cursor: pointer;
+    font-family: var(--mono-font);
+    font-size: 0.68rem;
+    font-weight: 650;
+    line-height: 1;
+    padding: 0 0.48rem;
+  }
+
+  .copyButton:hover {
+    border-color: var(--line-strong);
+    color: var(--ink);
+  }
+
+  .copyButton:active {
+    background: var(--surface-subtle);
+  }
+
   .entry footer {
     display: flex;
     flex-wrap: wrap;
     gap: 0.35rem 0.7rem;
-    margin-top: 0.85rem;
+    margin-top: 0.75rem;
+  }
+
+  .entry footer span {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--surface-subtle);
+    padding: 0.12rem 0.45rem;
   }
 
   .sourceDisclosure {
-    margin-top: 0.85rem;
+    margin-top: 0.75rem;
     border-top: 1px solid var(--line);
-    padding-top: 0.65rem;
+    padding-top: 0.7rem;
   }
 
   .sourceDisclosure summary {
@@ -133,8 +252,12 @@
   }
 
   .sourceCode {
-    margin-top: 0.55rem;
+    margin-top: 0.35rem;
     --source-start: 0;
+  }
+
+  .sourceToolbar {
+    margin-top: 0.55rem;
   }
 
   .sourceCode pre,
@@ -143,7 +266,7 @@
     overflow-x: auto;
     margin: 0;
     border-color: var(--code-border);
-    background: #fbfbfb !important;
+    background: #fbfcfe !important;
     padding: 0.55rem 0;
     font-size: 0.78rem;
     line-height: 1.45;
@@ -159,7 +282,7 @@
   }
 
   .sourceCode .scaffoldCode {
-    color: #24292f;
+    color: #1f2937;
   }
 
   .sourceCode .line {
@@ -178,7 +301,7 @@
     margin-right: 0.65rem;
     padding-right: 0.55rem;
     border-right: 1px solid var(--code-border);
-    color: #8a8a8a;
+    color: #98a2b3;
     text-align: right;
     user-select: none;
   }
@@ -188,30 +311,30 @@
   }
 
   .tok-keyword {
-    color: #8a3ffc;
+    color: #7047c8;
     font-weight: 650;
   }
 
   .tok-function {
-    color: #0550ae;
+    color: #135ea8;
   }
 
   .tok-function.tok-documentation {
-    color: #8250df;
+    color: #6f49c7;
     font-weight: 650;
   }
 
   .tok-string {
-    color: #a40e26;
+    color: #a23d30;
   }
 
   .tok-comment {
-    color: #6a737d;
+    color: #667085;
     font-style: italic;
   }
 
   .tok-parameter {
-    color: #953800;
+    color: #9a5b16;
   }
 
   .tok-deprecated {
@@ -227,9 +350,16 @@
 }
 
 @media (max-width: 620px) {
-  .referenceGroup > header,
-  .entry header,
+  .entrySummary,
   .params {
     display: grid;
+  }
+
+  .entrySummary {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .entrySummary > .summary {
+    grid-column: 2;
   }
 }

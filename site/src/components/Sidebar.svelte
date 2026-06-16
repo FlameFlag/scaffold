@@ -95,10 +95,9 @@ function labelFor(section: SidebarSection, group: string) {
     <ul class="navList">
       <li><a href="#reference">Reference</a></li>
       <li><a href="#capabilities">Capabilities</a></li>
-      <li><a href="#catalog-schema">Catalog schema</a></li>
     {#each groupedNav as item}
       <li>
-        <details class="navGroup" open={item.name === "Catalog"}>
+        <details class="navGroup">
           <summary>
             <span>{item.name}</span>
             <small>{sectionCount(item)}</small>

@@ -6,8 +6,14 @@ let { capabilities } = $props<{
 }>();
 </script>
 
-<section id="capabilities" class="panel" aria-labelledby="capabilities-title">
-  <h2 id="capabilities-title">Capability Contracts</h2>
+<details id="capabilities" class="panel panelDisclosure searchExpandable">
+  <summary>
+    <span>
+      <span class="summaryKicker">Runtime support</span>
+      <h2 id="capabilities-title">Capability contracts</h2>
+    </span>
+    <small>{capabilities.length} libraries</small>
+  </summary>
   <figure class="tableWrap">
     <table>
       <caption class="srOnly">
@@ -37,12 +43,4 @@ let { capabilities } = $props<{
       </tbody>
     </table>
   </figure>
-</section>
-
-<section id="catalog-schema" class="panel" aria-labelledby="catalog-schema-title">
-  <h2 id="catalog-schema-title">Catalog Schema</h2>
-  <p>
-    The generated reference includes schema metadata used by Scaffold catalog
-    validation.
-  </p>
-</section>
+</details>

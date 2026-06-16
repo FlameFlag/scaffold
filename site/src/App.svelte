@@ -1,23 +1,44 @@
 <script lang="ts">
-import { marked } from "marked";
 import { onMount, tick } from "svelte";
 import InfoPanels from "./components/InfoPanels.svelte";
 import ReferenceGroup from "./components/ReferenceGroup.svelte";
 import Sidebar from "./components/Sidebar.svelte";
-import SiteHeader from "./components/SiteHeader.svelte";
 import type { ReferenceDocument } from "./reference";
-import { loadReferenceDocument } from "./wasmReference";
-
-marked.use({
-  gfm: true,
-  breaks: false,
-});
 
 let reference = $state<ReferenceDocument | null>(null);
 let loadError = $state<string | null>(null);
 
+async function loadReferenceDocument(): Promise<ReferenceDocument> {
+  const response = await fetch(`${import.meta.env.BASE_URL}reference.static.json`);
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`);
+  }
+
+  return (await response.json()) as ReferenceDocument;
+}
+
 onMount(() => {
   let hashScrollTimer: number | undefined;
+
+  function openSearchableContent() {
+    document
+      .querySelectorAll<HTMLDetailsElement>("details.searchExpandable")
+      .forEach((details) => {
+        details.open = true;
+      });
+  }
+
+  function openDetailsForTarget(target: HTMLElement) {
+    let current: HTMLElement | null = target;
+
+    while (current) {
+      if (current instanceof HTMLDetailsElement) {
+        current.open = true;
+      }
+      current = current.parentElement;
+    }
+  }
 
   function scrollToHash() {
     if (!window.location.hash) {
@@ -26,6 +47,9 @@ onMount(() => {
 
     const id = decodeURIComponent(window.location.hash.slice(1));
     const target = document.getElementById(id);
+    if (target) {
+      openDetailsForTarget(target);
+    }
     target?.scrollIntoView({ block: "start" });
     return Boolean(target);
   }
@@ -53,6 +77,16 @@ onMount(() => {
     requestAnimationFrame(retry);
   }
 
+  function handleFindShortcut(event: KeyboardEvent) {
+    if (
+      event.key.toLowerCase() === "f" &&
+      (event.metaKey || event.ctrlKey) &&
+      !event.altKey
+    ) {
+      openSearchableContent();
+    }
+  }
+
   loadReferenceDocument()
     .then(async (data) => {
       reference = data;
@@ -64,12 +98,14 @@ onMount(() => {
     });
 
   window.addEventListener("hashchange", scheduleHashScroll);
+  window.addEventListener("keydown", handleFindShortcut, { capture: true });
 
   return () => {
     if (hashScrollTimer !== undefined) {
       window.clearTimeout(hashScrollTimer);
     }
     window.removeEventListener("hashchange", scheduleHashScroll);
+    window.removeEventListener("keydown", handleFindShortcut, { capture: true });
   };
 });
 
@@ -85,8 +121,6 @@ let groupCounts = $derived(
     return counts;
   }, {}),
 );
-
-let entryCount = $derived(reference?.entries.length ?? 0);
 </script>
 
 <div class="app">
@@ -94,40 +128,28 @@ let entryCount = $derived(reference?.entries.length ?? 0);
     <section class="landing" id="top">
       <div class="landingCopy">
         <p class="kicker">Scaffold</p>
-        <h1>Catalog your tools in a small Scheme DSL.</h1>
+        <h1>Scaffold Scheme Reference</h1>
         <p class="lede">
-          Scaffold keeps machine setup scripts readable: typed catalog helpers,
-          generated reference docs, and editor intelligence from the same source.
+          Generated documentation for the forms Scaffold understands.
         </p>
-        <div class="landingActions">
-          <a class="primaryLink" href="#reference">Browse reference</a>
-          <a href="#capabilities">View capabilities</a>
-        </div>
       </div>
     </section>
 
     <section id="reference" class="referenceSection">
-    <SiteHeader
-      title={reference?.title ?? "Scaffold Scheme Reference"}
-      {entryCount}
-      groupCount={groups.length}
-      capabilityCount={reference?.capabilities.length ?? 0}
-    />
+      {#if loadError}
+        <p class="notice">Could not load generated reference: {loadError}</p>
+      {:else if !reference}
+        <p class="notice">Loading generated reference...</p>
+      {:else}
+        <InfoPanels capabilities={reference.capabilities} />
 
-    {#if loadError}
-      <p class="notice">Could not load generated reference: {loadError}</p>
-    {:else if !reference}
-      <p class="notice">Loading generated reference...</p>
-    {:else}
-      <InfoPanels capabilities={reference.capabilities} />
-
-      {#each groups as group}
-        {@const entries = reference.entries.filter((entry) => entry.group === group)}
-        {#if entries.length > 0}
-          <ReferenceGroup {group} {entries} />
-        {/if}
-      {/each}
-    {/if}
+        {#each groups as group}
+          {@const entries = reference.entries.filter((entry) => entry.group === group)}
+          {#if entries.length > 0}
+            <ReferenceGroup {group} {entries} />
+          {/if}
+        {/each}
+      {/if}
     </section>
   </main>
 

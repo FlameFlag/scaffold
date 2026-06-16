@@ -1,16 +1,22 @@
 :root {
   color-scheme: light;
-  --bg: #f6f6f6;
-  --sidebar: #fafafa;
+  --bg: #f5f7fb;
+  --sidebar: #fbfcff;
   --surface: #ffffff;
-  --ink: #1f1f1f;
-  --muted: #666666;
-  --line: #dddddd;
-  --line-strong: #b8b8b8;
-  --link: #3873ad;
-  --link-hover: #244b74;
-  --code-bg: #f4f4f4;
-  --code-border: #e0e0e0;
+  --surface-subtle: #f8fafc;
+  --ink: #18202a;
+  --muted: #667085;
+  --muted-strong: #475467;
+  --line: #d9e1ec;
+  --line-strong: #b8c4d3;
+  --link: #2f6f88;
+  --link-hover: #164d62;
+  --accent: #0f7a68;
+  --accent-strong: #075e50;
+  --accent-soft: #e7f5f2;
+  --blue-soft: #eaf2ff;
+  --code-bg: #f3f6fa;
+  --code-border: #dbe4ef;
   --body-font: "Inter Variable", -apple-system, BlinkMacSystemFont, "Segoe UI",
     system-ui, sans-serif;
   --mono-font: "JetBrains Mono Variable", ui-monospace, "SFMono-Regular",
@@ -23,7 +29,7 @@
   }
 
   :focus-visible {
-    outline: 2px solid rgba(56, 115, 173, 0.45);
+    outline: 2px solid rgba(47, 111, 136, 0.45);
     outline-offset: 2px;
   }
 
@@ -37,7 +43,7 @@
     color: var(--ink);
     font-family: var(--body-font);
     font-size: 15px;
-    line-height: 1.55;
+    line-height: 1.6;
   }
 
   button,
@@ -59,23 +65,23 @@
   h2,
   h3 {
     margin: 0;
-    line-height: 1.25;
+    line-height: 1.18;
     letter-spacing: 0;
   }
 
   h1 {
-    font-size: 2.05rem;
-    font-weight: 650;
+    font-size: 2.35rem;
+    font-weight: 740;
   }
 
   h2 {
-    font-size: 1.3rem;
-    font-weight: 620;
+    font-size: 1.22rem;
+    font-weight: 700;
   }
 
   h3 {
-    font-size: 1.05rem;
-    font-weight: 620;
+    font-size: 1.02rem;
+    font-weight: 700;
   }
 
   code,
@@ -88,9 +94,9 @@
   code {
     padding: 0.08rem 0.25rem;
     border: 1px solid var(--code-border);
-    border-radius: 3px;
+    border-radius: 4px;
     background: var(--code-bg);
-    color: #222;
+    color: #202a37;
     font-size: 0.92em;
     overflow-wrap: anywhere;
   }
@@ -98,12 +104,12 @@
   pre {
     max-width: 100%;
     overflow-x: auto;
-    margin: 0.7rem 0;
-    padding: 0.85rem;
+    margin: 0.75rem 0;
+    padding: 0.9rem;
     border: 1px solid var(--line);
-    border-radius: 4px;
-    background: #f8f8f8;
-    color: #222;
+    border-radius: 6px;
+    background: #f8fafc;
+    color: #202a37;
     font-size: 0.85rem;
     line-height: 1.55;
   }

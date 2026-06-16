@@ -17,6 +17,25 @@ export type ReferenceParam = {
   summary: string;
 };
 
+export type RenderedReferenceParam = {
+  name: string;
+  summaryHtml: string;
+};
+
+export type ReferenceSourceSnippet = {
+  label: string;
+  code: string;
+  html: string;
+  startLine: number;
+};
+
+export type RenderedReferenceEntry = {
+  markdownHtml: string | null;
+  params: RenderedReferenceParam[];
+  returnsHtml: string | null;
+  sourceSnippet: ReferenceSourceSnippet | null;
+};
+
 export type ReferenceEntry = {
   name: string;
   kind: "function" | "keyword";
@@ -34,6 +53,7 @@ export type ReferenceEntry = {
   since: string | null;
   deprecated: string | null;
   source: string | null;
+  rendered: RenderedReferenceEntry;
   range?: {
     line: number;
     start: number;

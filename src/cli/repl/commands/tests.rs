@@ -76,7 +76,7 @@ fn repl_doc_entry_markdown_uses_reference_body_once() {
         1
     );
     assert!(markdown.contains("Prefer `tool` for ordinary catalog entries."));
-    assert!(markdown.contains("- Source: `src/dsl/std/catalog/root.scm`"));
+    assert!(markdown.contains("- Source: `src/dsl/std/catalog/root.scm:"));
 }
 
 #[test]

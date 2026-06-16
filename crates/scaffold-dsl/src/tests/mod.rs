@@ -460,6 +460,52 @@ fn catalog_stem_directory_is_a_local_library_root() {
 }
 
 #[test]
+fn local_library_discovery_does_not_depend_on_directory_names() {
+    let root = tempfile::Builder::new()
+        .prefix("scaffold-dsl-arbitrary-library-roots-")
+        .tempdir()
+        .expect("root");
+    let random_dir = root.path().join("gsdjoifopijksd").join("gfdjnogjsodigjios");
+    std::fs::create_dir_all(&random_dir).expect("random library dir");
+    std::fs::write(
+        root.path().join("scaffold-userland.scm"),
+        "(import (rnrs) (scaffold catalog) (entries demo))\n\n(catalog demo)\n",
+    )
+    .expect("catalog");
+    std::fs::write(
+        random_dir.join("whatever.scm"),
+        "(library (entries demo) (export demo) (import (rnrs) (scaffold catalog)) (define demo (tool \"demo\" (required))))\n",
+    )
+    .expect("library");
+
+    let value =
+        catalog_value_from_path(root.path().join("scaffold-userland.scm")).expect("catalog");
+
+    assert_eq!(value["tools"][0]["name"], "demo");
+}
+
+#[test]
+fn local_library_discovery_respects_gitignore_without_git() {
+    let root = tempfile::Builder::new()
+        .prefix("scaffold-dsl-ignored-library-roots-")
+        .tempdir()
+        .expect("root");
+    let ignored_dir = root.path().join("generated");
+    std::fs::create_dir_all(&ignored_dir).expect("ignored library dir");
+    std::fs::write(root.path().join(".gitignore"), "generated/\n").expect("gitignore");
+    std::fs::write(
+        root.path().join("scaffold.scm"),
+        "(import (rnrs) (scaffold catalog))\n\n(catalog)\n",
+    )
+    .expect("catalog");
+    std::fs::write(ignored_dir.join("broken.scm"), "(library").expect("broken library");
+
+    let value = catalog_value_from_path(root.path().join("scaffold.scm")).expect("catalog");
+
+    assert_eq!(value["tools"].as_array().map(Vec::len), Some(0));
+}
+
+#[test]
 fn bundled_extension_tests_live_with_extensions() {
     for path in [
         "distro/nix/tests/base/test.scm",
@@ -467,7 +513,9 @@ fn bundled_extension_tests_live_with_extensions() {
     ] {
         let _values = values_from_path_with_extension_root(
             extension_path(path),
-            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("src"),
+            PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                .join("src")
+                .join("extensions"),
         )
         .unwrap_or_else(|err| panic!("{path} failed: {err}"));
     }

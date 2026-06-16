@@ -8,7 +8,9 @@ use tower_lsp::lsp_types::{CompletionItem, Documentation};
 use scaffold_docs::DocIndex;
 use scaffold_lsp::completion_items;
 
-use super::commands::{REPL_COMMAND_SPECS, doc_entry_group, split_repl_command};
+use crate::cli::docs::doc_entry_group;
+
+use super::commands::{REPL_COMMAND_SPECS, split_repl_command};
 
 #[derive(Clone, Debug)]
 struct ReplCompletion {

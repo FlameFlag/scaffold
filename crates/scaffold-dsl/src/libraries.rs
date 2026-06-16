@@ -6,7 +6,6 @@ use super::stdlib::SchemeLibrary;
 use super::{DslError, Result, bundled};
 use scaffold_scheme::{identifier_text, is_identifier, parse_source, proper_list};
 use scheme_rs::syntax::Syntax;
-use walkdir::{DirEntry, WalkDir};
 
 pub(super) fn extension_dirs_for_root(root: &Path) -> Vec<PathBuf> {
     scaffold_context::extension_dirs_for_root(root)
@@ -37,10 +36,9 @@ pub(super) fn load_bundled_libraries() -> Result<Vec<SchemeLibrary>> {
 
 pub(super) fn load_user_libraries(extension_dirs: &[PathBuf]) -> Result<Vec<SchemeLibrary>> {
     let mut paths = Vec::new();
-    let mut seen_dirs = HashSet::new();
     let mut seen_files = HashSet::new();
     for dir in extension_dirs {
-        collect_scheme_files(dir, &mut paths, &mut seen_dirs, &mut seen_files)?;
+        collect_scheme_files(dir, &mut paths, &mut seen_files);
     }
     paths.sort();
 
@@ -48,7 +46,16 @@ pub(super) fn load_user_libraries(extension_dirs: &[PathBuf]) -> Result<Vec<Sche
     let mut libraries = Vec::new();
     for path in paths {
         let source = std::fs::read_to_string(&path)?;
+        if !looks_like_library_source(&source) {
+            continue;
+        }
         let name = library_name_from_source(&source, &path)?;
+        if name
+            .first()
+            .is_some_and(|component| component == "scaffold")
+        {
+            continue;
+        }
         if let Some(previous_path) = names.insert(name.clone(), path.display().to_string()) {
             return Err(DslError::Shape {
                 path: path.display().to_string(),
@@ -66,45 +73,33 @@ pub(super) fn load_user_libraries(extension_dirs: &[PathBuf]) -> Result<Vec<Sche
     Ok(libraries)
 }
 
-fn collect_scheme_files(
-    dir: &Path,
-    output: &mut Vec<PathBuf>,
-    seen_dirs: &mut HashSet<PathBuf>,
-    seen_files: &mut HashSet<PathBuf>,
-) -> Result<()> {
-    match canonical_path(dir) {
-        Ok(_) => {}
-        Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(()),
-        Err(err) => return Err(err.into()),
-    }
-
-    for entry in WalkDir::new(dir)
-        .follow_links(true)
-        .into_iter()
-        .filter_entry(|entry| visit_dir_once(entry, seen_dirs))
-    {
-        let entry = entry.map_err(std::io::Error::other)?;
-        let path = entry.path();
-        if entry.file_type().is_file()
-            && path.extension().is_some_and(|extension| extension == "scm")
-            && path.file_name().is_none_or(|name| name != "test.scm")
-            && seen_files.insert(canonical_path(path)?)
+fn collect_scheme_files(dir: &Path, output: &mut Vec<PathBuf>, seen_files: &mut HashSet<PathBuf>) {
+    for path in scaffold_context::scheme_paths(dir) {
+        if path.file_name().is_none_or(|name| name != "test.scm")
+            && seen_files.insert(canonical_path(&path).unwrap_or_else(|_| path.to_path_buf()))
         {
-            output.push(path.to_path_buf());
+            output.push(path);
         }
     }
-    Ok(())
 }
 
 fn canonical_path(path: &Path) -> std::io::Result<PathBuf> {
     std::fs::canonicalize(path)
 }
 
-fn visit_dir_once(entry: &DirEntry, seen_dirs: &mut HashSet<PathBuf>) -> bool {
-    if !entry.file_type().is_dir() {
-        return true;
+fn looks_like_library_source(source: &str) -> bool {
+    let mut rest = source;
+    loop {
+        rest = rest.trim_start_matches(char::is_whitespace);
+        if let Some(after_comment) = rest.strip_prefix(';') {
+            if let Some((_, after_line)) = after_comment.split_once('\n') {
+                rest = after_line;
+                continue;
+            }
+            return false;
+        }
+        return rest.starts_with("(library");
     }
-    canonical_path(entry.path()).is_ok_and(|path| seen_dirs.insert(path))
 }
 
 fn library_name_from_source(source: &str, path: &Path) -> Result<Vec<String>> {

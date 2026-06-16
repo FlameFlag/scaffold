@@ -1,8 +1,8 @@
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
+use ignore::WalkBuilder;
 use thiserror::Error;
-use walkdir::{DirEntry, WalkDir};
 
 #[derive(Debug, Error)]
 pub enum ContextError {
@@ -39,45 +39,30 @@ impl Context {
     #[must_use]
     pub fn source_paths(&self) -> Vec<PathBuf> {
         let mut paths = Vec::new();
-        let mut seen_dirs = HashSet::new();
         let mut seen_files = HashSet::new();
         if self.catalog_path.is_file() {
             push_unique_path(&self.catalog_path, &mut paths, &mut seen_files);
         }
-        for dir in self.extension_dirs() {
-            collect_scheme_paths(
-                &dir,
-                &mut paths,
-                SchemePathFilter::All,
-                &mut seen_dirs,
-                &mut seen_files,
-            );
-        }
+        collect_scheme_paths(
+            &self.root_dir,
+            &mut paths,
+            SchemePathFilter::All,
+            &mut seen_files,
+        );
         paths.sort();
         paths
     }
 
     #[must_use]
     pub fn test_paths(&self) -> Vec<PathBuf> {
-        let mut seen_dirs = HashSet::new();
         let mut seen_files = HashSet::new();
-        let mut paths = ["test.scm", ".scaffold/test.scm"]
-            .into_iter()
-            .map(|name| self.root_dir.join(name))
-            .filter(|path| path.is_file())
-            .fold(Vec::new(), |mut paths, path| {
-                push_unique_path(&path, &mut paths, &mut seen_files);
-                paths
-            });
-        for dir in self.extension_dirs() {
-            collect_scheme_paths(
-                &dir,
-                &mut paths,
-                SchemePathFilter::NamedTest,
-                &mut seen_dirs,
-                &mut seen_files,
-            );
-        }
+        let mut paths = Vec::new();
+        collect_scheme_paths(
+            &self.root_dir,
+            &mut paths,
+            SchemePathFilter::NamedTest,
+            &mut seen_files,
+        );
         paths.sort();
         paths
     }
@@ -93,26 +78,12 @@ pub fn extension_dirs_for_catalog_path(catalog_path: &Path) -> Vec<PathBuf> {
     let root = catalog_path
         .parent()
         .map_or_else(|| PathBuf::from("."), Path::to_path_buf);
-    let mut dirs = Vec::new();
-    if let Some(stem) = catalog_path.file_stem().and_then(|stem| stem.to_str())
-        && !stem.is_empty()
-    {
-        dirs.push(root.join(stem));
-    }
-    for dir in extension_dirs_for_root(&root) {
-        if !dirs.contains(&dir) {
-            dirs.push(dir);
-        }
-    }
-    dirs
+    extension_dirs_for_root(&root)
 }
 
 #[must_use]
 pub fn extension_dirs_for_root(root: &Path) -> Vec<PathBuf> {
-    vec![
-        root.join("extensions"),
-        root.join(".scaffold").join("extensions"),
-    ]
+    vec![root.to_path_buf()]
 }
 
 #[must_use]
@@ -129,10 +100,14 @@ pub fn default_catalog_path() -> PathBuf {
 
 #[must_use]
 pub fn workspace_scheme_paths(root: &Path) -> Vec<PathBuf> {
+    scheme_paths(root)
+}
+
+#[must_use]
+pub fn scheme_paths(root: &Path) -> Vec<PathBuf> {
     let mut paths = Vec::new();
-    let mut seen_dirs = HashSet::new();
     let mut seen_files = HashSet::new();
-    collect_workspace_scheme_paths(root, &mut paths, &mut seen_dirs, &mut seen_files);
+    collect_scheme_paths(root, &mut paths, SchemePathFilter::All, &mut seen_files);
     paths.sort();
     paths
 }
@@ -153,12 +128,15 @@ fn collect_scheme_paths(
     dir: &Path,
     output: &mut Vec<PathBuf>,
     filter: SchemePathFilter,
-    seen_dirs: &mut HashSet<PathBuf>,
     seen_files: &mut HashSet<PathBuf>,
 ) {
-    for entry in scheme_walk(dir, seen_dirs, |_| true) {
+    for entry in scheme_walk(dir) {
         let path = entry.path();
-        if entry.file_type().is_file() && matches_scheme_filter(path, filter) {
+        if entry
+            .file_type()
+            .is_some_and(|file_type| file_type.is_file())
+            && matches_scheme_filter(path, filter)
+        {
             push_unique_path(path, output, seen_files);
         }
     }
@@ -174,47 +152,21 @@ fn matches_scheme_filter(path: &Path, filter: SchemePathFilter) -> bool {
     }
 }
 
-fn collect_workspace_scheme_paths(
-    dir: &Path,
-    output: &mut Vec<PathBuf>,
-    seen_dirs: &mut HashSet<PathBuf>,
-    seen_files: &mut HashSet<PathBuf>,
-) {
-    for entry in scheme_walk(dir, seen_dirs, |entry| {
-        entry.depth() == 0
-            || !entry
-                .path()
-                .file_name()
-                .and_then(|name| name.to_str())
-                .is_some_and(|name| matches!(name, ".git" | "target" | "node_modules" | "out"))
-    }) {
-        let path = entry.path();
-        if entry.file_type().is_file()
-            && path.extension().is_some_and(|extension| extension == "scm")
-        {
-            push_unique_path(path, output, seen_files);
-        }
-    }
+fn scheme_walk(dir: &Path) -> impl Iterator<Item = ignore::DirEntry> {
+    let mut builder = WalkBuilder::new(dir);
+    builder
+        .follow_links(true)
+        .hidden(false)
+        .require_git(false)
+        .types(scheme_types());
+    builder.build().filter_map(Result::ok)
 }
 
-fn scheme_walk<'a>(
-    dir: &'a Path,
-    seen_dirs: &'a mut HashSet<PathBuf>,
-    mut descend: impl FnMut(&DirEntry) -> bool + 'a,
-) -> impl Iterator<Item = DirEntry> + 'a {
-    WalkDir::new(dir)
-        .follow_links(true)
-        .into_iter()
-        .filter_entry(move |entry| {
-            if !entry.file_type().is_dir() {
-                return true;
-            }
-            if !descend(entry) {
-                return false;
-            }
-            std::fs::canonicalize(entry.path()).is_ok_and(|path| seen_dirs.insert(path))
-        })
-        .filter_map(Result::ok)
+fn scheme_types() -> ignore::types::Types {
+    let mut builder = ignore::types::TypesBuilder::new();
+    builder.add("scheme", "*.scm").expect("valid scheme glob");
+    builder.select("scheme");
+    builder.build().expect("valid scheme type selection")
 }
 
 fn push_unique_path(path: &Path, output: &mut Vec<PathBuf>, seen_files: &mut HashSet<PathBuf>) {
@@ -247,14 +199,18 @@ mod tests {
     }
 
     #[test]
-    fn catalog_stem_is_extension_root() {
+    fn catalog_root_is_extension_root() {
         assert_eq!(
             extension_dirs_for_catalog_path(Path::new("/workspace/scaffold.scm")),
-            vec![
-                PathBuf::from("/workspace/scaffold"),
-                PathBuf::from("/workspace/extensions"),
-                PathBuf::from("/workspace/.scaffold/extensions"),
-            ]
+            vec![PathBuf::from("/workspace")]
+        );
+    }
+
+    #[test]
+    fn non_default_catalogs_use_workspace_extension_root() {
+        assert_eq!(
+            extension_dirs_for_catalog_path(Path::new("/workspace/scaffold-userland.scm")),
+            vec![PathBuf::from("/workspace")]
         );
     }
 
@@ -295,18 +251,72 @@ mod tests {
     }
 
     #[test]
-    fn collects_workspace_scheme_paths_without_build_outputs() {
-        let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("..")
-            .join("scaffold-dsl")
-            .join("src");
-        let files = workspace_scheme_paths(&root);
+    fn scheme_paths_respect_gitignore_without_git_repo() {
+        let root = tempfile::tempdir().expect("root");
+        let ignored = root.path().join("ignored");
+        let included = root.path().join("included");
+        std::fs::create_dir_all(&ignored).expect("ignored dir");
+        std::fs::create_dir_all(&included).expect("included dir");
+        std::fs::write(root.path().join(".gitignore"), "ignored/\n").expect("gitignore");
+        std::fs::write(ignored.join("hidden.scm"), "(import (rnrs))\n").expect("ignored source");
+        std::fs::write(included.join("visible.scm"), "(import (rnrs))\n").expect("visible source");
+
+        let files = workspace_scheme_paths(root.path());
+
+        assert!(
+            files
+                .iter()
+                .any(|path| path.ends_with("included/visible.scm"))
+        );
+        assert!(
+            !files
+                .iter()
+                .any(|path| path.ends_with("ignored/hidden.scm"))
+        );
+    }
+
+    #[test]
+    fn scheme_paths_include_hidden_scaffold_dirs() {
+        let root = tempfile::tempdir().expect("root");
+        let scaffold_dir = root.path().join(".scaffold");
+        std::fs::create_dir_all(&scaffold_dir).expect("scaffold dir");
+        std::fs::write(scaffold_dir.join("test.scm"), "(import (rnrs))\n").expect("test source");
+
+        let ctx = Context {
+            catalog_path: root.path().join("scaffold.scm"),
+            root_dir: root.path().to_path_buf(),
+            bin_dir: root.path().join("bin"),
+            state_dir: root.path().join("state"),
+        };
+
+        assert_eq!(ctx.test_paths(), vec![scaffold_dir.join("test.scm")]);
+    }
+
+    #[test]
+    fn collects_workspace_scheme_paths_without_ignored_outputs() {
+        let root = tempfile::tempdir().expect("root");
+        std::fs::write(root.path().join(".gitignore"), "target/\n").expect("gitignore");
+        std::fs::create_dir_all(root.path().join("std")).expect("std dir");
+        std::fs::create_dir_all(root.path().join("target")).expect("target dir");
+        std::fs::write(
+            root.path().join("std").join("config.scm"),
+            "(import (rnrs))\n",
+        )
+        .expect("source");
+        std::fs::write(
+            root.path().join("target").join("generated.scm"),
+            "(import (rnrs))\n",
+        )
+        .expect("ignored source");
+
+        let files = workspace_scheme_paths(root.path());
 
         assert!(files.iter().any(|path| path.ends_with("std/config.scm")));
-        assert!(!files.iter().any(|path| {
-            path.components()
-                .any(|component| component.as_os_str() == "target")
-        }));
+        assert!(
+            !files
+                .iter()
+                .any(|path| path.ends_with("target/generated.scm"))
+        );
     }
 
     fn fixture_path(path: &str) -> PathBuf {

@@ -6,8 +6,11 @@ use std::path::PathBuf;
 
 use clap::{CommandFactory, Parser};
 use clap_complete::{Shell, generate};
+use comfy_table::{
+    Attribute, Cell, Color, ContentArrangement, Table, presets::UTF8_FULL_CONDENSED,
+};
 
-use scaffold_catalog::Catalog;
+use scaffold_catalog::{Action, Catalog, CatalogError, Phase, Tool};
 use scaffold_context::{self as context, Context};
 use scaffold_dsl as dsl;
 use scaffold_fmt::FormatMode;
@@ -71,7 +74,7 @@ pub fn run() -> Result<(), CliError> {
             Ok(())
         }
         Command::Docs(args) => {
-            let rendered = docs::render_docs(args.format)?;
+            let rendered = docs::render_docs(&args)?;
             if let Some(path) = args.output {
                 ensure_output_parent(&path)?;
                 std::fs::write(path, rendered)?;
@@ -110,7 +113,7 @@ fn run_with_context(command: Command, catalog: Option<PathBuf>) -> Result<(), Cl
             }
         }
         Command::Docs(args) => {
-            let rendered = docs::render_docs(args.format)?;
+            let rendered = docs::render_docs(&args)?;
             if let Some(path) = args.output {
                 ensure_output_parent(&path)?;
                 std::fs::write(path, rendered)?;
@@ -175,10 +178,12 @@ fn run_with_context(command: Command, catalog: Option<PathBuf>) -> Result<(), Cl
                     Policy::Missing
                 },
                 &args.tools,
-            )?;
+            )
+            .map_err(|err| contextualize_install_error(&ctx, err))?;
         }
         Command::Uninstall(args) => {
-            install::uninstall_catalog(&ctx, &args.tools, args.dry_run)?;
+            install::uninstall_catalog(&ctx, &args.tools, args.dry_run)
+                .map_err(|err| contextualize_install_error(&ctx, err))?;
         }
         Command::Lsp => {
             scaffold_lsp::run().map_err(CliError::Lsp)?;
@@ -190,37 +195,15 @@ fn run_with_context(command: Command, catalog: Option<PathBuf>) -> Result<(), Cl
             repl::run_repl(&ctx)?;
         }
         Command::List => {
-            let catalog = Catalog::load(&ctx.catalog_path)?;
+            let catalog = load_catalog(&ctx)?;
             let host = Host::current();
-            for tool in catalog.tools {
-                let host_status = if tool.supports_host(host) {
-                    "yes"
-                } else {
-                    "no"
-                };
-                println!("{}\t{}", tool.name, host_status);
-            }
+            print!("{}", render_catalog_list(&catalog.tools, host));
         }
         Command::Check => {
-            let catalog = Catalog::load(&ctx.catalog_path)?;
+            let catalog = load_catalog(&ctx)?;
             let host = Host::current();
-            let mut missing = 0;
-            for tool in catalog.tools {
-                let status = if !tool.supports_host(host) {
-                    "unsupported"
-                } else if install::tool_is_present(&ctx, &tool) {
-                    "present"
-                } else {
-                    missing += 1;
-                    "missing"
-                };
-                let version = tool.version_summary();
-                if version.is_empty() {
-                    println!("{}\t{}", tool.name, status);
-                } else {
-                    println!("{}\t{}\t{}", tool.name, status, version);
-                }
-            }
+            let (rows, missing) = catalog_check_rows(&ctx, &catalog.tools, host);
+            print!("{}", render_catalog_check(&rows));
             if missing != 0 {
                 return Err(CliError::message(format!("{missing} tools missing")));
             }
@@ -240,20 +223,7 @@ fn run_with_context(command: Command, catalog: Option<PathBuf>) -> Result<(), Cl
             }
         }
         Command::Paths => {
-            println!("catalog\t{}", ctx.catalog_path.display());
-            println!("root\t{}", ctx.root_dir.display());
-            println!("bin\t{}", ctx.bin_dir.display());
-            println!("state\t{}", ctx.state_dir.display());
-            for dir in ctx.extension_dirs() {
-                let canonical = std::fs::canonicalize(&dir).ok();
-                if let Some(canonical) = canonical
-                    && canonical != dir
-                {
-                    println!("extension\t{}\t{}", dir.display(), canonical.display());
-                    continue;
-                }
-                println!("extension\t{}", dir.display());
-            }
+            print!("{}", render_paths(&path_rows(&ctx)));
         }
         Command::Completions(args) => {
             let mut command = Cli::command();
@@ -263,6 +233,199 @@ fn run_with_context(command: Command, catalog: Option<PathBuf>) -> Result<(), Cl
     }
 
     Ok(())
+}
+
+fn render_catalog_list(tools: &[Tool], host: Host) -> String {
+    let mut table = Table::new();
+    table
+        .load_preset(UTF8_FULL_CONDENSED)
+        .set_content_arrangement(ContentArrangement::Dynamic)
+        .set_header(vec![
+            header_cell("tool"),
+            header_cell("host"),
+            header_cell("action"),
+            header_cell("phase"),
+            header_cell("bins"),
+            header_cell("description"),
+        ]);
+
+    for tool in tools {
+        table.add_row(vec![
+            Cell::new(&tool.name),
+            host_status_cell(tool.supports_host(host)),
+            Cell::new(action_label(&tool.action)),
+            Cell::new(phase_label(tool.phase())),
+            Cell::new(bin_summary(tool)),
+            Cell::new(tool.meta.description.as_deref().unwrap_or_default()),
+        ]);
+    }
+
+    format!("{}\n", table.trim_fmt())
+}
+
+#[derive(Debug)]
+struct CatalogCheckRow {
+    name: String,
+    status: CheckStatus,
+    version: String,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum CheckStatus {
+    Present,
+    Missing,
+    Unsupported,
+}
+
+fn catalog_check_rows(ctx: &Context, tools: &[Tool], host: Host) -> (Vec<CatalogCheckRow>, usize) {
+    let mut missing = 0;
+    let rows = tools
+        .iter()
+        .map(|tool| {
+            let status = if !tool.supports_host(host) {
+                CheckStatus::Unsupported
+            } else if install::tool_is_present(ctx, tool) {
+                CheckStatus::Present
+            } else {
+                missing += 1;
+                CheckStatus::Missing
+            };
+            CatalogCheckRow {
+                name: tool.name.clone(),
+                status,
+                version: tool.version_summary(),
+            }
+        })
+        .collect();
+    (rows, missing)
+}
+
+fn render_catalog_check(rows: &[CatalogCheckRow]) -> String {
+    let mut table = Table::new();
+    table
+        .load_preset(UTF8_FULL_CONDENSED)
+        .set_content_arrangement(ContentArrangement::Dynamic)
+        .set_header(vec![
+            header_cell("tool"),
+            header_cell("status"),
+            header_cell("version"),
+        ]);
+
+    for row in rows {
+        table.add_row(vec![
+            Cell::new(&row.name),
+            check_status_cell(row.status),
+            Cell::new(&row.version),
+        ]);
+    }
+
+    format!("{}\n", table.trim_fmt())
+}
+
+#[derive(Debug)]
+struct PathRow {
+    kind: &'static str,
+    path: String,
+    resolved: String,
+}
+
+fn path_rows(ctx: &Context) -> Vec<PathRow> {
+    let mut rows = vec![
+        PathRow::new("catalog", ctx.catalog_path.display().to_string()),
+        PathRow::new("root", ctx.root_dir.display().to_string()),
+        PathRow::new("bin", ctx.bin_dir.display().to_string()),
+        PathRow::new("state", ctx.state_dir.display().to_string()),
+    ];
+    rows.extend(ctx.extension_dirs().into_iter().map(|dir| {
+        let resolved = std::fs::canonicalize(&dir)
+            .ok()
+            .filter(|canonical| canonical != &dir)
+            .map(|canonical| canonical.display().to_string())
+            .unwrap_or_default();
+        PathRow {
+            kind: "extension",
+            path: dir.display().to_string(),
+            resolved,
+        }
+    }));
+    rows
+}
+
+impl PathRow {
+    fn new(kind: &'static str, path: String) -> Self {
+        Self {
+            kind,
+            path,
+            resolved: String::new(),
+        }
+    }
+}
+
+fn render_paths(rows: &[PathRow]) -> String {
+    let mut table = Table::new();
+    table
+        .load_preset(UTF8_FULL_CONDENSED)
+        .set_content_arrangement(ContentArrangement::Dynamic)
+        .set_header(vec![
+            header_cell("kind"),
+            header_cell("path"),
+            header_cell("resolved"),
+        ]);
+
+    for row in rows {
+        table.add_row(vec![
+            Cell::new(row.kind),
+            Cell::new(&row.path),
+            Cell::new(&row.resolved),
+        ]);
+    }
+
+    format!("{}\n", table.trim_fmt())
+}
+
+fn header_cell(label: &str) -> Cell {
+    Cell::new(label).add_attribute(Attribute::Bold)
+}
+
+fn host_status_cell(supported: bool) -> Cell {
+    if supported {
+        Cell::new("supported").fg(Color::Green)
+    } else {
+        Cell::new("unsupported").fg(Color::Yellow)
+    }
+}
+
+fn check_status_cell(status: CheckStatus) -> Cell {
+    match status {
+        CheckStatus::Present => Cell::new("present").fg(Color::Green),
+        CheckStatus::Missing => Cell::new("missing").fg(Color::Red),
+        CheckStatus::Unsupported => Cell::new("unsupported").fg(Color::Yellow),
+    }
+}
+
+const fn action_label(action: &Action) -> &'static str {
+    match action {
+        Action::Required => "required",
+        Action::Package(_) => "package",
+        Action::Build(_) => "build",
+        Action::Archive(_) => "archive",
+    }
+}
+
+const fn phase_label(phase: Phase) -> &'static str {
+    match phase {
+        Phase::Prerequisites => "prerequisites",
+        Phase::Packages => "packages",
+        Phase::Builds => "builds",
+    }
+}
+
+fn bin_summary(tool: &Tool) -> String {
+    tool.bins
+        .iter()
+        .map(|bin| bin.name.as_str())
+        .collect::<Vec<_>>()
+        .join(", ")
 }
 
 fn print_json_values(values: Vec<serde_json::Value>) -> Result<(), CliError> {
@@ -280,4 +443,175 @@ fn ensure_output_parent(path: &std::path::Path) -> Result<(), CliError> {
         std::fs::create_dir_all(parent)?;
     }
     Ok(())
+}
+
+fn load_catalog(ctx: &Context) -> Result<Catalog, CliError> {
+    Catalog::load(&ctx.catalog_path).map_err(|err| contextualize_catalog_error(ctx, err))
+}
+
+fn contextualize_install_error(ctx: &Context, err: install::InstallError) -> CliError {
+    match err {
+        install::InstallError::Catalog(err) => contextualize_catalog_error(ctx, err),
+        err => CliError::Install(err),
+    }
+}
+
+fn contextualize_catalog_error(ctx: &Context, err: CatalogError) -> CliError {
+    match err {
+        CatalogError::Dsl(dsl::DslError::Io(source)) => CliError::message(format!(
+            "failed while loading catalog {}: {source}",
+            ctx.catalog_path.display()
+        )),
+        err => CliError::Catalog(err),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use scaffold_catalog::Catalog;
+    use scaffold_platform::{Host, HostArch, HostOs};
+    use serde_json::json;
+
+    use super::{
+        CatalogCheckRow, CheckStatus, PathRow, catalog_check_rows, contextualize_catalog_error,
+        render_catalog_check, render_catalog_list, render_paths,
+    };
+
+    #[test]
+    fn list_renderer_includes_catalog_metadata_and_host_status() {
+        let catalog = Catalog::from_value(json!({
+            "tools": [
+                {
+                    "name": "demo",
+                    "bins": [{ "name": "demo-bin" }],
+                    "meta": { "description": "Demo tool." },
+                    "action": { "type": "required" }
+                },
+                {
+                    "name": "windows-only",
+                    "platforms": ["windows"],
+                    "action": { "type": "required" }
+                }
+            ]
+        }))
+        .expect("catalog");
+        let rendered = render_catalog_list(
+            &catalog.tools,
+            Host {
+                os: HostOs::Linux,
+                arch: HostArch::X86_64,
+            },
+        );
+
+        assert!(rendered.contains("tool"));
+        assert!(rendered.contains("host"));
+        assert!(rendered.contains("demo"));
+        assert!(rendered.contains("demo-bin"));
+        assert!(rendered.contains("Demo tool."));
+        assert!(rendered.contains("supported"));
+        assert!(rendered.contains("unsupported"));
+    }
+
+    #[test]
+    fn check_rows_mark_present_missing_and_unsupported_tools() {
+        let current_exe = std::env::current_exe().expect("current test executable");
+        let catalog = Catalog::from_value(json!({
+            "tools": [
+                {
+                    "name": "checked",
+                    "checks": [{ "argv": [current_exe.to_string_lossy(), "--list"] }],
+                    "action": { "type": "required" }
+                },
+                {
+                    "name": "definitely-not-a-real-scaffold-test-bin",
+                    "action": { "type": "required" }
+                },
+                {
+                    "name": "windows-only",
+                    "platforms": ["windows"],
+                    "action": { "type": "required" }
+                }
+            ]
+        }))
+        .expect("catalog");
+        let ctx = scaffold_context::Context {
+            catalog_path: std::path::PathBuf::from("catalog.scm"),
+            root_dir: std::path::PathBuf::from("."),
+            bin_dir: std::path::PathBuf::from("."),
+            state_dir: std::path::PathBuf::from("."),
+        };
+
+        let (rows, missing) = catalog_check_rows(
+            &ctx,
+            &catalog.tools,
+            Host {
+                os: HostOs::Linux,
+                arch: HostArch::X86_64,
+            },
+        );
+
+        assert_eq!(missing, 1);
+        assert_eq!(rows[0].status, CheckStatus::Present);
+        assert_eq!(rows[1].status, CheckStatus::Missing);
+        assert_eq!(rows[2].status, CheckStatus::Unsupported);
+    }
+
+    #[test]
+    fn check_renderer_uses_table_layout() {
+        let rendered = render_catalog_check(&[
+            CatalogCheckRow {
+                name: "demo".to_owned(),
+                status: CheckStatus::Present,
+                version: "demo 1.0.0".to_owned(),
+            },
+            CatalogCheckRow {
+                name: "missing".to_owned(),
+                status: CheckStatus::Missing,
+                version: String::new(),
+            },
+        ]);
+
+        assert!(rendered.contains("tool"));
+        assert!(rendered.contains("status"));
+        assert!(rendered.contains("version"));
+        assert!(rendered.contains("demo 1.0.0"));
+        assert!(!rendered.contains("demo\tpresent"));
+    }
+
+    #[test]
+    fn paths_renderer_uses_table_layout() {
+        let rendered = render_paths(&[
+            PathRow::new("catalog", "/workspace/scaffold.scm".to_owned()),
+            PathRow {
+                kind: "extension",
+                path: "/workspace/link".to_owned(),
+                resolved: "/workspace/actual".to_owned(),
+            },
+        ]);
+
+        assert!(rendered.contains("kind"));
+        assert!(rendered.contains("path"));
+        assert!(rendered.contains("resolved"));
+        assert!(rendered.contains("/workspace/scaffold.scm"));
+        assert!(rendered.contains("/workspace/actual"));
+        assert!(!rendered.contains("catalog\t/workspace/scaffold.scm"));
+    }
+
+    #[test]
+    fn catalog_io_error_names_catalog_path() {
+        let ctx = scaffold_context::Context {
+            catalog_path: std::path::PathBuf::from("/definitely/missing/scaffold.scm"),
+            root_dir: std::path::PathBuf::from("/definitely/missing"),
+            bin_dir: std::path::PathBuf::from("."),
+            state_dir: std::path::PathBuf::from("."),
+        };
+        let err = scaffold_catalog::CatalogError::Dsl(scaffold_dsl::DslError::Io(
+            std::io::Error::new(std::io::ErrorKind::NotFound, "missing"),
+        ));
+
+        let message = contextualize_catalog_error(&ctx, err).to_string();
+
+        assert!(message.contains("/definitely/missing/scaffold.scm"));
+        assert!(message.contains("failed while loading catalog"));
+    }
 }

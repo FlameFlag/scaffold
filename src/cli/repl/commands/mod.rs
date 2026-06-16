@@ -1,15 +1,16 @@
 use std::collections::BTreeMap;
 
-use nucleo_matcher::{
-    Config as FuzzyConfig, Matcher, Utf32Str,
-    pattern::{CaseMatching, Normalization, Pattern},
-};
 use termimad::{
     CompoundStyle, MadSkin,
     crossterm::style::{Attribute, Color},
 };
 
 use scaffold_docs::{DocEntry, DocIndex};
+
+use crate::cli::docs::{
+    doc_entry_group, doc_search_results, entry_count_label, same_markdown_paragraph,
+    source_location,
+};
 
 pub(super) enum ReplControl {
     Continue,
@@ -120,7 +121,13 @@ fn print_doc_source(docs: &DocIndex, name: &str) {
         return;
     };
     match &entry.source {
-        Some(source) => print_repl_markdown(&format!("**Source:** `{source}`")),
+        Some(source) => {
+            let mut markdown = format!("**Source:** `{}`", source_location(source, entry));
+            if let Some(signature) = entry.signature.as_deref() {
+                markdown.push_str(&format!("\n\n```scheme\n{signature}\n```"));
+            }
+            print_repl_markdown(&markdown);
+        }
         None => println!("no source recorded for `{name}`"),
     }
 }
@@ -232,7 +239,7 @@ fn doc_entry_markdown(entry: &DocEntry) -> String {
     let mut details = Vec::new();
     details.push(format!("Group: `{}`", doc_entry_group(entry)));
     if let Some(source) = &entry.source {
-        details.push(format!("Source: `{source}`"));
+        details.push(format!("Source: `{}`", source_location(source, entry)));
     }
     if let Some(since) = &entry.since {
         details.push(format!("Since: `{since}`"));
@@ -307,17 +314,6 @@ fn doc_entry_summary_line(entry: &DocEntry) -> String {
     format!("  {signature} - {summary}")
 }
 
-pub(super) fn doc_entry_group(entry: &DocEntry) -> &str {
-    entry.group.as_deref().unwrap_or("Language")
-}
-
-fn entry_count_label(count: usize) -> String {
-    match count {
-        1 => "1 entry".to_owned(),
-        count => format!("{count} entries"),
-    }
-}
-
 fn push_markdown_section_break(output: &mut String) {
     if !output.is_empty() && !output.ends_with("\n\n") {
         if output.ends_with('\n') {
@@ -326,14 +322,6 @@ fn push_markdown_section_break(output: &mut String) {
             output.push_str("\n\n");
         }
     }
-}
-
-fn same_markdown_paragraph(left: &str, right: &str) -> bool {
-    normalize_markdown_paragraph(left) == normalize_markdown_paragraph(right)
-}
-
-fn normalize_markdown_paragraph(value: &str) -> String {
-    value.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
 #[cfg(test)]
@@ -352,69 +340,6 @@ fn doc_entry_matches(entry: &DocEntry, query: &str) -> bool {
             .markdown
             .as_ref()
             .is_some_and(|value| value.to_ascii_lowercase().contains(&query))
-}
-
-fn doc_search_results<'a>(docs: &'a DocIndex, query: &str, limit: usize) -> Vec<&'a DocEntry> {
-    let pattern = Pattern::parse(query, CaseMatching::Ignore, Normalization::Smart);
-    let mut matcher = Matcher::new(FuzzyConfig::DEFAULT);
-    let mut matches = docs
-        .visible_entries()
-        .filter_map(|entry| {
-            doc_entry_search_score(entry, &pattern, &mut matcher).map(|score| (entry, score))
-        })
-        .collect::<Vec<_>>();
-    matches.sort_by(|(left_entry, left_score), (right_entry, right_score)| {
-        right_score
-            .cmp(left_score)
-            .then_with(|| left_entry.name.cmp(&right_entry.name))
-    });
-    matches
-        .into_iter()
-        .take(limit)
-        .map(|(entry, _score)| entry)
-        .collect()
-}
-
-fn doc_entry_search_score(
-    entry: &DocEntry,
-    pattern: &Pattern,
-    matcher: &mut Matcher,
-) -> Option<u32> {
-    let mut buf = Vec::new();
-    let searchable = doc_entry_search_text(entry);
-    let mut score = pattern.score(Utf32Str::new(&searchable, &mut buf), matcher)?;
-
-    if let Some(name_score) = pattern.score(Utf32Str::new(&entry.name, &mut buf), matcher) {
-        score += name_score * 8;
-    }
-    if let Some(signature) = &entry.signature
-        && let Some(signature_score) = pattern.score(Utf32Str::new(signature, &mut buf), matcher)
-    {
-        score += signature_score * 4;
-    }
-    if let Some(summary) = &entry.summary
-        && let Some(summary_score) = pattern.score(Utf32Str::new(summary, &mut buf), matcher)
-    {
-        score += summary_score * 2;
-    }
-
-    Some(score)
-}
-
-fn doc_entry_search_text(entry: &DocEntry) -> String {
-    let mut parts = vec![
-        entry.name.as_str(),
-        doc_entry_group(entry),
-        entry.signature.as_deref().unwrap_or_default(),
-        entry.summary.as_deref().unwrap_or_default(),
-        entry.markdown.as_deref().unwrap_or_default(),
-        entry.returns.as_deref().unwrap_or_default(),
-        entry.source.as_deref().unwrap_or_default(),
-    ];
-    parts.extend(entry.params.iter().map(|param| param.name.as_str()));
-    parts.extend(entry.params.iter().map(|param| param.summary.as_str()));
-    parts.extend(entry.see.iter().map(String::as_str));
-    parts.join(" ")
 }
 
 pub(super) struct ReplCommandSpec {

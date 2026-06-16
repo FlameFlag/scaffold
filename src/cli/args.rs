@@ -28,7 +28,7 @@ pub(super) struct Cli {
 pub(super) enum Command {
     #[command(about = "Analyze Scaffold Scheme files for static issues")]
     Analyze(AnalyzeArgs),
-    #[command(about = "Render Scaffold Scheme reference documentation")]
+    #[command(about = "Browse or export Scaffold Scheme reference documentation")]
     Docs(DocsArgs),
     #[command(about = "Evaluate a Scaffold Scheme expression")]
     Eval(EvalArgs),
@@ -89,10 +89,38 @@ pub(super) struct UninstallArgs {
 
 #[derive(Debug, Args)]
 pub(super) struct DocsArgs {
-    #[arg(long, value_name = "FILE", value_hint = ValueHint::FilePath)]
+    #[arg(value_name = "QUERY", help = "Show one symbol, or fuzzy-search docs")]
+    pub(super) query: Vec<String>,
+    #[arg(long, help = "Show the full generated reference")]
+    pub(super) all: bool,
+    #[arg(long, value_name = "GROUP", help = "List docs in one group")]
+    pub(super) group: Option<String>,
+    #[arg(
+        long,
+        value_name = "NAME",
+        help = "Show where a documented symbol comes from"
+    )]
+    pub(super) source: Option<String>,
+    #[arg(
+        long,
+        default_value_t = 20,
+        value_parser = parse_positive_usize,
+        help = "Maximum search results to show"
+    )]
+    pub(super) limit: usize,
+    #[arg(
+        long,
+        value_name = "FILE",
+        value_hint = ValueHint::FilePath,
+        help = "Write the generated full reference to a file"
+    )]
     pub(super) output: Option<PathBuf>,
-    #[arg(long, value_enum, default_value_t = DocsFormat::Markdown)]
-    pub(super) format: DocsFormat,
+    #[arg(
+        long,
+        value_enum,
+        help = "Export generated reference instead of browsing"
+    )]
+    pub(super) format: Option<DocsFormat>,
 }
 
 #[derive(Debug, Clone, Copy, ValueEnum)]
@@ -140,4 +168,14 @@ impl From<CompletionShell> for clap_complete::Shell {
             CompletionShell::Zsh => Self::Zsh,
         }
     }
+}
+
+fn parse_positive_usize(value: &str) -> Result<usize, String> {
+    let parsed = value
+        .parse::<usize>()
+        .map_err(|err| format!("invalid positive integer: {err}"))?;
+    if parsed == 0 {
+        return Err("value must be at least 1".to_owned());
+    }
+    Ok(parsed)
 }

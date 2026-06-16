@@ -1,4 +1,6 @@
 #[cfg(feature = "reference")]
+use markdown_table_formatter::format_tables;
+#[cfg(feature = "reference")]
 use serde::Serialize;
 #[cfg(feature = "reference")]
 use std::collections::BTreeMap;
@@ -27,25 +29,7 @@ pub fn scaffold_reference_json() -> serde_json::Result<String> {
 pub fn render_reference_markdown(index: &DocIndex) -> String {
     let mut output = String::from("# Scaffold Scheme Reference\n\n");
     output.push_str(
-        "Generated from parsable Doc v2 forms such as `(doc ...)`, `(doc-next ...)`, `(extern-doc ...)`, `(moduledoc ...)`, and `(typedoc ...)`.\n",
-    );
-    output.push_str("\n## Capability Contracts\n\n");
-    output.push_str("| Library | Effect | Catalog | Test | Editor | WASM |\n");
-    output.push_str("| --- | --- | --- | --- | --- | --- |\n");
-    for capability in scaffold_dsl::rust_backed_capabilities() {
-        output.push_str(&format!(
-            "| `{}` | {} | {} | {} | {} | {} |\n",
-            capability.library,
-            capability.effect,
-            capability_mode(capability, "catalog"),
-            capability_mode(capability, "test"),
-            capability_mode(capability, "editor"),
-            capability_mode(capability, "wasm"),
-        ));
-    }
-    output.push_str("\n## Catalog Schema\n\n");
-    output.push_str(
-        "The generated JSON reference includes `catalog_schema` with field, enum, and relationship metadata used by Scaffold catalog validation.\n",
+        "Generated reference for Scaffold Scheme symbols, catalog helpers, and standard extension libraries.\n",
     );
 
     let mut groups = BTreeMap::<String, Vec<&DocEntry>>::new();
@@ -61,16 +45,43 @@ pub fn render_reference_markdown(index: &DocIndex) -> String {
     }
 
     output.push_str("\n## Contents\n\n");
-    for (group, entries) in &groups {
-        output.push_str(&format!(
-            "- [{}](#{}) ({})\n",
-            group,
-            anchor(group),
-            entries.len()
-        ));
-    }
+    output.push_str(&markdown_table(
+        &["Group", "Entries"],
+        groups
+            .iter()
+            .map(|(group, entries)| {
+                vec![
+                    format!("[{group}](#{})", anchor(group)),
+                    entries.len().to_string(),
+                ]
+            })
+            .collect::<Vec<_>>(),
+    ));
+    output.push_str("\n## Capability Contracts\n\n");
+    output.push_str("Rust-backed libraries expose different capability levels depending on where the DSL is running.\n\n");
+    output.push_str(&markdown_table(
+        &["Library", "Effect", "Catalog", "Test", "Editor", "WASM"],
+        scaffold_dsl::rust_backed_capabilities()
+            .iter()
+            .map(|capability| {
+                vec![
+                    format!("`{}`", capability.library),
+                    capability.effect.to_owned(),
+                    capability_mode(capability, "catalog").to_owned(),
+                    capability_mode(capability, "test").to_owned(),
+                    capability_mode(capability, "editor").to_owned(),
+                    capability_mode(capability, "wasm").to_owned(),
+                ]
+            })
+            .collect::<Vec<_>>(),
+    ));
 
-    for (group, entries) in groups {
+    output.push_str("\n## Catalog Schema\n\n");
+    output.push_str(
+        "The JSON reference export includes `catalog_schema` with field, enum, and relationship metadata used by Scaffold catalog validation.\n",
+    );
+
+    for (group, entries) in &groups {
         output.push_str(&format!("\n## {group}\n\n"));
         for entry in entries {
             output.push_str(&format!("### `{}`\n\n", entry.name));
@@ -87,7 +98,7 @@ pub fn render_reference_markdown(index: &DocIndex) -> String {
         }
     }
 
-    output
+    format_tables(output)
 }
 
 #[cfg(feature = "reference")]
@@ -253,6 +264,44 @@ struct ReferenceParam {
 }
 
 #[cfg(feature = "reference")]
+fn markdown_table(headers: &[&str], rows: Vec<Vec<String>>) -> String {
+    let mut output = String::new();
+    output.push('|');
+    for header in headers {
+        output.push(' ');
+        output.push_str(&markdown_table_cell(header));
+        output.push_str(" |");
+    }
+    output.push('\n');
+
+    output.push('|');
+    for _header in headers {
+        output.push_str(" --- |");
+    }
+    output.push('\n');
+
+    for row in rows {
+        output.push('|');
+        for cell in row {
+            output.push(' ');
+            output.push_str(&markdown_table_cell(cell));
+            output.push_str(" |");
+        }
+        output.push('\n');
+    }
+    output
+}
+
+#[cfg(feature = "reference")]
+fn markdown_table_cell(value: impl AsRef<str>) -> String {
+    value
+        .as_ref()
+        .trim()
+        .replace('|', "\\|")
+        .replace('\n', "<br>")
+}
+
+#[cfg(feature = "reference")]
 fn capability_mode(capability: &scaffold_dsl::CapabilityDescriptor, mode: &str) -> &'static str {
     capability
         .modes
@@ -286,9 +335,15 @@ mod tests {
         let markdown = scaffold_reference_markdown();
 
         assert!(markdown.starts_with("# Scaffold Scheme Reference"));
+        assert!(markdown.contains("## Contents"));
+        assert!(markdown.contains("| Group                                   | Entries |"));
+        assert!(markdown.contains("| [Catalog](#catalog)                     | 35      |"));
         assert!(markdown.contains("## Capability Contracts"));
         assert!(markdown.contains("## Catalog Schema"));
-        assert!(markdown.contains("| `(scaffold fs)` | host-read-only |"));
+        assert!(
+            markdown
+                .contains("| `(scaffold fs)`        | host-read-only    | available | available |")
+        );
         assert!(markdown.contains("## Catalog"));
         assert!(markdown.contains("## Filesystem"));
         assert!(markdown.contains("## Paths"));

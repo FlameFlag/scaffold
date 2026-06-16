@@ -58,8 +58,10 @@ mod tests {
 
         assert!(files.iter().any(|path| path.ends_with("std/config.scm")));
         assert!(!files.iter().any(|path| {
-            path.components()
-                .any(|component| component.as_os_str() == "target")
+            path.strip_prefix(&root)
+                .ok()
+                .and_then(|relative| relative.components().next())
+                .is_some_and(|component| component.as_os_str() == "target")
         }));
     }
 

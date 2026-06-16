@@ -1,4 +1,4 @@
-import { readFile, rename, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import initScaffoldWasm, {
@@ -43,6 +43,7 @@ const renderedReference = {
     })),
 };
 
+await mkdir(dirname(outputPath), { recursive: true });
 await writeFile(`${outputPath}.tmp`, `${JSON.stringify(renderedReference)}\n`);
 await rename(`${outputPath}.tmp`, outputPath);
 
@@ -188,27 +189,47 @@ function scanSchemeForms(source, endOffset, visit) {
 
 function scanCharacter(state, escaped, character, index) {
   if (state === "comment") {
-    return {
-      state: character === "\n" ? "code" : "comment",
-      escaped: false,
-      event: null,
-    };
+    return commentState(character);
   }
 
   if (state === "string") {
-    if (escaped) {
-      return { state: "string", escaped: false, event: null };
-    }
+    return stringState(character, escaped);
+  }
 
-    if (character === "\\") {
-      return { state: "string", escaped: true, event: null };
-    }
+  return codeState(character, index);
+}
 
-    return {
-      state: character === "\"" ? "code" : "string",
-      escaped: false,
-      event: null,
-    };
+function commentState(character) {
+  return {
+    state: character === "\n" ? "code" : "comment",
+    escaped: false,
+    event: null,
+  };
+}
+
+function stringState(character, escaped) {
+  if (escaped) {
+    return { state: "string", escaped: false, event: null };
+  }
+
+  if (character === "\\") {
+    return { state: "string", escaped: true, event: null };
+  }
+
+  return {
+    state: character === "\"" ? "code" : "string",
+    escaped: false,
+    event: null,
+  };
+}
+
+function codeState(character, index) {
+  if (character === "(") {
+    return { state: "code", escaped: false, event: { kind: "open", index } };
+  }
+
+  if (character === ")") {
+    return { state: "code", escaped: false, event: { kind: "close", index } };
   }
 
   if (character === ";") {
@@ -217,14 +238,6 @@ function scanCharacter(state, escaped, character, index) {
 
   if (character === "\"") {
     return { state: "string", escaped: false, event: null };
-  }
-
-  if (character === "(") {
-    return { state: "code", escaped: false, event: { kind: "open", index } };
-  }
-
-  if (character === ")") {
-    return { state: "code", escaped: false, event: { kind: "close", index } };
   }
 
   return { state: "code", escaped: false, event: null };

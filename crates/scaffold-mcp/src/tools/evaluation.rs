@@ -27,6 +27,7 @@ impl ScaffoldMcp {
         &self,
         Parameters(args): Parameters<EvalExpressionRequest>,
     ) -> Result<CallToolResult, McpError> {
+        self.require_catalog("evaluate expressions")?;
         let ctx = self.context()?;
         let session =
             dsl::session_with_catalog_path(&ctx.catalog_path, true).map_err(internal_error)?;
@@ -44,6 +45,7 @@ impl ScaffoldMcp {
         &self,
         Parameters(args): Parameters<EvalFileRequest>,
     ) -> Result<CallToolResult, McpError> {
+        self.require_catalog("evaluate files")?;
         let path = self.resolve_path(&args.path)?;
         let ctx = self.context()?;
         let values = dsl::values_from_path_with_catalog_path(&path, &ctx.catalog_path)

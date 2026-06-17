@@ -8,15 +8,21 @@ use scaffold_template as template;
 
 use super::InstallError;
 use super::bindings::ToolBindings;
+use super::report::{InstallEvent, InstallEventKind, InstallReporter};
 
 pub(super) fn uninstall_tool(
     ctx: &Context,
     tool: &Tool,
     dry_run: bool,
+    reporter: &mut impl InstallReporter,
 ) -> Result<(), InstallError> {
     let host = Host::current();
     if !tool.supports_host(host) {
-        println!("{}: unsupported on this host, skipping", tool.name);
+        reporter.report(InstallEvent::new(
+            &tool.name,
+            InstallEventKind::Skip,
+            "unsupported on this host",
+        ));
         return Ok(());
     }
 
@@ -25,7 +31,11 @@ pub(super) fn uninstall_tool(
 
     for argv in tool.uninstall.commands_for_host(host) {
         let argv = template::render_slice(argv, &bindings);
-        println!("{}: {}", tool.name, argv.join(" "));
+        reporter.report(InstallEvent::new(
+            &tool.name,
+            InstallEventKind::Run,
+            argv.join(" "),
+        ));
         if !dry_run {
             process::run(&argv)?;
         }
@@ -38,7 +48,11 @@ pub(super) fn uninstall_tool(
     {
         for bin in &tool.bins {
             let path = ctx.bin_dir.join(process::executable_name(&bin.name));
-            println!("{}: remove {}", tool.name, path.display());
+            reporter.report(InstallEvent::new(
+                &tool.name,
+                InstallEventKind::Remove,
+                path.display().to_string(),
+            ));
             if !dry_run {
                 remove_path_if_exists(tool, &path)?;
             }
@@ -48,7 +62,11 @@ pub(super) fn uninstall_tool(
     for path in tool.uninstall.paths_for_host(host) {
         let rendered = template::render(path, &bindings);
         let path = PathBuf::from(rendered);
-        println!("{}: remove {}", tool.name, path.display());
+        reporter.report(InstallEvent::new(
+            &tool.name,
+            InstallEventKind::Remove,
+            path.display().to_string(),
+        ));
         if !dry_run {
             remove_path_if_exists(tool, &path)?;
         }
@@ -60,7 +78,11 @@ pub(super) fn uninstall_tool(
         .remove_prefix
         .unwrap_or(matches!(tool.action, Action::Build(_) | Action::Archive(_)))
     {
-        println!("{}: remove {}", tool.name, prefix.display());
+        reporter.report(InstallEvent::new(
+            &tool.name,
+            InstallEventKind::Remove,
+            prefix.display().to_string(),
+        ));
         if !dry_run {
             remove_path_if_exists(tool, &prefix)?;
         }

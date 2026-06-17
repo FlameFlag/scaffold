@@ -35,6 +35,8 @@ pub enum InstallError {
     MissingOrderReference { tool: String, reference: String },
     #[error("catalog install order contains a cycle")]
     CyclicInstallOrder,
+    #[error("catalog install order graph is inconsistent")]
+    InvalidInstallOrderGraph,
     #[error("{tool}: refusing to remove unsafe uninstall path {path:?}")]
     UnsafeUninstallPath { tool: String, path: PathBuf },
 }

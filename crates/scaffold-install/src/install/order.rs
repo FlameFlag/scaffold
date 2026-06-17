@@ -111,12 +111,17 @@ pub(super) fn resolve_install_order<'a>(
             .collect::<Vec<_>>();
         targets.sort_by_key(|&target| install_sort_key(&catalog.tools[target], target));
         for target in targets {
-            let count = indegree.get_mut(&target).expect("target indegree");
+            let Some(count) = indegree.get_mut(&target) else {
+                return Err(InstallError::InvalidInstallOrderGraph);
+            };
             *count -= 1;
             if *count == 0 {
                 ready.push(target);
             }
         }
+    }
+    if ordered.len() != selected.len() {
+        return Err(InstallError::InvalidInstallOrderGraph);
     }
 
     Ok(ordered

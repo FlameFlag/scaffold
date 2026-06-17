@@ -9,9 +9,14 @@ use scaffold_template as template;
 
 use super::bindings::ToolBindings;
 use super::presence::{tool_is_present, tool_is_present_after_install};
-use super::{InstallError, Policy};
+use super::{InstallError, InstallEvent, InstallEventKind, InstallReporter, Policy};
 
-pub(super) fn install_tool(ctx: &Context, tool: &Tool, policy: Policy) -> Result<(), InstallError> {
+pub(super) fn install_tool(
+    ctx: &Context,
+    tool: &Tool,
+    policy: Policy,
+    reporter: &mut impl InstallReporter,
+) -> Result<(), InstallError> {
     let host = Host::current();
     if !tool.supports_host(host) {
         return Err(InstallError::UnsupportedHost {
@@ -21,7 +26,11 @@ pub(super) fn install_tool(ctx: &Context, tool: &Tool, policy: Policy) -> Result
 
     if matches!(tool.action, Action::Required) {
         if tool_is_present(ctx, tool) {
-            println!("{}: present", tool.name);
+            reporter.report(InstallEvent::new(
+                &tool.name,
+                InstallEventKind::Present,
+                "already present",
+            ));
             return Ok(());
         }
         return Err(InstallError::MissingRequired {
@@ -30,7 +39,11 @@ pub(super) fn install_tool(ctx: &Context, tool: &Tool, policy: Policy) -> Result
     }
 
     if policy == Policy::Missing && tool_is_present(ctx, tool) {
-        println!("{}: present, skipping", tool.name);
+        reporter.report(InstallEvent::new(
+            &tool.name,
+            InstallEventKind::Skip,
+            "already present",
+        ));
         return Ok(());
     }
 
@@ -46,7 +59,11 @@ pub(super) fn install_tool(ctx: &Context, tool: &Tool, policy: Policy) -> Result
             let bindings = tool_bindings.as_map();
             for install_argv in package.install_argvs {
                 let argv = template::render_slice(install_argv, &bindings);
-                println!("{}: {}", tool.name, argv.join(" "));
+                reporter.report(InstallEvent::new(
+                    &tool.name,
+                    InstallEventKind::Run,
+                    argv.join(" "),
+                ));
                 process::run(&argv)?;
             }
             Ok::<(), InstallError>(())
@@ -66,7 +83,11 @@ pub(super) fn install_tool(ctx: &Context, tool: &Tool, policy: Policy) -> Result
             std::fs::create_dir_all(prefix.join("bin"))?;
             for command_argv in command_argvs {
                 let argv = template::render_slice(command_argv, &bindings);
-                println!("{}: {}", tool.name, argv.join(" "));
+                reporter.report(InstallEvent::new(
+                    &tool.name,
+                    InstallEventKind::Run,
+                    argv.join(" "),
+                ));
                 process::run_in(Some(&source_dir), &argv)?;
             }
             link_binaries(ctx, tool, &prefix)?;
@@ -75,7 +96,11 @@ pub(super) fn install_tool(ctx: &Context, tool: &Tool, policy: Policy) -> Result
         Action::Archive(action) => {
             let prefix = ctx.install_prefix(&tool.name);
             let archive_path = ctx.root_dir.join(&action.path);
-            println!("{}: extract {}", tool.name, archive_path.display());
+            reporter.report(InstallEvent::new(
+                &tool.name,
+                InstallEventKind::Extract,
+                archive_path.display().to_string(),
+            ));
             std::fs::create_dir_all(&prefix)?;
             archive::extract_archive(&archive_path, &prefix, action.strip_components)?;
             link_binaries(ctx, tool, &prefix)?;

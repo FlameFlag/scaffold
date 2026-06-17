@@ -3,6 +3,7 @@ mod error;
 mod execute;
 mod order;
 mod presence;
+mod report;
 mod uninstall;
 
 use scaffold_catalog::Catalog;
@@ -10,7 +11,8 @@ use scaffold_context::Context;
 use scaffold_platform::Host;
 
 pub use error::InstallError;
-pub use presence::tool_is_present;
+pub use presence::{ToolPresenceStatus, tool_is_present, tool_presence_status};
+pub use report::{InstallEvent, InstallEventKind, InstallReporter, NoopReporter};
 
 use execute::install_tool;
 use order::resolve_install_order;
@@ -27,15 +29,29 @@ pub fn install_catalog(
     policy: Policy,
     names: &[String],
 ) -> Result<(), InstallError> {
+    let mut reporter = NoopReporter;
+    install_catalog_with_reporter(ctx, policy, names, &mut reporter)
+}
+
+pub fn install_catalog_with_reporter(
+    ctx: &Context,
+    policy: Policy,
+    names: &[String],
+    reporter: &mut impl InstallReporter,
+) -> Result<(), InstallError> {
     let catalog = Catalog::load(&ctx.catalog_path)?;
     let installing_all = names.is_empty();
     let host = Host::current();
     for tool in resolve_install_order(&catalog, names)? {
         if installing_all && !tool.supports_host(host) {
-            println!("{}: unsupported, skipping", tool.name);
+            reporter.report(InstallEvent::new(
+                &tool.name,
+                InstallEventKind::Skip,
+                "unsupported on this host",
+            ));
             continue;
         }
-        install_tool(ctx, tool, policy)?;
+        install_tool(ctx, tool, policy, reporter)?;
     }
     Ok(())
 }
@@ -45,11 +61,21 @@ pub fn uninstall_catalog(
     names: &[String],
     dry_run: bool,
 ) -> Result<(), InstallError> {
+    let mut reporter = NoopReporter;
+    uninstall_catalog_with_reporter(ctx, names, dry_run, &mut reporter)
+}
+
+pub fn uninstall_catalog_with_reporter(
+    ctx: &Context,
+    names: &[String],
+    dry_run: bool,
+    reporter: &mut impl InstallReporter,
+) -> Result<(), InstallError> {
     let catalog = Catalog::load(&ctx.catalog_path)?;
     let mut tools = resolve_install_order(&catalog, names)?;
     tools.reverse();
     for tool in tools {
-        uninstall_tool(ctx, tool, dry_run)?;
+        uninstall_tool(ctx, tool, dry_run, reporter)?;
     }
     Ok(())
 }
@@ -82,6 +108,52 @@ mod tests {
         };
 
         assert!(tool_is_present(&ctx, &tool));
+    }
+
+    #[test]
+    fn tool_presence_status_reports_present_missing_and_unsupported() {
+        let current_exe = std::env::current_exe().expect("current test executable");
+        let ctx = Context {
+            catalog_path: PathBuf::from("catalog.scm"),
+            root_dir: PathBuf::from("."),
+            bin_dir: PathBuf::from("."),
+            state_dir: PathBuf::from("."),
+        };
+        let present: Tool = serde_json::from_value(serde_json::json!({
+            "name": "present",
+            "checks": [{ "argv": [current_exe.to_string_lossy(), "--list"] }],
+            "action": { "type": "required" }
+        }))
+        .expect("present tool");
+        let missing: Tool = serde_json::from_value(serde_json::json!({
+            "name": "missing",
+            "bins": [{ "name": "definitely-not-a-real-scaffold-test-bin" }],
+            "action": { "type": "required" }
+        }))
+        .expect("missing tool");
+        let unsupported: Tool = serde_json::from_value(serde_json::json!({
+            "name": "unsupported",
+            "platforms": [unsupported_host_os_symbol()],
+            "action": { "type": "required" }
+        }))
+        .expect("unsupported tool");
+        let host = Host::current();
+
+        assert_eq!(
+            tool_presence_status(&ctx, &present, host),
+            ToolPresenceStatus::Present
+        );
+        assert_eq!(
+            tool_presence_status(&ctx, &missing, host),
+            ToolPresenceStatus::Missing
+        );
+        assert_eq!(
+            tool_presence_status(&ctx, &unsupported, host),
+            ToolPresenceStatus::Unsupported
+        );
+        assert_eq!(ToolPresenceStatus::Present.label(), "present");
+        assert_eq!(ToolPresenceStatus::Missing.label(), "missing");
+        assert_eq!(ToolPresenceStatus::Unsupported.label(), "unsupported");
     }
 
     #[test]
@@ -165,6 +237,32 @@ mod tests {
         };
 
         install_catalog(&ctx, Policy::Missing, &[]).expect("install all");
+    }
+
+    #[test]
+    fn install_reporter_receives_skipped_unsupported_tools() {
+        let root = test_root("install-reporter-receives-skipped-unsupported-tools");
+        let catalog_path = root.path().join("catalog.scm");
+        write_catalog_fixture(
+            &catalog_path,
+            include_str!("../fixtures/install/all-with-unsupported.scm"),
+        );
+        let ctx = Context {
+            catalog_path,
+            root_dir: root.path().to_path_buf(),
+            bin_dir: root.path().join("bin"),
+            state_dir: root.path().join("state"),
+        };
+        let mut reporter = RecordingReporter::default();
+
+        install_catalog_with_reporter(&ctx, Policy::Missing, &[], &mut reporter)
+            .expect("install all");
+
+        assert!(reporter.events.iter().any(|event| {
+            event.tool == "unsupported"
+                && event.action == InstallEventKind::Skip
+                && event.detail == "unsupported on this host"
+        }));
     }
 
     #[test]
@@ -253,6 +351,36 @@ mod tests {
     }
 
     #[test]
+    fn uninstall_reporter_receives_planned_removals() {
+        let root = test_root("uninstall-reporter-receives-planned-removals");
+        let trash = root.path().join("trash");
+        std::fs::write(&trash, "keep me").expect("trash");
+        let catalog_path = root.path().join("catalog.scm");
+        std::fs::write(
+            &catalog_path,
+            include_str!("../fixtures/install/uninstall-removes-declared-paths.scm"),
+        )
+        .expect("catalog");
+        let ctx = Context {
+            catalog_path,
+            root_dir: root.path().to_path_buf(),
+            bin_dir: root.path().join("bin"),
+            state_dir: root.path().join("state"),
+        };
+        let mut reporter = RecordingReporter::default();
+
+        uninstall_catalog_with_reporter(&ctx, &["demo".to_owned()], true, &mut reporter)
+            .expect("dry-run uninstall");
+
+        assert!(reporter.events.iter().any(|event| {
+            event.tool == "demo"
+                && event.action == InstallEventKind::Remove
+                && event.detail == trash.display().to_string()
+        }));
+        assert!(trash.exists());
+    }
+
+    #[test]
     fn uninstall_rejects_unsafe_declared_paths() {
         let root = test_root("uninstall-rejects-unsafe-paths");
         let catalog_path = root.path().join("catalog.scm");
@@ -280,6 +408,17 @@ mod tests {
             .prefix(&format!("scaffold-{name}-"))
             .tempdir()
             .expect("root")
+    }
+
+    #[derive(Default)]
+    struct RecordingReporter {
+        events: Vec<InstallEvent>,
+    }
+
+    impl InstallReporter for RecordingReporter {
+        fn report(&mut self, event: InstallEvent) {
+            self.events.push(event);
+        }
     }
 
     const fn unsupported_host_os_symbol() -> &'static str {

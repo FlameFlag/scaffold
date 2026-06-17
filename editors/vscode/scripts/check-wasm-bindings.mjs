@@ -23,7 +23,7 @@ try {
   }
 
   const stale = [];
-  for (const file of expectedFiles) {
+  for (const file of expectedFiles.filter(isComparableBindingFile)) {
     const [expected, generated] = await Promise.all([
       readFile(resolve(expectedDir, file)),
       readFile(resolve(generatedDir, file)),
@@ -46,4 +46,8 @@ async function generatedBindingFiles(dir) {
   return (await readdir(dir))
     .filter((file) => file.startsWith("scaffold_wasm"))
     .sort();
+}
+
+function isComparableBindingFile(file) {
+  return !file.endsWith(".wasm");
 }

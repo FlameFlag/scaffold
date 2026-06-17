@@ -9,4 +9,5 @@ workspace = true
 
 [dependencies]
 lexpr = "0.2.7"
+markdown-table-formatter = "0.3.0"
 serde = { version = "1.0.228", features = ["derive"] }

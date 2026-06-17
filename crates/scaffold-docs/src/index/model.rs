@@ -76,6 +76,20 @@ impl DocEntry {
             kind,
         }
     }
+
+    #[must_use]
+    pub fn group_name(&self) -> &str {
+        self.group.as_deref().unwrap_or("Language")
+    }
+
+    #[must_use]
+    pub fn display_source_location(&self) -> Option<String> {
+        let source = self.source.as_deref()?;
+        Some(match self.range {
+            Some(range) => format!("{source}:{}", range.start.line + 1),
+            None => source.to_owned(),
+        })
+    }
 }
 
 impl ReferenceEntry for DocEntry {
@@ -97,6 +111,17 @@ impl ReferenceEntry for DocEntry {
 
     fn stability(&self) -> Option<&str> {
         self.stability.as_deref()
+    }
+
+    fn effect(&self) -> Option<&str> {
+        self.effect.as_deref()
+    }
+
+    fn requires_capability(&self) -> Vec<&str> {
+        self.requires_capability
+            .iter()
+            .map(String::as_str)
+            .collect()
     }
 
     fn params(&self) -> Vec<EditorReferenceParam<'_>> {
@@ -148,6 +173,10 @@ impl ReferenceItem for DocEntry {
 
     fn source(&self) -> Option<&str> {
         self.source.as_deref()
+    }
+
+    fn source_location(&self) -> Option<String> {
+        self.display_source_location()
     }
 
     fn range(&self) -> Option<scaffold_editor::symbols::SymbolRange> {

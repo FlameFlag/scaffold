@@ -8,9 +8,16 @@ use std::collections::BTreeMap;
 mod index;
 
 pub use index::{
-    DocEntry, DocIndex, DocKind, DocParam, SourceDocs, SourcePosition, SourceRange,
-    WorkspaceDocIndex, markdown_for_entry, snippet_for_signature, source_docs,
-    source_docs_with_definitions,
+    DocEntry, DocIndex, DocKind, DocParam, EntryDetail, EntryDocumentation, SourceDocs,
+    SourcePosition, SourceRange, WorkspaceDocIndex, detailed_markdown_for_entry, entry_count_label,
+    entry_documentation, entry_summary_markdown_table, group_count_label, group_markdown_table,
+    markdown_for_entry, rendered_markdown_for_entry, search_doc_entries, search_reference_entries,
+    snippet_for_signature, source_docs, source_docs_with_definitions, source_markdown_for_entry,
+    suggest_doc_entries, suggest_reference_entries, titled_markdown_for_entry,
+};
+#[cfg(feature = "reference")]
+pub use scaffold_editor::reference::{
+    markdown_code_span, markdown_table, markdown_text, same_markdown_paragraph,
 };
 
 #[cfg(feature = "reference")]
@@ -26,6 +33,13 @@ pub fn scaffold_reference_json() -> serde_json::Result<String> {
 
 #[cfg(feature = "reference")]
 #[must_use]
+pub fn reference_entry_json(entry: &DocEntry) -> serde_json::Value {
+    serde_json::to_value(ReferenceEntry::from_doc_entry(entry))
+        .expect("reference entries serialize to JSON values")
+}
+
+#[cfg(feature = "reference")]
+#[must_use]
 pub fn render_reference_markdown(index: &DocIndex) -> String {
     let mut output = String::from("# Scaffold Scheme Reference\n\n");
     output.push_str(
@@ -35,7 +49,7 @@ pub fn render_reference_markdown(index: &DocIndex) -> String {
     let mut groups = BTreeMap::<String, Vec<&DocEntry>>::new();
     for entry in index.visible_entries() {
         groups
-            .entry(entry.group.clone().unwrap_or_else(|| "Language".to_owned()))
+            .entry(entry.group_name().to_owned())
             .or_default()
             .push(entry);
     }
@@ -51,7 +65,7 @@ pub fn render_reference_markdown(index: &DocIndex) -> String {
             .iter()
             .map(|(group, entries)| {
                 vec![
-                    format!("[{group}](#{})", anchor(group)),
+                    format!("[{}](#{})", markdown_text(group), anchor(group)),
                     entries.len().to_string(),
                 ]
             })
@@ -65,7 +79,7 @@ pub fn render_reference_markdown(index: &DocIndex) -> String {
             .iter()
             .map(|capability| {
                 vec![
-                    format!("`{}`", capability.library),
+                    markdown_code_span(capability.library),
                     capability.effect.to_owned(),
                     capability_mode(capability, "catalog").to_owned(),
                     capability_mode(capability, "test").to_owned(),
@@ -82,9 +96,13 @@ pub fn render_reference_markdown(index: &DocIndex) -> String {
     );
 
     for (group, entries) in &groups {
-        output.push_str(&format!("\n## {group}\n\n"));
+        output.push_str(&format!(
+            "\n## <a id=\"{}\"></a>{}\n\n",
+            anchor(group),
+            markdown_text(group)
+        ));
         for entry in entries {
-            output.push_str(&format!("### `{}`\n\n", entry.name));
+            output.push_str(&format!("### {}\n\n", markdown_code_span(&entry.name)));
             let markdown = markdown_for_entry(entry);
             if markdown.trim().is_empty() {
                 output.push_str("No documentation provided.\n\n");
@@ -92,8 +110,12 @@ pub fn render_reference_markdown(index: &DocIndex) -> String {
                 output.push_str(markdown.trim());
                 output.push_str("\n\n");
             }
-            if let Some(source) = &entry.source {
-                output.push_str(&format!("Source: `{source}`\n\n"));
+            if let Some(location) = entry.display_source_location() {
+                output.push_str(&markdown_table(
+                    &["Field", "Value"],
+                    vec![vec!["Source".to_owned(), markdown_code_span(location)]],
+                ));
+                output.push('\n');
             }
         }
     }
@@ -183,6 +205,8 @@ struct ReferenceEntry {
     signature: Option<String>,
     summary: Option<String>,
     markdown: Option<String>,
+    raw_markdown: Option<String>,
+    rendered_markdown: String,
     example: Option<String>,
     params: Vec<ReferenceParam>,
     returns: Option<String>,
@@ -194,7 +218,9 @@ struct ReferenceEntry {
     since: Option<String>,
     deprecated: Option<String>,
     source: Option<String>,
+    source_location: Option<String>,
     range: Option<ReferenceRange>,
+    hidden: bool,
 }
 
 #[cfg(feature = "reference")]
@@ -206,6 +232,8 @@ impl ReferenceEntry {
             signature: entry.signature.clone(),
             summary: entry.summary.clone(),
             markdown: entry.markdown.clone(),
+            raw_markdown: entry.markdown.clone(),
+            rendered_markdown: rendered_markdown_for_entry(entry),
             example: entry.example.clone(),
             params: entry
                 .params
@@ -216,7 +244,7 @@ impl ReferenceEntry {
                 })
                 .collect(),
             returns: entry.returns.clone(),
-            group: entry.group.clone().unwrap_or_else(|| "Language".to_owned()),
+            group: entry.group_name().to_owned(),
             see: entry.see.clone(),
             effect: entry.effect.clone(),
             requires_capability: entry.requires_capability.clone(),
@@ -224,7 +252,9 @@ impl ReferenceEntry {
             since: entry.since.clone(),
             deprecated: entry.deprecated.clone(),
             source: entry.source.clone(),
+            source_location: entry.display_source_location(),
             range: entry.range.map(ReferenceRange::from_source_range),
+            hidden: entry.hidden,
         }
     }
 }
@@ -261,44 +291,6 @@ const fn doc_kind_name(kind: DocKind) -> &'static str {
 struct ReferenceParam {
     name: String,
     summary: String,
-}
-
-#[cfg(feature = "reference")]
-fn markdown_table(headers: &[&str], rows: Vec<Vec<String>>) -> String {
-    let mut output = String::new();
-    output.push('|');
-    for header in headers {
-        output.push(' ');
-        output.push_str(&markdown_table_cell(header));
-        output.push_str(" |");
-    }
-    output.push('\n');
-
-    output.push('|');
-    for _header in headers {
-        output.push_str(" --- |");
-    }
-    output.push('\n');
-
-    for row in rows {
-        output.push('|');
-        for cell in row {
-            output.push(' ');
-            output.push_str(&markdown_table_cell(cell));
-            output.push_str(" |");
-        }
-        output.push('\n');
-    }
-    output
-}
-
-#[cfg(feature = "reference")]
-fn markdown_table_cell(value: impl AsRef<str>) -> String {
-    value
-        .as_ref()
-        .trim()
-        .replace('|', "\\|")
-        .replace('\n', "<br>")
 }
 
 #[cfg(feature = "reference")]
@@ -344,21 +336,77 @@ mod tests {
             markdown
                 .contains("| `(scaffold fs)`        | host-read-only    | available | available |")
         );
-        assert!(markdown.contains("## Catalog"));
-        assert!(markdown.contains("## Filesystem"));
-        assert!(markdown.contains("## Paths"));
-        assert!(markdown.contains("## Workspace"));
+        assert!(markdown.contains("## <a id=\"catalog\"></a>Catalog"));
+        assert!(markdown.contains("## <a id=\"filesystem\"></a>Filesystem"));
+        assert!(markdown.contains("## <a id=\"paths\"></a>Paths"));
+        assert!(markdown.contains("## <a id=\"workspace\"></a>Workspace"));
         assert!(markdown.contains("### `tool`"));
         assert!(markdown.contains("### `path/exists?`"));
         assert!(markdown.contains("### `path/join`"));
         assert!(markdown.contains("### `workspace/path`"));
-        assert!(markdown.contains("Parameters:"));
+        assert!(markdown.contains("**Parameters**"));
+        assert!(markdown.contains("| Source | `src/dsl/std/catalog/tool.scm:"));
+        assert!(!markdown.contains("\nSource: `"));
         assert!(!markdown.contains("### `doc-field`"));
+    }
+
+    #[test]
+    fn reference_markdown_escapes_group_link_and_heading_text() {
+        let mut index = DocIndex::empty();
+        let entry = DocEntry {
+            name: "group/entry".to_owned(),
+            signature: None,
+            summary: None,
+            markdown: None,
+            example: None,
+            params: Vec::new(),
+            returns: None,
+            group: Some("Bad [Group] | Plus+".to_owned()),
+            see: Vec::new(),
+            effect: None,
+            requires_capability: Vec::new(),
+            stability: None,
+            since: None,
+            deprecated: None,
+            hidden: false,
+            source: None,
+            range: None,
+            kind: DocKind::Function,
+        };
+        index.insert(entry);
+
+        let markdown = render_reference_markdown(&index);
+
+        assert!(markdown.contains("| [Bad \\[Group\\] \\| Plus\\+](#bad-group-plus) | 1       |"));
+        assert!(markdown.contains("## <a id=\"bad-group-plus\"></a>Bad \\[Group\\] | Plus\\+"));
+        assert!(!markdown.contains("[Bad [Group] | Plus+]"));
+        assert!(!markdown.contains("## Bad [Group] | Plus+"));
+    }
+
+    #[test]
+    fn markdown_table_formats_and_escapes_cells() {
+        let table = markdown_table(
+            &["Name", "Summary"],
+            vec![vec![
+                "`pipe`".to_owned(),
+                "keeps | escaped\nand compact".to_owned(),
+            ]],
+        );
+
+        assert!(table.contains("| Name   | Summary"));
+        assert!(table.contains("keeps \\| escaped<br>and compact"));
     }
 
     #[test]
     fn renders_structured_reference_json() {
         let json = scaffold_reference_json().expect("reference json");
+        let value: serde_json::Value = serde_json::from_str(&json).expect("reference value");
+        let tool = value["entries"]
+            .as_array()
+            .expect("entries")
+            .iter()
+            .find(|entry| entry["name"] == "tool")
+            .expect("tool entry");
 
         assert!(json.contains("\"title\": \"Scaffold Scheme Reference\""));
         assert!(json.contains("\"capabilities\""));
@@ -377,7 +425,60 @@ mod tests {
         assert!(json.contains("\"group\": \"Filesystem\""));
         assert!(json.contains("\"group\": \"Paths\""));
         assert!(json.contains("\"group\": \"Workspace\""));
+        assert_eq!(
+            tool["source_location"].as_str(),
+            Some("src/dsl/std/catalog/tool.scm:16")
+        );
+        assert_eq!(tool["hidden"].as_bool(), Some(false));
+        assert!(tool["markdown"].is_null());
+        assert!(tool["raw_markdown"].is_null());
+        assert!(tool["rendered_markdown"].as_str().is_some_and(|markdown| {
+            markdown.contains("```scheme\n(tool name action field ...)\n```")
+                && markdown.contains("**Parameters**")
+        }));
+        let subject = value["entries"]
+            .as_array()
+            .expect("entries")
+            .iter()
+            .find(|entry| entry["name"] == "subject")
+            .expect("subject entry");
+        assert_eq!(
+            subject["rendered_markdown"].as_str(),
+            Some("No documentation provided.")
+        );
         assert!(!json.contains("\"name\": \"doc-field\""));
+    }
+
+    #[test]
+    fn renders_reference_entry_json_value() {
+        let index = DocIndex::scaffold();
+        let entry = index.get("tool").expect("tool entry");
+        let value = reference_entry_json(entry);
+
+        assert_eq!(value["name"], "tool");
+        assert_eq!(value["kind"], "function");
+        assert_eq!(value["group"], "Catalog");
+        assert!(value["markdown"].is_null());
+        assert!(value["raw_markdown"].is_null());
+        assert!(value["rendered_markdown"].as_str().is_some_and(|markdown| {
+            markdown.contains("```scheme\n(tool name action field ...)\n```")
+                && markdown.contains("**Parameters**")
+        }));
+        assert_eq!(
+            value["source_location"].as_str(),
+            Some("src/dsl/std/catalog/tool.scm:16")
+        );
+        assert_eq!(value["hidden"].as_bool(), Some(false));
+        assert!(
+            value["range"]["length"]
+                .as_u64()
+                .is_some_and(|length| length > 0)
+        );
+        assert!(
+            value["params"]
+                .as_array()
+                .is_some_and(|params| params.iter().any(|param| param["name"] == "name"))
+        );
     }
 
     #[test]

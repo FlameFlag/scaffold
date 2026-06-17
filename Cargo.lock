@@ -2329,7 +2329,6 @@ dependencies = [
  "scaffold-mcp",
  "scaffold-platform",
  "scaffold-scheme",
- "scheme-rs",
  "serde_json",
  "termimad",
  "thiserror",
@@ -2401,6 +2400,7 @@ version = "0.0.1"
 dependencies = [
  "lexpr",
  "markdown-table-formatter",
+ "nucleo-matcher",
  "scaffold-catalog",
  "scaffold-dsl",
  "scaffold-editor",
@@ -2429,6 +2429,7 @@ name = "scaffold-editor"
 version = "0.0.1"
 dependencies = [
  "lexpr",
+ "markdown-table-formatter",
  "serde",
 ]
 

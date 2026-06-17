@@ -1,4 +1,5 @@
 use crate::symbols::SymbolRange;
+use markdown_table_formatter::format_tables;
 
 pub struct ReferenceParam<'a> {
     pub name: &'a str,
@@ -73,6 +74,12 @@ pub trait ReferenceEntry {
     fn group(&self) -> Option<&str>;
     fn since(&self) -> Option<&str>;
     fn stability(&self) -> Option<&str>;
+    fn effect(&self) -> Option<&str> {
+        None
+    }
+    fn requires_capability(&self) -> Vec<&str> {
+        Vec::new()
+    }
     fn params(&self) -> Vec<ReferenceParam<'_>>;
     fn returns(&self) -> Option<&str>;
     fn markdown(&self) -> Option<&str>;
@@ -86,6 +93,9 @@ pub trait ReferenceItem: ReferenceEntry {
     fn kind(&self) -> ReferenceKind;
     fn hidden(&self) -> bool;
     fn source(&self) -> Option<&str>;
+    fn source_location(&self) -> Option<String> {
+        None
+    }
     fn range(&self) -> Option<SymbolRange>;
 }
 
@@ -124,7 +134,11 @@ pub fn hover_markdown<'a, E>(
 where
     E: ReferenceItem + 'a,
 {
-    let markdown = markdown_for_entry(entries.into_iter().find(|entry| entry.name() == symbol)?);
+    let markdown = markdown_for_entry(
+        entries
+            .into_iter()
+            .find(|entry| !entry.hidden() && entry.name() == symbol)?,
+    );
     (!markdown.trim().is_empty()).then_some(markdown)
 }
 
@@ -135,7 +149,9 @@ pub fn signature_help<'a, E>(
 where
     E: ReferenceItem + 'a,
 {
-    let entry = entries.into_iter().find(|entry| entry.name() == symbol)?;
+    let entry = entries
+        .into_iter()
+        .find(|entry| !entry.hidden() && entry.name() == symbol)?;
     let signature = entry.signature()?;
     Some(SignatureHelp {
         label: signature.to_owned(),
@@ -148,6 +164,9 @@ pub fn definition_location(
     entry: &impl ReferenceItem,
     fallback_uri: &str,
 ) -> Option<DefinitionLocation> {
+    if entry.hidden() {
+        return None;
+    }
     let range = entry.range()?;
     Some(DefinitionLocation {
         uri: entry
@@ -170,7 +189,7 @@ where
     let mut symbols = entries
         .into_iter()
         .filter(|entry| !entry.hidden())
-        .filter(|entry| query.is_empty() || entry_matches_query(*entry, entry.name(), &query))
+        .filter(|entry| query.is_empty() || reference_item_matches_query(*entry, &query))
         .filter_map(|entry| {
             let range = entry.range()?;
             let uri = entry.source()?.to_owned();
@@ -226,58 +245,83 @@ pub fn markdown_for_entry(entry: &impl ReferenceEntry) -> String {
         output.push_str(signature);
         output.push_str("\n```\n\n");
     }
-    if let Some(summary) = entry.summary() {
+    let summary = entry
+        .summary()
+        .map(str::trim)
+        .filter(|value| !value.is_empty());
+    if let Some(summary) = summary {
         output.push_str(summary);
     }
     let mut metadata = Vec::new();
     if let Some(group) = entry.group() {
-        metadata.push(format!("Group: {group}"));
+        metadata.push(vec!["Group".to_owned(), group.to_owned()]);
     }
     if let Some(since) = entry.since() {
-        metadata.push(format!("Since: {since}"));
+        metadata.push(vec!["Since".to_owned(), since.to_owned()]);
     }
     if let Some(stability) = entry.stability() {
-        metadata.push(format!("Stability: {stability}"));
+        metadata.push(vec!["Stability".to_owned(), stability.to_owned()]);
+    }
+    if let Some(effect) = entry.effect() {
+        metadata.push(vec!["Effect".to_owned(), effect.to_owned()]);
+    }
+    let capabilities = entry.requires_capability();
+    if !capabilities.is_empty() {
+        metadata.push(vec![
+            "Requires capability".to_owned(),
+            capabilities
+                .into_iter()
+                .map(markdown_code_span)
+                .collect::<Vec<_>>()
+                .join(", "),
+        ]);
     }
     if !metadata.is_empty() {
         push_section_break(&mut output);
-        output.push_str(&metadata.join("  \n"));
+        output.push_str(&markdown_table(&["Field", "Value"], metadata));
     }
     let params = entry.params();
     if !params.is_empty() {
         push_section_break(&mut output);
-        output.push_str("Parameters:\n");
-        for param in params {
-            output.push_str(&format!("- `{}`: {}\n", param.name, param.summary));
-        }
+        output.push_str("**Parameters**\n\n");
+        output.push_str(&markdown_table(
+            &["Parameter", "Description"],
+            params
+                .into_iter()
+                .map(|param| vec![markdown_code_span(param.name), param.summary.to_owned()])
+                .collect(),
+        ));
     }
     if let Some(returns) = entry.returns() {
         push_section_break(&mut output);
-        output.push_str("Returns: ");
+        output.push_str("**Returns:** ");
         output.push_str(returns);
     }
-    if let Some(markdown) = entry.markdown() {
+    let markdown = entry.markdown().map(str::trim).filter(|value| {
+        !value.is_empty() && summary.is_none_or(|summary| !same_markdown_paragraph(summary, value))
+    });
+    if let Some(markdown) = markdown {
         push_section_break(&mut output);
         output.push_str(markdown);
     }
     if let Some(example) = entry.example() {
         push_section_break(&mut output);
-        output.push_str("Example:\n\n```scheme\n");
+        output.push_str("**Example**\n\n```scheme\n");
         output.push_str(example);
         output.push_str("\n```");
     }
     if let Some(deprecated) = entry.deprecated() {
         push_section_break(&mut output);
-        output.push_str("Deprecated: ");
+        output.push_str("**Deprecated:** ");
         output.push_str(deprecated);
     }
     let see = entry.see();
     if !see.is_empty() {
         push_section_break(&mut output);
-        output.push_str("See also: ");
+        output.push_str("**See also:** ");
         output.push_str(
             &see.iter()
-                .map(|name| format!("`{name}`"))
+                .map(markdown_code_span)
                 .collect::<Vec<_>>()
                 .join(", "),
         );
@@ -293,16 +337,61 @@ pub fn completion_sort_text(entry: &impl ReferenceEntry, name: &str) -> String {
 }
 
 pub fn entry_matches_query(entry: &impl ReferenceEntry, name: &str, query: &str) -> bool {
+    let query = query.trim().to_lowercase();
+    if query.is_empty() {
+        return true;
+    }
+    let query = query.as_str();
+
     entry_field_matches(name, query)
         || entry
             .group()
             .is_some_and(|group| entry_field_matches(group, query))
+        || entry
+            .since()
+            .is_some_and(|since| entry_field_matches(since, query))
+        || entry
+            .stability()
+            .is_some_and(|stability| entry_field_matches(stability, query))
+        || entry
+            .effect()
+            .is_some_and(|effect| entry_field_matches(effect, query))
+        || entry
+            .requires_capability()
+            .iter()
+            .any(|capability| entry_field_matches(capability, query))
         || entry
             .signature()
             .is_some_and(|signature| entry_field_matches(signature, query))
         || entry
             .summary()
             .is_some_and(|summary| entry_field_matches(summary, query))
+        || entry.params().iter().any(|param| {
+            entry_field_matches(param.name, query) || entry_field_matches(param.summary, query)
+        })
+        || entry
+            .returns()
+            .is_some_and(|returns| entry_field_matches(returns, query))
+        || entry
+            .markdown()
+            .is_some_and(|markdown| entry_field_matches(markdown, query))
+        || entry
+            .example()
+            .is_some_and(|example| entry_field_matches(example, query))
+        || entry
+            .deprecated()
+            .is_some_and(|deprecated| entry_field_matches(deprecated, query))
+        || entry
+            .see()
+            .iter()
+            .any(|name| entry_field_matches(name, query))
+}
+
+fn reference_item_matches_query(entry: &impl ReferenceItem, query: &str) -> bool {
+    entry_matches_query(entry, entry.name(), query)
+        || entry
+            .source()
+            .is_some_and(|source| entry_field_matches(source, query))
 }
 
 pub fn signature_parameters(entry: &impl ReferenceEntry) -> Vec<SignatureParameter> {
@@ -361,10 +450,133 @@ fn signature_parameter_names(signature: &str) -> impl Iterator<Item = &str> {
         .split_whitespace()
 }
 
+#[must_use]
+pub fn markdown_code_span(value: impl AsRef<str>) -> String {
+    let value = value.as_ref();
+    let delimiter = "`".repeat(max_consecutive_backticks(value) + 1);
+    if value.contains('`') || value.starts_with(' ') || value.ends_with(' ') {
+        format!("{delimiter} {value} {delimiter}")
+    } else {
+        format!("{delimiter}{value}{delimiter}")
+    }
+}
+
+fn max_consecutive_backticks(value: &str) -> usize {
+    let mut max_run = 0;
+    let mut run = 0;
+    for ch in value.chars() {
+        if ch == '`' {
+            run += 1;
+            max_run = max_run.max(run);
+        } else {
+            run = 0;
+        }
+    }
+    max_run
+}
+
+#[must_use]
+pub fn markdown_text(value: impl AsRef<str>) -> String {
+    let normalized = value
+        .as_ref()
+        .replace("\r\n", "\n")
+        .replace('\r', "\n")
+        .replace('\n', " ");
+    let mut output = String::with_capacity(normalized.len());
+    for ch in normalized.chars() {
+        if matches!(
+            ch,
+            '\\' | '`'
+                | '*'
+                | '_'
+                | '{'
+                | '}'
+                | '['
+                | ']'
+                | '<'
+                | '>'
+                | '('
+                | ')'
+                | '#'
+                | '+'
+                | '-'
+                | '.'
+                | '!'
+        ) {
+            output.push('\\');
+        }
+        output.push(ch);
+    }
+    output
+}
+
 fn push_section_break(output: &mut String) {
-    if !output.is_empty() && !output.ends_with("\n\n") {
+    if !output.is_empty() {
+        while output.ends_with('\n') {
+            output.pop();
+        }
         output.push_str("\n\n");
     }
+}
+
+#[must_use]
+pub fn same_markdown_paragraph(left: &str, right: &str) -> bool {
+    normalize_markdown_paragraph(left) == normalize_markdown_paragraph(right)
+}
+
+fn normalize_markdown_paragraph(value: &str) -> String {
+    value.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
+#[must_use]
+pub fn markdown_table(headers: &[&str], rows: Vec<Vec<String>>) -> String {
+    assert!(
+        !headers.is_empty(),
+        "markdown tables must have at least one column"
+    );
+
+    let mut output = String::new();
+    output.push('|');
+    for header in headers {
+        push_markdown_table_cell(&mut output, header);
+    }
+    output.push('\n');
+
+    output.push('|');
+    for _header in headers {
+        output.push_str(" --- |");
+    }
+    output.push('\n');
+
+    for row in rows {
+        assert_eq!(
+            row.len(),
+            headers.len(),
+            "markdown table row width must match header width"
+        );
+        output.push('|');
+        for cell in row {
+            push_markdown_table_cell(&mut output, cell);
+        }
+        output.push('\n');
+    }
+    format_tables(output)
+}
+
+fn push_markdown_table_cell(output: &mut String, value: impl AsRef<str>) {
+    output.push(' ');
+    output.push_str(&markdown_table_cell(value));
+    output.push_str(" |");
+}
+
+fn markdown_table_cell(value: impl AsRef<str>) -> String {
+    value
+        .as_ref()
+        .trim()
+        .replace("\r\n", "\n")
+        .replace('\r', "\n")
+        .replace('|', "\\|")
+        .replace('\n', "<br>")
 }
 
 #[cfg(test)]
@@ -399,6 +611,14 @@ mod tests {
             None
         }
 
+        fn effect(&self) -> Option<&str> {
+            Some("pure")
+        }
+
+        fn requires_capability(&self) -> Vec<&str> {
+            vec!["scaffold.demo"]
+        }
+
         fn params(&self) -> Vec<ReferenceParam<'_>> {
             self.params
                 .iter()
@@ -430,6 +650,90 @@ mod tests {
         }
     }
 
+    struct Item<'a> {
+        name: &'a str,
+        source: Option<&'a str>,
+        range: Option<SymbolRange>,
+        hidden: bool,
+        entry: Entry<'a>,
+    }
+
+    impl ReferenceEntry for Item<'_> {
+        fn signature(&self) -> Option<&str> {
+            self.entry.signature()
+        }
+
+        fn summary(&self) -> Option<&str> {
+            self.entry.summary()
+        }
+
+        fn group(&self) -> Option<&str> {
+            self.entry.group()
+        }
+
+        fn since(&self) -> Option<&str> {
+            self.entry.since()
+        }
+
+        fn stability(&self) -> Option<&str> {
+            self.entry.stability()
+        }
+
+        fn effect(&self) -> Option<&str> {
+            self.entry.effect()
+        }
+
+        fn requires_capability(&self) -> Vec<&str> {
+            self.entry.requires_capability()
+        }
+
+        fn params(&self) -> Vec<ReferenceParam<'_>> {
+            self.entry.params()
+        }
+
+        fn returns(&self) -> Option<&str> {
+            self.entry.returns()
+        }
+
+        fn markdown(&self) -> Option<&str> {
+            self.entry.markdown()
+        }
+
+        fn example(&self) -> Option<&str> {
+            self.entry.example()
+        }
+
+        fn deprecated(&self) -> Option<&str> {
+            self.entry.deprecated()
+        }
+
+        fn see(&self) -> Vec<&str> {
+            self.entry.see()
+        }
+    }
+
+    impl ReferenceItem for Item<'_> {
+        fn name(&self) -> &str {
+            self.name
+        }
+
+        fn kind(&self) -> ReferenceKind {
+            ReferenceKind::Function
+        }
+
+        fn hidden(&self) -> bool {
+            self.hidden
+        }
+
+        fn source(&self) -> Option<&str> {
+            self.source
+        }
+
+        fn range(&self) -> Option<SymbolRange> {
+            self.range.clone()
+        }
+    }
+
     #[test]
     fn renders_markdown_reference_entry() {
         let markdown = markdown_for_entry(&Entry {
@@ -438,14 +742,82 @@ mod tests {
             group: Some("Demo"),
             params: vec![ReferenceParam {
                 name: "name",
-                summary: "Demo name.",
+                summary: "Demo | name.\nSecond line.",
             }],
         });
 
         assert!(markdown.contains("```scheme\n(demo name)\n```"));
-        assert!(markdown.contains("Group: Demo"));
-        assert!(markdown.contains("- `name`: Demo name."));
-        assert!(markdown.contains("See also: `tool`"));
+        assert!(markdown.contains("| Field"));
+        assert!(markdown.contains("| Value"));
+        assert!(markdown.contains("Group"));
+        assert!(markdown.contains("Demo"));
+        assert!(markdown.contains("Effect"));
+        assert!(markdown.contains("pure"));
+        assert!(markdown.contains("Requires capability"));
+        assert!(markdown.contains("`scaffold.demo`"));
+        assert!(markdown.contains("**Parameters**"));
+        assert!(!markdown.contains("\n\n\n**Parameters**"));
+        assert!(markdown.contains("| Parameter | Description"));
+        assert!(markdown.contains("| `name`    | Demo \\| name.<br>Second line. |"));
+        assert!(!markdown.contains("- `name`:"));
+        assert!(markdown.contains("**Returns:** A value."));
+        assert!(!markdown.contains("Returns: A value."));
+        assert!(markdown.contains("**Example**"));
+        assert!(markdown.contains("```scheme\n(demo \"name\")\n```"));
+        assert!(markdown.contains("**See also:** `tool`"));
+        assert!(!markdown.contains("See also: `tool`"));
+    }
+
+    #[test]
+    fn omits_markdown_when_it_repeats_the_summary() {
+        let markdown = markdown_for_entry(&Entry {
+            signature: Some("(demo name)"),
+            summary: Some("Extra details."),
+            group: Some("Demo"),
+            params: Vec::new(),
+        });
+
+        assert_eq!(markdown.matches("Extra details.").count(), 1);
+    }
+
+    #[test]
+    fn markdown_table_escapes_cells_and_formats_columns() {
+        let markdown = markdown_table(
+            &["Name", "Description"],
+            vec![vec![
+                "tool|path".to_owned(),
+                "first line\r\nsecond line".to_owned(),
+            ]],
+        );
+
+        assert!(markdown.contains("| Name       | Description"));
+        assert!(markdown.contains("| tool\\|path | first line<br>second line |"));
+    }
+
+    #[test]
+    fn markdown_code_spans_use_safe_delimiters() {
+        assert_eq!(markdown_code_span("catalog/tool"), "`catalog/tool`");
+        assert_eq!(markdown_code_span("bad`query"), "`` bad`query ``");
+        assert_eq!(markdown_code_span("bad``query"), "``` bad``query ```");
+        assert_eq!(markdown_code_span(" padded "), "`  padded  `");
+    }
+
+    #[test]
+    fn markdown_text_escapes_inline_markup() {
+        assert_eq!(
+            markdown_text("Bad [Group] | Plus+"),
+            "Bad \\[Group\\] | Plus\\+"
+        );
+        assert_eq!(markdown_text("line\r\nbreak"), "line break");
+    }
+
+    #[test]
+    #[should_panic(expected = "markdown table row width must match header width")]
+    fn markdown_table_rejects_mismatched_row_widths() {
+        drop(markdown_table(
+            &["Name", "Description"],
+            vec![vec!["tool".to_owned()]],
+        ));
     }
 
     #[test]
@@ -480,12 +852,71 @@ mod tests {
             signature: Some("(demo name)"),
             summary: Some("Create a demo."),
             group: Some("Fixtures"),
-            params: Vec::new(),
+            params: vec![ReferenceParam {
+                name: "name",
+                summary: "Demo name.",
+            }],
         };
 
         assert!(entry_matches_query(&entry, "demo", "fix"));
+        assert!(entry_matches_query(&entry, "demo", "1.0"));
+        assert!(entry_matches_query(&entry, "demo", "pure"));
+        assert!(entry_matches_query(&entry, "demo", "scaffold.demo"));
         assert!(entry_matches_query(&entry, "demo", "create"));
+        assert!(entry_matches_query(&entry, "demo", "value"));
+        assert!(entry_matches_query(&entry, "demo", "extra details"));
+        assert!(entry_matches_query(&entry, "demo", "tool"));
         assert!(entry_matches_query(&entry, "demo", "name"));
         assert_eq!(completion_sort_text(&entry, "demo"), "Fixtures:demo");
+    }
+
+    #[test]
+    fn workspace_symbols_match_metadata_and_source_paths() {
+        let item = Item {
+            name: "demo",
+            source: Some("src/dsl/std/workspace.scm"),
+            range: Some(SymbolRange {
+                line: 2,
+                start: 4,
+                length: 6,
+            }),
+            hidden: false,
+            entry: Entry {
+                signature: Some("(demo name)"),
+                summary: Some("Create a demo."),
+                group: Some("Fixtures"),
+                params: Vec::new(),
+            },
+        };
+
+        assert_eq!(workspace_symbols([&item], "scaffold.demo")[0].name, "demo");
+        assert_eq!(workspace_symbols([&item], "workspace.scm")[0].name, "demo");
+    }
+
+    #[test]
+    fn hidden_items_are_omitted_from_public_reference_helpers() {
+        let hidden = Item {
+            name: "internal-demo",
+            source: Some("src/internal.scm"),
+            range: Some(SymbolRange {
+                line: 2,
+                start: 4,
+                length: 13,
+            }),
+            hidden: true,
+            entry: Entry {
+                signature: Some("(internal-demo name)"),
+                summary: Some("Internal helper."),
+                group: Some("Internal"),
+                params: Vec::new(),
+            },
+        };
+
+        assert!(hover_markdown([&hidden], "internal-demo").is_none());
+        assert!(signature_help([&hidden], "internal-demo").is_none());
+        assert!(definition_location(&hidden, "file:///fallback.scm").is_none());
+        assert!(workspace_symbols([&hidden], "internal").is_empty());
+        assert!(document_symbols([&hidden]).is_empty());
+        assert!(completion_items([&hidden]).is_empty());
     }
 }

@@ -4,6 +4,7 @@ use crate::editor_reference::{
 };
 
 const REFERENCE_JSON: &str = include_str!("reference.min.json");
+const MAX_REFERENCE_SEARCH_LIMIT: usize = 100;
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
 pub(crate) struct ReferenceDocument {
@@ -35,15 +36,23 @@ pub(crate) struct ReferenceEntry {
     pub(crate) signature: Option<String>,
     pub(crate) summary: Option<String>,
     pub(crate) markdown: Option<String>,
+    #[serde(default)]
+    pub(crate) raw_markdown: Option<String>,
+    #[serde(default)]
+    pub(crate) rendered_markdown: String,
     pub(crate) example: Option<String>,
     pub(crate) params: Vec<ReferenceParam>,
     pub(crate) returns: Option<String>,
     pub(crate) group: String,
     pub(crate) see: Vec<String>,
+    pub(crate) effect: Option<String>,
+    pub(crate) requires_capability: Vec<String>,
     pub(crate) stability: Option<String>,
     pub(crate) since: Option<String>,
     pub(crate) deprecated: Option<String>,
     pub(crate) source: Option<String>,
+    #[serde(default)]
+    pub(crate) source_location: Option<String>,
     #[serde(default)]
     pub(crate) range: Option<crate::editor_symbols::SymbolRange>,
     #[serde(default)]
@@ -65,11 +74,16 @@ pub(crate) struct ReferenceParam {
 
 impl From<scaffold_docs::DocEntry> for ReferenceEntry {
     fn from(entry: scaffold_docs::DocEntry) -> Self {
+        let source_location = entry.display_source_location();
+        let rendered_markdown = scaffold_docs::rendered_markdown_for_entry(&entry);
+        let group = entry.group_name().to_owned();
         Self {
             name: entry.name,
             kind: ReferenceKind::from(entry.kind),
             signature: entry.signature,
             summary: entry.summary,
+            rendered_markdown,
+            raw_markdown: entry.markdown.clone(),
             markdown: entry.markdown,
             example: entry.example,
             params: entry
@@ -81,12 +95,15 @@ impl From<scaffold_docs::DocEntry> for ReferenceEntry {
                 })
                 .collect(),
             returns: entry.returns,
-            group: entry.group.unwrap_or_default(),
+            group,
             see: entry.see,
+            effect: entry.effect,
+            requires_capability: entry.requires_capability,
             stability: entry.stability,
             since: entry.since,
             deprecated: entry.deprecated,
             source: entry.source,
+            source_location,
             range: entry.range.map(symbol_range),
             hidden: entry.hidden,
         }
@@ -121,6 +138,17 @@ impl EditorReferenceEntry for ReferenceEntry {
 
     fn stability(&self) -> Option<&str> {
         self.stability.as_deref()
+    }
+
+    fn effect(&self) -> Option<&str> {
+        self.effect.as_deref()
+    }
+
+    fn requires_capability(&self) -> Vec<&str> {
+        self.requires_capability
+            .iter()
+            .map(String::as_str)
+            .collect()
     }
 
     fn params(&self) -> Vec<EditorReferenceParam<'_>> {
@@ -172,6 +200,10 @@ impl EditorReferenceItem for ReferenceEntry {
 
     fn source(&self) -> Option<&str> {
         self.source.as_deref()
+    }
+
+    fn source_location(&self) -> Option<String> {
+        self.source_location.clone()
     }
 
     fn range(&self) -> Option<crate::editor_symbols::SymbolRange> {
@@ -282,6 +314,30 @@ pub(crate) fn workspace_symbols(
     crate::editor_reference::workspace_symbols(reference.entries.iter(), query)
 }
 
+pub(crate) fn search_entries<'a>(
+    reference: &'a ReferenceDocument,
+    query: &str,
+    limit: usize,
+) -> Vec<&'a ReferenceEntry> {
+    scaffold_docs::search_reference_entries(
+        reference.entries.iter(),
+        query.trim(),
+        limit.clamp(1, MAX_REFERENCE_SEARCH_LIMIT),
+    )
+}
+
+pub(crate) fn suggest_entries<'a>(
+    reference: &'a ReferenceDocument,
+    query: &str,
+    limit: usize,
+) -> Vec<&'a ReferenceEntry> {
+    scaffold_docs::suggest_reference_entries(
+        reference.entries.iter(),
+        query.trim(),
+        limit.clamp(1, MAX_REFERENCE_SEARCH_LIMIT),
+    )
+}
+
 pub(crate) fn document_symbols(text: &str) -> Vec<crate::editor_reference::DocumentSymbol> {
     let entries = source_docs("<open document>", text)
         .entries
@@ -341,7 +397,11 @@ impl ReferenceIndex {
         ReferenceDocument {
             capabilities: self.capabilities,
             catalog_schema: self.catalog_schema,
-            entries: self.entries,
+            entries: self
+                .entries
+                .into_iter()
+                .filter(|entry| !entry.hidden)
+                .collect(),
         }
     }
 }
@@ -434,6 +494,92 @@ mod tests {
         assert_eq!(helper.source.as_deref(), Some("file:///workspace/acme.scm"));
         assert_eq!(helper.range.as_ref().expect("definition range").line, 2);
         assert!(helper.summary.is_none());
+    }
+
+    #[test]
+    fn public_reference_documents_filter_hidden_workspace_docs() {
+        let workspace = vec![WorkspaceDocument {
+            uri: "file:///workspace/acme.scm".to_owned(),
+            text: concat!(
+                "(library (acme tools)\n",
+                "  (export internal-helper)\n",
+                "  (doc 'internal-helper\n",
+                "    (hidden)\n",
+                "    (summary \"Internal helper.\")))",
+            )
+            .to_owned(),
+        }];
+        let workspace_index = reference_index_for_workspace(&workspace);
+        let document_index =
+            reference_index_for_document("(import (acme tools))\n(internal-helper)", &workspace);
+
+        assert!(
+            !workspace_index
+                .entries
+                .iter()
+                .any(|entry| entry.name == "internal-helper")
+        );
+        assert!(
+            !document_index
+                .entries
+                .iter()
+                .any(|entry| entry.name == "internal-helper")
+        );
+        assert!(search_entries(&document_index, "internal helper", 20).is_empty());
+    }
+
+    #[test]
+    fn public_reference_documents_filter_hidden_current_document_docs() {
+        let index = reference_index_for_document(
+            concat!(
+                "(doc 'local-helper\n",
+                "  (hidden)\n",
+                "  (summary \"Internal local helper.\"))\n",
+                "(define (local-helper value) value)",
+            ),
+            &[],
+        );
+
+        assert!(
+            !index
+                .entries
+                .iter()
+                .any(|entry| entry.name == "local-helper")
+        );
+        assert!(hover_markdown(&index, "local-helper").is_empty());
+        assert!(signature_help(&index, "local-helper").is_none());
+    }
+
+    #[test]
+    fn document_entries_without_group_use_language_fallback() {
+        let index = reference_index_for_document(
+            "(doc 'local-helper (summary \"Docs\"))\n(define (local-helper value) value)",
+            &[],
+        );
+        let helper = index
+            .entries
+            .iter()
+            .find(|entry| entry.name == "local-helper")
+            .expect("local helper docs");
+
+        assert_eq!(helper.group, "Language");
+        assert_eq!(helper.group(), Some("Language"));
+    }
+
+    #[test]
+    fn search_entries_uses_shared_fuzzy_ranking() {
+        let reference = reference_document();
+        let matches = search_entries(&reference, "ctlg tool", 20);
+
+        assert_eq!(
+            matches.first().map(|entry| entry.name.as_str()),
+            Some("catalog/tool")
+        );
+        assert!(
+            !search_entries(&reference, "zzzzzzz", 20)
+                .iter()
+                .any(|entry| entry.name == "tool")
+        );
     }
 
     #[test]

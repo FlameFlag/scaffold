@@ -114,6 +114,10 @@ fn returns_reference_backed_hover_markdown() {
     assert!(hover.contains("```scheme"));
     assert!(hover.contains("Create a catalog tool object"));
     assert!(hover_scaffold_scheme("not-real").is_empty());
+
+    let workspace_hover = hover_scaffold_scheme("source/path");
+    assert!(workspace_hover.contains("context-read-only"));
+    assert!(workspace_hover.contains("`scaffold.workspace`"));
 }
 
 #[test]
@@ -156,6 +160,141 @@ fn returns_reference_entries() {
     assert!(entries.contains("\"name\":\"host/matches?\""));
     assert!(entries.contains("\"name\":\"workspace/path\""));
     assert!(entries.contains("\"group\":\"Catalog\""));
+    assert!(entries.contains("\"effect\":\"context-read-only\""));
+    assert!(entries.contains("\"requires_capability\":[\"scaffold.workspace\"]"));
+}
+
+#[test]
+fn returns_ranked_reference_search_entries() {
+    let entries = serde_json::from_str::<Vec<serde_json::Value>>(
+        &search_reference_entries_scaffold_scheme("ctlg tool", 20),
+    )
+    .expect("search entries json");
+
+    assert_eq!(entries[0]["name"], "catalog/tool");
+    assert_eq!(entries[0]["raw_markdown"], entries[0]["markdown"]);
+    assert!(
+        entries[0]["rendered_markdown"]
+            .as_str()
+            .is_some_and(|markdown| {
+                markdown.contains("```scheme\n(catalog/tool name action field ...)\n```")
+                    && markdown.contains("**Example**")
+            })
+    );
+    assert!(
+        search_reference_entries_scaffold_scheme("zzzzzzz", 20)
+            .parse::<serde_json::Value>()
+            .expect("empty search json")
+            .as_array()
+            .expect("empty search array")
+            .is_empty()
+    );
+}
+
+#[test]
+fn returns_reference_entry_suggestions_for_close_symbol_typos() {
+    let suggestions = serde_json::from_str::<Vec<serde_json::Value>>(
+        &suggest_reference_entries_scaffold_scheme("catlgtool", 5),
+    )
+    .expect("suggestion entries json");
+
+    assert_eq!(suggestions[0]["name"], "catalog/tool");
+    assert!(
+        suggest_reference_entries_scaffold_scheme("zzzzzzz", 5)
+            .parse::<serde_json::Value>()
+            .expect("empty suggestions json")
+            .as_array()
+            .expect("empty suggestions array")
+            .is_empty()
+    );
+}
+
+#[test]
+fn reference_search_limit_is_clamped_for_wasm_consumers() {
+    let oversized = serde_json::from_str::<Vec<serde_json::Value>>(
+        &search_reference_entries_scaffold_scheme("tool", 999),
+    )
+    .expect("oversized search json");
+    let max = serde_json::from_str::<Vec<serde_json::Value>>(
+        &search_reference_entries_scaffold_scheme("tool", 100),
+    )
+    .expect("max-limit search json");
+    let zero = serde_json::from_str::<Vec<serde_json::Value>>(
+        &search_reference_entries_scaffold_scheme("tool", 0),
+    )
+    .expect("zero-limit search json");
+
+    assert_eq!(oversized, max);
+    assert!(oversized.len() <= 100);
+    assert_eq!(zero.len(), 1);
+}
+
+#[test]
+fn returns_workspace_aware_ranked_reference_search_entries() {
+    let workspace_json = serde_json::json!([
+        {
+            "uri": "file:///workspace/acme.scm",
+            "text": "(library (acme tools) (export acme-tool) (doc 'acme-tool (signature \"(acme-tool name)\") (summary \"Acme.\")))"
+        }
+    ])
+    .to_string();
+    let entries =
+        search_reference_entries_scaffold_scheme_for_workspace("acme", &workspace_json, 20);
+
+    assert!(entries.contains("\"name\":\"acme-tool\""));
+    assert!(entries.contains("\"raw_markdown\""));
+    assert!(entries.contains("\"rendered_markdown\""));
+    assert!(entries.contains("(acme-tool name)"));
+}
+
+#[test]
+fn returns_workspace_aware_reference_entry_suggestions() {
+    let workspace_json = serde_json::json!([
+        {
+            "uri": "file:///workspace/acme.scm",
+            "text": "(library (acme tools) (export acme-widget) (doc 'acme-widget (signature \"(acme-widget name)\") (summary \"Acme.\")))"
+        }
+    ])
+    .to_string();
+    let suggestions = serde_json::from_str::<Vec<serde_json::Value>>(
+        &suggest_reference_entries_scaffold_scheme_for_workspace("acmewidget", &workspace_json, 5),
+    )
+    .expect("workspace suggestion entries json");
+
+    assert_eq!(suggestions[0]["name"], "acme-widget");
+}
+
+#[test]
+fn document_reference_entries_use_language_group_fallback() {
+    let entries = serde_json::from_str::<Vec<serde_json::Value>>(
+        &reference_entries_scaffold_scheme_for_document(
+            "(doc 'local-helper (summary \"Docs\"))\n(define (local-helper value) value)",
+            "file:///workspace/main.scm",
+            "[]",
+        ),
+    )
+    .expect("reference entries json");
+    let helper = entries
+        .iter()
+        .find(|entry| entry["name"] == "local-helper")
+        .expect("local helper entry");
+
+    assert_eq!(helper["group"], "Language");
+}
+
+#[test]
+fn embedded_reference_json_matches_generator() {
+    let embedded: serde_json::Value =
+        serde_json::from_str(include_str!("reference.json")).expect("embedded reference json");
+    let embedded_min: serde_json::Value =
+        serde_json::from_str(include_str!("reference.min.json")).expect("minified reference json");
+    let generated: serde_json::Value = serde_json::from_str(
+        &scaffold_docs::scaffold_reference_json().expect("generated reference json"),
+    )
+    .expect("generated reference json parses");
+
+    assert_eq!(embedded, generated);
+    assert_eq!(embedded_min, embedded);
 }
 
 #[test]
@@ -255,6 +394,71 @@ fn returns_reference_backed_inlay_hints() {
     assert!(hints.contains("\"label\":\"name:\""));
     assert!(hints.contains("\"label\":\"action:\""));
     assert!(!hints.contains("ignored"));
+}
+
+#[test]
+fn readme_lists_current_wasm_exports() {
+    let readme = include_str!("../README.md");
+    let listed_exports = readme
+        .split_once("Current export:\n\n")
+        .expect("current export section")
+        .1
+        .lines()
+        .take_while(|line| line.starts_with("- `"))
+        .map(|line| {
+            line.strip_prefix("- `")
+                .and_then(|line| line.strip_suffix('`'))
+                .expect("export bullet")
+        })
+        .collect::<Vec<_>>();
+    let listed_export_names = listed_exports
+        .iter()
+        .map(|export| export.split_once('(').expect("function signature").0)
+        .collect::<Vec<_>>();
+    let rust_export_names = include_str!("lib.rs")
+        .lines()
+        .filter_map(|line| {
+            line.trim()
+                .strip_prefix("#[wasm_bindgen(js_name = ")
+                .and_then(|line| line.strip_suffix(")]"))
+        })
+        .collect::<Vec<_>>();
+
+    assert_eq!(listed_export_names, rust_export_names);
+
+    assert_eq!(
+        listed_exports,
+        vec![
+            "formatScaffoldScheme(text: string): string",
+            "diagnoseScaffoldScheme(text: string): string",
+            "missingDocStubScaffoldScheme(name: string, indent: string): string",
+            "semanticTokensScaffoldScheme(text: string): string",
+            "semanticTokensScaffoldSchemeForDocument(text: string, workspaceJson: string): string",
+            "completionItemsScaffoldScheme(): string",
+            "completionItemsScaffoldSchemeForDocument(text: string, workspaceJson: string): string",
+            "hoverScaffoldScheme(symbol: string): string",
+            "hoverScaffoldSchemeForDocument(text: string, symbol: string, workspaceJson: string): string",
+            "signatureHelpScaffoldScheme(symbol: string): string",
+            "signatureHelpScaffoldSchemeForDocument(text: string, symbol: string, workspaceJson: string): string",
+            "referenceEntriesScaffoldScheme(): string",
+            "searchReferenceEntriesScaffoldScheme(query: string, limit: number): string",
+            "suggestReferenceEntriesScaffoldScheme(query: string, limit: number): string",
+            "referenceCapabilitiesScaffoldScheme(): string",
+            "referenceCatalogSchemaScaffoldScheme(): string",
+            "referenceEntriesScaffoldSchemeForWorkspace(workspaceJson: string): string",
+            "searchReferenceEntriesScaffoldSchemeForWorkspace(query: string, workspaceJson: string, limit: number): string",
+            "suggestReferenceEntriesScaffoldSchemeForWorkspace(query: string, workspaceJson: string, limit: number): string",
+            "referenceEntriesScaffoldSchemeForDocument(text: string, uri: string, workspaceJson: string): string",
+            "symbolAtScaffoldScheme(text: string, line: number, character: number): string",
+            "formContextScaffoldScheme(text: string, line: number, character: number): string",
+            "referenceLocationsScaffoldScheme(symbol: string, workspaceJson: string): string",
+            "documentReferenceSymbolsScaffoldScheme(text: string): string",
+            "inlayHintsScaffoldScheme(text: string, startLine: number, startCharacter: number, endLine: number, endCharacter: number): string",
+            "inlayHintsScaffoldSchemeForDocument(text: string, workspaceJson: string, startLine: number, startCharacter: number, endLine: number, endCharacter: number): string",
+            "definitionScaffoldScheme(text: string, uri: string, line: number, character: number, workspaceJson: string): string",
+            "workspaceSymbolsScaffoldScheme(query: string, workspaceJson: string): string",
+        ]
+    );
 }
 
 #[test]

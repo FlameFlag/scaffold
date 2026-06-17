@@ -122,6 +122,28 @@ pub fn reference_entries_scaffold_scheme() -> String {
     serde_json::to_string(&reference_document().entries).expect("reference entries serialize")
 }
 
+#[wasm_bindgen(js_name = searchReferenceEntriesScaffoldScheme)]
+#[must_use]
+pub fn search_reference_entries_scaffold_scheme(query: &str, limit: usize) -> String {
+    serde_json::to_string(&reference::search_entries(
+        &reference_document(),
+        query,
+        limit,
+    ))
+    .expect("reference search entries serialize")
+}
+
+#[wasm_bindgen(js_name = suggestReferenceEntriesScaffoldScheme)]
+#[must_use]
+pub fn suggest_reference_entries_scaffold_scheme(query: &str, limit: usize) -> String {
+    serde_json::to_string(&reference::suggest_entries(
+        &reference_document(),
+        query,
+        limit,
+    ))
+    .expect("reference suggestion entries serialize")
+}
+
 #[wasm_bindgen(js_name = referenceCapabilitiesScaffoldScheme)]
 #[must_use]
 pub fn reference_capabilities_scaffold_scheme() -> String {
@@ -141,6 +163,38 @@ pub fn reference_entries_scaffold_scheme_for_workspace(workspace_json: &str) -> 
     let workspace = reference::workspace_documents(workspace_json);
     serde_json::to_string(&reference_index_for_workspace(&workspace).entries)
         .expect("reference entries serialize")
+}
+
+#[wasm_bindgen(js_name = searchReferenceEntriesScaffoldSchemeForWorkspace)]
+#[must_use]
+pub fn search_reference_entries_scaffold_scheme_for_workspace(
+    query: &str,
+    workspace_json: &str,
+    limit: usize,
+) -> String {
+    let workspace = reference::workspace_documents(workspace_json);
+    serde_json::to_string(&reference::search_entries(
+        &reference_index_for_workspace(&workspace),
+        query,
+        limit,
+    ))
+    .expect("reference search entries serialize")
+}
+
+#[wasm_bindgen(js_name = suggestReferenceEntriesScaffoldSchemeForWorkspace)]
+#[must_use]
+pub fn suggest_reference_entries_scaffold_scheme_for_workspace(
+    query: &str,
+    workspace_json: &str,
+    limit: usize,
+) -> String {
+    let workspace = reference::workspace_documents(workspace_json);
+    serde_json::to_string(&reference::suggest_entries(
+        &reference_index_for_workspace(&workspace),
+        query,
+        limit,
+    ))
+    .expect("reference suggestion entries serialize")
 }
 
 #[wasm_bindgen(js_name = referenceEntriesScaffoldSchemeForDocument)]

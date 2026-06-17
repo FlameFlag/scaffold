@@ -213,6 +213,25 @@ impl SourceDiagnostic {
     pub fn is_error(&self) -> bool {
         self.severity == Severity::Error
     }
+
+    #[must_use]
+    pub const fn code_str(&self) -> &'static str {
+        self.code
+    }
+
+    #[must_use]
+    pub const fn severity_label(&self) -> &'static str {
+        match self.severity {
+            Severity::Advice => "advice",
+            Severity::Warning => "warning",
+            Severity::Error => "error",
+        }
+    }
+
+    #[must_use]
+    pub fn help_text(&self) -> &str {
+        &self.help
+    }
 }
 
 fn primary_label(offset: usize, len: usize, label: impl Into<String>) -> LabeledSpan {
@@ -225,4 +244,19 @@ fn secondary_label(offset: usize, len: usize, label: impl Into<String>) -> Label
 
 fn source_span(offset: usize, len: usize) -> SourceSpan {
     (offset, len.max(1)).into()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::SourceDiagnostic;
+
+    #[test]
+    fn exposes_stable_code_severity_and_help_text() {
+        let diagnostic = SourceDiagnostic::syntax("test.scm", "(bad", 0, 1, "bad syntax");
+
+        assert_eq!(diagnostic.code_str(), "scaffold::dsl::syntax");
+        assert_eq!(diagnostic.severity_label(), "error");
+        assert!(diagnostic.help_text().contains("fix the Scheme syntax"));
+        assert!(diagnostic.is_error());
+    }
 }

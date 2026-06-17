@@ -75,7 +75,8 @@ bun run --cwd editors/vscode test:web
 The `compile:check` command verifies that the committed VS Code source bundle
 and WASM bindings match what the current Rust and generated reference sources
 would produce. The `compile:wasm` command builds the Rust crate in release mode
-and runs `wasm-bindgen` to emit `editors/vscode/wasm/scaffold_wasm.js`,
+with normalized path prefixes and runs `wasm-bindgen` to emit
+`editors/vscode/wasm/scaffold_wasm.js`,
 `editors/vscode/wasm/scaffold_wasm.d.ts`, and
 `editors/vscode/wasm/scaffold_wasm_bg.wasm`.
 The smoke test initializes the generated web-target bundle from raw WASM bytes

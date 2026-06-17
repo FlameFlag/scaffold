@@ -191,7 +191,7 @@
     "compile": "tsc -p ./ && bun run bundle:browser",
     "bundle:browser": "esbuild src/browser.ts --bundle --platform=browser --format=cjs --external:vscode --log-override:empty-import-meta=silent --sourcemap --outfile=out/browser.js",
     "bundle:browser:check": "bun scripts/check-browser-bundle.mjs",
-    "compile:wasm": "cargo build --locked --manifest-path ../../Cargo.toml -p scaffold-wasm --target wasm32-unknown-unknown --release && wasm-bindgen ../../target/wasm32-unknown-unknown/release/scaffold_wasm.wasm --target web --remove-name-section --remove-producers-section --out-dir wasm --out-name scaffold_wasm",
+    "compile:wasm": "bun scripts/compile-wasm.mjs",
     "compile:wasm:check": "bun scripts/check-wasm-bindings.mjs",
     "compile:check": "bun run sync:sources --check && bun run compile:wasm:check && tsc -p ./ --noEmit && bun run bundle:browser:check",
     "compile:all": "bun run sync:sources && bun run compile:wasm && bun run compile",

@@ -1,48 +1,16 @@
 import { mkdtemp, readdir, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, resolve } from "node:path";
-import { runCommand } from "./run-command.mjs";
-import { extensionRoot, repoRoot } from "./script-paths.mjs";
+import { extensionRoot } from "./script-paths.mjs";
+import { buildScaffoldWasm, generateWasmBindings } from "./wasm-build.mjs";
 
 const tempDir = await mkdtemp(resolve(tmpdir(), "scaffold-wasm-bindings-"));
 const generatedDir = resolve(tempDir, "wasm");
 const expectedDir = resolve(extensionRoot, "wasm");
-const wasmInput = resolve(
-  repoRoot,
-  "target/wasm32-unknown-unknown/release/scaffold_wasm.wasm",
-);
 
 try {
-  await runCommand(
-    [
-      "cargo",
-      "build",
-      "--locked",
-      "--manifest-path",
-      resolve(repoRoot, "Cargo.toml"),
-      "-p",
-      "scaffold-wasm",
-      "--target",
-      "wasm32-unknown-unknown",
-      "--release",
-    ],
-    { cwd: extensionRoot },
-  );
-  await runCommand(
-    [
-      "wasm-bindgen",
-      wasmInput,
-      "--target",
-      "web",
-      "--remove-name-section",
-      "--remove-producers-section",
-      "--out-dir",
-      generatedDir,
-      "--out-name",
-      "scaffold_wasm",
-    ],
-    { cwd: extensionRoot },
-  );
+  await buildScaffoldWasm({ cwd: extensionRoot });
+  await generateWasmBindings(generatedDir, { cwd: extensionRoot });
 
   const [expectedFiles, generatedFiles] = await Promise.all([
     generatedBindingFiles(expectedDir),

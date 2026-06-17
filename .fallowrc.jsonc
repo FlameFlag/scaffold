@@ -11,7 +11,7 @@
     "**/node_modules/**",
     // Generated docs-site output.
     "site/dist/**",
-    "site/public/reference.json",
+    "site/public/reference.static.json",
     "site/tsconfig.tsbuildinfo",
     "editors/vscode/.fallow/**",
     "editors/vscode/.vscode-test-web/**",

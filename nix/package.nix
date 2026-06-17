@@ -24,10 +24,12 @@ let
       ../crates
       ../examples
       ../package.json
+      ../shared
       ../src
 
       ../site/index.html
       ../site/package.json
+      ../site/scripts
       ../site/src
       ../site/svelte.config.js
       ../site/tsconfig.json
@@ -68,7 +70,7 @@ let
 
     outputHashMode = "recursive";
     outputHashAlgo = "sha256";
-    outputHash = "sha256-w32OGI/3X3sFVsFXNdo0Q4sEdZRNIpSEuWTFkUYWpWQ=";
+    outputHash = "sha256-NhPebmVYnIdF1i+9wal/bx4LpZLBXjp+teeLkdM6Y1c=";
     dontFixup = true;
 
     buildPhase = ''
@@ -93,6 +95,7 @@ let
     ln -s ../vite/bin/vite.js node_modules/.bin/vite
     ln -s ../typescript/bin/tsc node_modules/.bin/tsc
     ln -s ../esbuild/bin/esbuild node_modules/.bin/esbuild
+    ln -s ../svelte-check/bin/svelte-check node_modules/.bin/svelte-check
   '';
 
   wasm-bindgen-cli = rustPlatform.buildRustPackage (finalAttrs: {
@@ -204,10 +207,13 @@ let
       rm -rf editors/vscode/wasm
       cp -R ${scaffold-wasm}/wasm editors/vscode/wasm
 
-      mkdir -p site/public
-      ${lib.getExe scaffold} docs --format json --output site/public/reference.json
+      mkdir -p site/.generated
+      ${lib.getExe scaffold} docs --output site/.generated/reference.json
 
-      bun run --cwd site build
+      bun run --cwd site static-reference
+      bun site/scripts/check-reference.mjs
+      bun run --cwd site typecheck
+      bun run --cwd site vite build
 
       runHook postBuild
     '';
@@ -255,22 +261,10 @@ let
 
       bun run compile
 
-      node - <<'EOF'
-      const { pack } = require("@vscode/vsce/out/package");
-
-      // The vsce CLI always runs vscode:prepublish, which rebuilds the WASM
-      // with Cargo. Nix already supplied the prepared WASM above.
-      pack({
-        cwd: process.cwd(),
-        packagePath: process.env.out,
-        useYarn: false,
-        dependencies: false,
-        allowMissingRepository: true,
-      }).catch(error => {
-        console.error(error);
-        process.exit(1);
-      });
-      EOF
+      # The vsce CLI always runs vscode:prepublish, which rebuilds the WASM
+      # with Cargo. Nix already supplied the prepared WASM above.
+      bun scripts/package-vsix.mjs --out "$out"
+      bun scripts/check-vsix-package.mjs --package "$out"
 
       runHook postBuild
     '';

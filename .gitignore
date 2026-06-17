@@ -4,8 +4,9 @@
 # Node / VS Code extension dependencies and build output
 node_modules/
 site/dist/
-site/.generated/
-site/public/reference.static.json
+site/.generated/*
+!site/.generated/reference.json
+!site/public/reference.static.json
 editors/vscode/out/
 .vscode-test/
 .vscode-test-web/

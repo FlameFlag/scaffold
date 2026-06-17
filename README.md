@@ -80,11 +80,57 @@ scaffold --catalog /path/to/scaffold.scm install ripgrep
 Useful development commands:
 
 ```sh
-cargo test
+cargo test --workspace --locked
 cargo run -- docs
+cargo run -- docs tool
+cargo run -- docs --search "ctlg tool"
+cargo run -- docs --format json --search "ctlg tool"
+cargo run -- docs --source tool
+cargo run -- docs --all
+cargo run -- docs --output reference.md
+cargo run -- docs --output reference.json
 bun run docs:dev
-bun run docs:build
+bun run docs:check
+bun run reference
+bun run artifacts:check
+bun run vscode:check
+bun run check:all
 cargo run -- fmt --check crates/scaffold-dsl/src/fixtures/catalog/macro-tools.scm
+```
+
+`bun run check:all` runs Rust formatting, clippy, workspace tests, the workspace
+build, Biome, fallow dead-code checks, docs site reference/type/build checks,
+VS Code reference checks, a non-mutating VS Code compile/WASM binding check,
+VSIX package smoke checks, and the WASM smoke test. Browser-hosted VS Code
+tests are separate because they require Chromium setup:
+`bun run vscode:test:web`.
+
+## Reference docs
+
+`scaffold docs` is a browser for the generated Scheme reference, not a full
+reference dump by default. Run it with no arguments to see documentation groups,
+pass an exact symbol to open one entry, or use fuzzy search when you only know
+part of a name, source path or location, capability, effect, or example:
+
+```sh
+scaffold docs
+scaffold docs tool
+scaffold docs --search "ctlg tool" --limit 10
+scaffold docs --search ripgrep
+scaffold docs --group Catalog
+scaffold docs --source src/dsl/std/catalog/tool.scm
+scaffold docs --source src/dsl/std/catalog/tool.scm:16:1
+```
+
+Browse output can be rendered as text, Markdown, or JSON. Full reference exports
+are explicit; use `--all` for stdout or `--output` for a file:
+
+```sh
+scaffold docs tool --format markdown
+scaffold docs --search "context read only" --format json
+scaffold docs --all
+scaffold docs --output reference.md
+scaffold docs --output reference.json
 ```
 
 ## Batteries included
@@ -168,8 +214,18 @@ for browser/web extension use and is backed by the WASM editor engine in
 ```sh
 cd editors/vscode
 bun install
-bun run compile:all
+bun run compile:check
 bun run test:wasm:smoke
+```
+
+After changing bundled reference data, source bundles, or the WASM editor
+engine, regenerate the committed extension artifacts with:
+
+```sh
+cd ../..
+bun run reference
+bun run artifacts
+bun run artifacts:check
 ```
 
 ## License

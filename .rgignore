@@ -1,0 +1,16 @@
+# Generated reference payloads are large enough to drown normal code searches.
+# Use `rg -u` when intentionally inspecting regenerated reference JSON.
+site/public/reference.static.json
+**/reference.static.json
+crates/scaffold-wasm/src/reference.json
+crates/scaffold-wasm/src/reference.min.json
+**/scaffold-wasm/src/reference.json
+**/scaffold-wasm/src/reference.min.json
+editors/vscode/scaffold-sources.json
+**/scaffold-sources.json
+
+# Build output.
+site/dist/
+editors/vscode/out/
+dist/
+out/

@@ -10,6 +10,9 @@ workspace = true
 [features]
 test-support = []
 
+[package.metadata.cargo-machete]
+ignored = ["walkdir"]
+
 [dependencies]
 miette = { version = "7.6.0", default-features = false, features = ["fancy-no-backtrace", "derive"] }
 scaffold-context = { path = "../scaffold-context" }

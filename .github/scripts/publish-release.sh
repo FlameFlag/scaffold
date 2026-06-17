@@ -18,11 +18,47 @@ package_binary() {
   cp "target/${target}/release/${bin_name}" "${dist_dir}/${asset}/"
   cp README.md LICENSE "${dist_dir}/${asset}/"
 
-  if [[ "$archive_kind" == "zip" ]]; then
-    7z a "${dist_dir}/${asset}.zip" "./${dist_dir}/${asset}/*"
-  else
-    tar -C "$dist_dir" -czf "${dist_dir}/${asset}.tar.gz" "$asset"
+  case "$archive_kind" in
+    zip)
+      zip_directory "${dist_dir}/${asset}" "${dist_dir}/${asset}.zip" "$asset"
+      ;;
+    tar.gz)
+      tar -C "$dist_dir" -czf "${dist_dir}/${asset}.tar.gz" "$asset"
+      ;;
+    *)
+      echo "Unknown ARCHIVE_KIND: ${archive_kind}" >&2
+      exit 1
+      ;;
+  esac
+}
+
+zip_directory() {
+  local source_dir="$1"
+  local output_path="$2"
+  local archive_root="$3"
+  local python_bin
+
+  python_bin="$(command -v python3 || command -v python || true)"
+  if [[ -z "$python_bin" ]]; then
+    echo "Python is required to create ZIP release archives." >&2
+    exit 1
   fi
+
+  "$python_bin" - "$source_dir" "$output_path" "$archive_root" <<'PY'
+import os
+import sys
+import zipfile
+
+source_dir, output_path, archive_root = sys.argv[1:]
+
+with zipfile.ZipFile(output_path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+    for root, _dirs, files in os.walk(source_dir):
+        for file_name in sorted(files):
+            path = os.path.join(root, file_name)
+            relative_path = os.path.relpath(path, source_dir)
+            archive_name = os.path.join(archive_root, relative_path).replace(os.sep, "/")
+            archive.write(path, archive_name)
+PY
 }
 
 release_files() {

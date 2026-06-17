@@ -87,17 +87,29 @@ jobs:
       - name: Check fallow rules
         run: bun run fallow:ci
 
-      - name: Build docs site
-        run: bun run docs:build
+      - name: Check docs site
+        run: bun run docs:check
+
+      - name: Check WASM reference data
+        run: bun run wasm:reference:check
+
+      - name: Check VS Code extension
+        run: bun run vscode:check
+
+      - name: Check VS Code generated bindings
+        run: bun run vscode:compile:check
 
       - name: Build VS Code extension
         run: bun run vscode:compile:all
+
+      - name: Check VSIX package
+        run: bun run vscode:vsix:pack:check
 
       - name: Test VS Code WASM bridge
         run: bun run vscode:test:wasm
 
       - name: Install Chromium
-        run: bunx playwright install --with-deps chromium
+        run: bunx --no-install playwright install --with-deps chromium
 
       - name: Test VS Code web extension
         run: bun run vscode:test:web

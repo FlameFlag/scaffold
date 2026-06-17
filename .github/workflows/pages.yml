@@ -10,7 +10,10 @@ on:
       - "Cargo.lock"
       - "Cargo.toml"
       - "crates/**"
+      - "editors/vscode/scaffold-sources.json"
+      - "editors/vscode/wasm/**"
       - "site/**"
+      - "shared/**"
       - "bun.lock"
       - "package.json"
   workflow_dispatch:
@@ -44,9 +47,6 @@ jobs:
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
-
-      - name: Generate reference data
-        run: bun run docs:reference
 
       - name: Configure GitHub Pages
         id: pages

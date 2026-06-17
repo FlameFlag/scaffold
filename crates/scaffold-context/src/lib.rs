@@ -38,11 +38,13 @@ impl Context {
 
     #[must_use]
     pub fn source_paths(&self) -> Vec<PathBuf> {
+        if !self.catalog_path.is_file() {
+            return Vec::new();
+        }
+
         let mut paths = Vec::new();
         let mut seen_files = HashSet::new();
-        if self.catalog_path.is_file() {
-            push_unique_path(&self.catalog_path, &mut paths, &mut seen_files);
-        }
+        push_unique_path(&self.catalog_path, &mut paths, &mut seen_files);
         collect_scheme_paths(
             &self.root_dir,
             &mut paths,
@@ -55,6 +57,10 @@ impl Context {
 
     #[must_use]
     pub fn test_paths(&self) -> Vec<PathBuf> {
+        if !self.catalog_path.is_file() {
+            return Vec::new();
+        }
+
         let mut seen_files = HashSet::new();
         let mut paths = Vec::new();
         collect_scheme_paths(
@@ -280,6 +286,7 @@ mod tests {
         let root = tempfile::tempdir().expect("root");
         let scaffold_dir = root.path().join(".scaffold");
         std::fs::create_dir_all(&scaffold_dir).expect("scaffold dir");
+        std::fs::write(root.path().join("scaffold.scm"), "(import (rnrs))\n").expect("catalog");
         std::fs::write(scaffold_dir.join("test.scm"), "(import (rnrs))\n").expect("test source");
 
         let ctx = Context {
@@ -317,6 +324,22 @@ mod tests {
                 .iter()
                 .any(|path| path.ends_with("target/generated.scm"))
         );
+    }
+
+    #[test]
+    fn missing_catalog_does_not_discover_workspace_sources() {
+        let root = tempfile::tempdir().expect("root");
+        std::fs::write(root.path().join("test.scm"), "(import (rnrs))\n").expect("test source");
+        std::fs::write(root.path().join("library.scm"), "(import (rnrs))\n").expect("source");
+        let ctx = Context {
+            catalog_path: root.path().join("scaffold.scm"),
+            root_dir: root.path().to_path_buf(),
+            bin_dir: root.path().join("bin"),
+            state_dir: root.path().join("state"),
+        };
+
+        assert!(ctx.source_paths().is_empty());
+        assert!(ctx.test_paths().is_empty());
     }
 
     fn fixture_path(path: &str) -> PathBuf {

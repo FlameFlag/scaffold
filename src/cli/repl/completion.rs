@@ -8,8 +8,6 @@ use tower_lsp::lsp_types::{CompletionItem, Documentation};
 use scaffold_docs::DocIndex;
 use scaffold_lsp::completion_items;
 
-use crate::cli::docs::doc_entry_group;
-
 use super::commands::{REPL_COMMAND_SPECS, split_repl_command};
 
 #[derive(Clone, Debug)]
@@ -152,7 +150,7 @@ fn completion_documentation_text(documentation: Documentation) -> Option<String>
 fn documented_groups(docs: &DocIndex) -> Vec<String> {
     let mut groups = docs
         .visible_entries()
-        .map(doc_entry_group)
+        .map(|entry| entry.group_name())
         .map(str::to_owned)
         .collect::<Vec<_>>();
     groups.sort();

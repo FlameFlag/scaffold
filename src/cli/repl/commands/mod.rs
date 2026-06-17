@@ -5,12 +5,13 @@ use termimad::{
     crossterm::style::{Attribute, Color},
 };
 
-use scaffold_docs::{DocEntry, DocIndex};
-
-use crate::cli::docs::{
-    doc_entry_group, doc_search_results, entry_count_label, same_markdown_paragraph,
-    source_location,
+use scaffold_docs::{
+    DocEntry, DocIndex, detailed_markdown_for_entry, entry_count_label,
+    entry_summary_markdown_table, group_markdown_table, markdown_code_span, markdown_table,
+    search_doc_entries, source_markdown_for_entry, suggest_doc_entries,
 };
+
+use crate::cli::docs::{get_doc_entry, get_doc_source_entries, search_doc_groups};
 
 pub(super) enum ReplControl {
     Continue,
@@ -60,9 +61,11 @@ fn print_doc_entry(docs: &DocIndex, name: &str) {
         eprintln!("usage: :doc NAME");
         return;
     }
-    let Some(entry) = docs.get(name) else {
-        eprintln!("no docs for `{name}`");
-        print_doc_search(docs, name);
+    let Some(entry) = get_doc_entry(docs, name) else {
+        eprintln!("no documented symbol named `{name}`");
+        if let Some(markdown) = doc_possible_matches_markdown(docs, name, ":doc") {
+            print_repl_markdown(&markdown);
+        }
         return;
     };
     print_repl_markdown(&doc_entry_markdown(entry));
@@ -73,13 +76,16 @@ fn print_doc_search(docs: &DocIndex, query: &str) {
         eprintln!("usage: :search QUERY");
         return;
     }
-    let matches = doc_search_results(docs, query, 20);
+    let matches = search_doc_entries(docs, query, 20);
     if matches.is_empty() {
-        eprintln!("no docs matched `{query}`");
+        eprintln!("no reference entries matched `{query}`");
+        if let Some(markdown) = doc_possible_matches_markdown(docs, query, ":doc") {
+            print_repl_markdown(&markdown);
+        }
         return;
     }
     print_repl_markdown(&doc_entries_markdown(
-        &format!("Search results for `{query}`"),
+        &format!("Search results for {}", markdown_code_span(query)),
         &matches,
     ));
 }
@@ -90,45 +96,59 @@ fn print_doc_groups(docs: &DocIndex) {
 
 fn print_doc_group(docs: &DocIndex, group: &str) {
     if group.is_empty() {
-        eprintln!("usage: :group NAME");
+        eprintln!("usage: :group GROUP");
         return;
     }
     let mut entries = docs
         .visible_entries()
-        .filter(|entry| doc_entry_group(entry).eq_ignore_ascii_case(group))
+        .filter(|entry| entry.group_name().eq_ignore_ascii_case(group))
         .collect::<Vec<_>>();
     entries.sort_by(|left, right| left.name.cmp(&right.name));
     if entries.is_empty() {
         eprintln!("no documentation group named `{group}`");
+        let suggestions = search_doc_groups(docs, group, 5);
+        if !suggestions.is_empty() {
+            print_repl_markdown(&doc_group_suggestions_markdown(
+                "Did you mean",
+                &suggestions,
+            ));
+        }
         return;
     }
     print_repl_markdown(&doc_entries_markdown(
-        &format!(
-            "Documentation group `{}`",
-            entries[0].group.as_deref().unwrap_or(group)
-        ),
+        &doc_group_title(entries[0]),
         &entries,
     ));
 }
 
 fn print_doc_source(docs: &DocIndex, name: &str) {
     if name.is_empty() {
-        eprintln!("usage: :source NAME");
+        eprintln!("usage: :source SYMBOL_OR_SOURCE");
         return;
     }
-    let Some(entry) = docs.get(name) else {
-        eprintln!("no docs for `{name}`");
+    if let Some(entry) = get_doc_entry(docs, name) {
+        match source_markdown_for_entry(entry) {
+            Some(markdown) => print_repl_markdown(&markdown),
+            None => println!("no source recorded for `{name}`"),
+        }
         return;
-    };
-    match &entry.source {
-        Some(source) => {
-            let mut markdown = format!("**Source:** `{}`", source_location(source, entry));
-            if let Some(signature) = entry.signature.as_deref() {
-                markdown.push_str(&format!("\n\n```scheme\n{signature}\n```"));
-            }
+    }
+
+    if let Some((source, entries)) = get_doc_source_entries(docs, name) {
+        print_repl_markdown(&doc_entries_markdown(
+            &format!("Docs from source {}", markdown_code_span(source)),
+            &entries,
+        ));
+        return;
+    }
+
+    if name.ends_with(".scm") || name.contains(".scm:") {
+        eprintln!("no documented source matched `{name}`");
+    } else {
+        eprintln!("no documented symbol named `{name}`");
+        if let Some(markdown) = doc_possible_matches_markdown(docs, name, ":source") {
             print_repl_markdown(&markdown);
         }
-        None => println!("no source recorded for `{name}`"),
     }
 }
 
@@ -149,197 +169,98 @@ fn repl_doc_skin() -> MadSkin {
 
 fn repl_help_markdown() -> String {
     let mut output = String::from("## REPL commands\n\n");
-    for command in REPL_COMMAND_SPECS {
-        output.push_str(&format!(
-            "- `{}` - {}\n",
-            command.usage, command.description
-        ));
-    }
+    output.push_str(&markdown_table(
+        &["Command", "Description"],
+        REPL_COMMAND_SPECS
+            .iter()
+            .map(|command| {
+                vec![
+                    format!("`{}`", command.usage),
+                    command.description.to_owned(),
+                ]
+            })
+            .collect(),
+    ));
     output.push_str("\nUse `Alt+Enter` for a newline. Use `:q`, `:quit`, or `(exit)` to leave.\n");
     output
 }
 
 fn doc_entry_markdown(entry: &DocEntry) -> String {
-    let mut output = String::new();
-    output.push_str(&format!("## `{}`\n\n", entry.name));
-
-    if let Some(signature) = entry
-        .signature
-        .as_deref()
-        .map(str::trim)
-        .filter(|s| !s.is_empty())
-    {
-        output.push_str("```scheme\n");
-        output.push_str(signature);
-        output.push_str("\n```\n");
-    }
-
-    let summary = entry
-        .summary
-        .as_deref()
-        .map(str::trim)
-        .filter(|s| !s.is_empty());
-    if let Some(summary) = summary {
-        push_markdown_section_break(&mut output);
-        output.push_str(summary);
-        output.push('\n');
-    }
-
-    if let Some(deprecated) = entry
-        .deprecated
-        .as_deref()
-        .map(str::trim)
-        .filter(|s| !s.is_empty())
-    {
-        push_markdown_section_break(&mut output);
-        output.push_str(&format!("**Deprecated:** {deprecated}\n"));
-    }
-
-    let markdown = entry.markdown.as_deref().map(str::trim).filter(|s| {
-        !s.is_empty() && summary.is_none_or(|summary| !same_markdown_paragraph(summary, s))
-    });
-    if let Some(markdown) = markdown {
-        push_markdown_section_break(&mut output);
-        output.push_str(markdown);
-        output.push('\n');
-    }
-
-    if !entry.params.is_empty() {
-        push_markdown_section_break(&mut output);
-        output.push_str("### Parameters\n\n");
-        for param in &entry.params {
-            output.push_str(&format!("- `{}` - {}\n", param.name, param.summary));
-        }
-    }
-
-    if let Some(returns) = entry
-        .returns
-        .as_deref()
-        .map(str::trim)
-        .filter(|s| !s.is_empty())
-    {
-        push_markdown_section_break(&mut output);
-        output.push_str("### Returns\n\n");
-        output.push_str(returns);
-        output.push('\n');
-    }
-
-    if let Some(example) = entry
-        .example
-        .as_deref()
-        .map(str::trim)
-        .filter(|s| !s.is_empty())
-    {
-        push_markdown_section_break(&mut output);
-        output.push_str("### Example\n\n```scheme\n");
-        output.push_str(example);
-        output.push_str("\n```\n");
-    }
-
-    let mut details = Vec::new();
-    details.push(format!("Group: `{}`", doc_entry_group(entry)));
-    if let Some(source) = &entry.source {
-        details.push(format!("Source: `{}`", source_location(source, entry)));
-    }
-    if let Some(since) = &entry.since {
-        details.push(format!("Since: `{since}`"));
-    }
-    if let Some(stability) = &entry.stability {
-        details.push(format!("Stability: `{stability}`"));
-    }
-    if !details.is_empty() {
-        push_markdown_section_break(&mut output);
-        output.push_str("### Details\n\n");
-        for detail in details {
-            output.push_str(&format!("- {detail}\n"));
-        }
-    }
-
-    if !entry.see.is_empty() {
-        push_markdown_section_break(&mut output);
-        output.push_str("### See also\n\n");
-        output.push_str(
-            &entry
-                .see
-                .iter()
-                .map(|name| format!("`{name}`"))
-                .collect::<Vec<_>>()
-                .join(", "),
-        );
-        output.push('\n');
-    }
-
-    if output.trim() == format!("## `{}`", entry.name) {
-        push_markdown_section_break(&mut output);
-        output.push_str("No documentation provided.\n");
-    }
-    output
+    detailed_markdown_for_entry(entry)
 }
 
 fn doc_groups_markdown(docs: &DocIndex) -> String {
     let mut groups = BTreeMap::<&str, usize>::new();
     for entry in docs.visible_entries() {
-        *groups.entry(doc_entry_group(entry)).or_default() += 1;
+        *groups.entry(entry.group_name()).or_default() += 1;
     }
     let mut output = format!(
         "## Documentation groups\n\n{}.\n\n",
         entry_count_label(groups.values().sum::<usize>())
     );
-    for (group, count) in groups {
-        output.push_str(&format!("- `{group}` - {}\n", entry_count_label(count)));
-    }
+    output.push_str(&group_markdown_table(
+        groups
+            .into_iter()
+            .map(|(group, count)| (group, entry_count_label(count))),
+    ));
     output
 }
 
-fn doc_entries_markdown(title: &str, entries: &[&DocEntry]) -> String {
-    let mut output = format!("## {title}\n\n{}.\n\n", entry_count_label(entries.len()));
-    for entry in entries {
-        let signature = entry.signature.as_deref().unwrap_or(&entry.name);
-        let summary = entry.summary.as_deref().unwrap_or("No summary.");
+fn doc_group_suggestions_markdown(title: &str, groups: &[(&str, usize)]) -> String {
+    let mut output = format!("## {title}\n\n");
+    output.push_str(&group_markdown_table(
+        groups
+            .iter()
+            .map(|(group, count)| (*group, entry_count_label(*count))),
+    ));
+    if let Some((group, _)) = groups.first() {
+        output.push_str("\n## Try\n\n");
         output.push_str(&format!(
-            "- `{}`  \n  `{}`  \n  {} - {}\n",
-            entry.name,
-            signature,
-            doc_entry_group(entry),
-            summary
+            "- {}\n",
+            markdown_code_span(format!(":group {group}"))
         ));
     }
     output
 }
 
-#[cfg(test)]
-fn doc_entry_summary_line(entry: &DocEntry) -> String {
-    let summary = entry.summary.as_deref().unwrap_or("No summary.");
-    let signature = entry.signature.as_deref().unwrap_or(&entry.name);
-    format!("  {signature} - {summary}")
+fn doc_group_title(entry: &DocEntry) -> String {
+    format!(
+        "Documentation group {}",
+        markdown_code_span(entry.group_name())
+    )
 }
 
-fn push_markdown_section_break(output: &mut String) {
-    if !output.is_empty() && !output.ends_with("\n\n") {
-        if output.ends_with('\n') {
-            output.push('\n');
-        } else {
-            output.push_str("\n\n");
-        }
+fn doc_entries_markdown(title: &str, entries: &[&DocEntry]) -> String {
+    let mut output = format!("## {title}\n\n{}.\n\n", entry_count_label(entries.len()));
+    output.push_str(&entry_summary_markdown_table(entries.iter().copied()));
+    output
+}
+
+fn doc_possible_matches_markdown(
+    docs: &DocIndex,
+    query: &str,
+    try_command: &str,
+) -> Option<String> {
+    let mut matches = search_doc_entries(docs, query, 10);
+    if matches.is_empty() {
+        matches = suggest_doc_entries(docs, query, 5);
     }
+    let first = matches.first()?;
+    let mut output = doc_entries_markdown(
+        &format!("Possible matches for {}", markdown_code_span(query)),
+        &matches,
+    );
+    output.push_str("\n## Try\n\n");
+    output.push_str(&format!(
+        "- {}\n",
+        markdown_code_span(format!("{try_command} {}", first.name))
+    ));
+    Some(output)
 }
 
 #[cfg(test)]
-fn doc_entry_matches(entry: &DocEntry, query: &str) -> bool {
-    let query = query.to_ascii_lowercase();
-    entry.name.to_ascii_lowercase().contains(&query)
-        || entry
-            .signature
-            .as_ref()
-            .is_some_and(|value| value.to_ascii_lowercase().contains(&query))
-        || entry
-            .summary
-            .as_ref()
-            .is_some_and(|value| value.to_ascii_lowercase().contains(&query))
-        || entry
-            .markdown
-            .as_ref()
-            .is_some_and(|value| value.to_ascii_lowercase().contains(&query))
+fn doc_entry_table_row(entry: &DocEntry) -> String {
+    entry_summary_markdown_table([entry])
 }
 
 pub(super) struct ReplCommandSpec {
@@ -362,12 +283,12 @@ pub(super) const REPL_COMMAND_SPECS: &[ReplCommandSpec] = &[
     ReplCommandSpec {
         name: ":docs",
         usage: ":docs [QUERY]",
-        description: "List doc groups, or search docs when QUERY is present.",
+        description: "List doc groups, or search reference docs when QUERY is present.",
     },
     ReplCommandSpec {
         name: ":search",
         usage: ":search QUERY",
-        description: "Search names, signatures, summaries, and long docs.",
+        description: "Search reference docs, examples, source paths or locations, and metadata.",
     },
     ReplCommandSpec {
         name: ":groups",
@@ -376,13 +297,13 @@ pub(super) const REPL_COMMAND_SPECS: &[ReplCommandSpec] = &[
     },
     ReplCommandSpec {
         name: ":group",
-        usage: ":group NAME",
+        usage: ":group GROUP",
         description: "List docs in one group.",
     },
     ReplCommandSpec {
         name: ":source",
-        usage: ":source NAME",
-        description: "Show where a documented symbol comes from.",
+        usage: ":source SYMBOL_OR_SOURCE",
+        description: "Show where a documented symbol comes from, or list docs from a source file or location.",
     },
     ReplCommandSpec {
         name: ":quit",

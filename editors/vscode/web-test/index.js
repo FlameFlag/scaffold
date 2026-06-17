@@ -203,11 +203,8 @@ async function run() {
       path: "/reference.md",
     }),
   );
-  const referenceText = referenceDocument.getText();
   assert(
-    referenceText.includes("| Entries | Groups | Examples | Deprecated |") &&
-      referenceText.includes("[`acme-tool`](#acme-tool)") &&
-      referenceText.includes("Create an Acme tool fixture."),
+    hasRenderedReferenceDocument(referenceDocument.getText()),
     "rendered virtual reference document",
   );
   await vscode.commands.executeCommand("scaffold.openLanguageReference");
@@ -308,6 +305,14 @@ function assert(condition, message) {
   if (!condition) {
     throw new Error(`Expected ${message}`);
   }
+}
+
+function hasRenderedReferenceDocument(text) {
+  return (
+    text.includes("| Entries | Groups | Examples | Deprecated |") &&
+    text.includes("[`build`](#entry-build-1i9vvkz)") &&
+    text.includes("Create a build action for tools compiled from source.")
+  );
 }
 
 async function waitFor(predicate, label) {

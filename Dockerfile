@@ -16,7 +16,7 @@ COPY . .
 
 ENV CARGO_TERM_COLOR=always
 
-RUN rustup target add wasm32-unknown-unknown
+RUN rustup target add wasm32-unknown-unknown && rustup component add clippy rustfmt
 RUN cargo install wasm-bindgen-cli --locked --version "$WASM_BINDGEN_VERSION"
 RUN bun install --frozen-lockfile
 RUN cargo fmt --all -- --check

@@ -1,21 +1,47 @@
 <script lang="ts">
 import { onMount, tick } from "svelte";
+import EntryCard from "./components/EntryCard.svelte";
 import InfoPanels from "./components/InfoPanels.svelte";
 import ReferenceGroup from "./components/ReferenceGroup.svelte";
 import Sidebar from "./components/Sidebar.svelte";
-import type { ReferenceDocument } from "./reference";
+import {
+  parseReferenceDocument,
+  type ReferenceDocument,
+  targetIdFromHash,
+} from "./reference";
+import { createReferenceSearchIndex } from "./reference-search";
 
 let reference = $state<ReferenceDocument | null>(null);
 let loadError = $state<string | null>(null);
+let searchQuery = $state("");
+let searchInput = $state<HTMLInputElement | null>(null);
 
 async function loadReferenceDocument(): Promise<ReferenceDocument> {
-  const response = await fetch(`${import.meta.env.BASE_URL}reference.static.json`);
+  const response = await fetch(
+    `${import.meta.env.BASE_URL}reference.static.json`,
+  );
 
   if (!response.ok) {
     throw new Error(`HTTP ${response.status}`);
   }
 
-  return (await response.json()) as ReferenceDocument;
+  return parseReferenceDocument(await response.json());
+}
+
+function isCommandShortcut(event: KeyboardEvent, key: string) {
+  return (
+    event.key.toLowerCase() === key &&
+    (event.metaKey || event.ctrlKey) &&
+    !event.altKey
+  );
+}
+
+function referenceEntryCountLabel(count: number) {
+  return `${count} reference entr${count === 1 ? "y" : "ies"}`;
+}
+
+function suggestedReferenceEntryCountLabel(count: number) {
+  return `${count} suggested reference entr${count === 1 ? "y" : "ies"}`;
 }
 
 onMount(() => {
@@ -29,6 +55,11 @@ onMount(() => {
       });
   }
 
+  function focusReferenceSearch() {
+    searchInput?.focus();
+    searchInput?.select();
+  }
+
   function openDetailsForTarget(target: HTMLElement) {
     let current: HTMLElement | null = target;
 
@@ -40,13 +71,24 @@ onMount(() => {
     }
   }
 
+  function targetElementById(id: string): HTMLElement | null {
+    return (
+      document.getElementById(id) ??
+      (!id.startsWith("group-") ? document.getElementById(`group-${id}`) : null)
+    );
+  }
+
   function scrollToHash() {
     if (!window.location.hash) {
       return true;
     }
 
-    const id = decodeURIComponent(window.location.hash.slice(1));
-    const target = document.getElementById(id);
+    const id = targetIdFromHash(window.location.hash);
+    if (!id) {
+      return true;
+    }
+
+    const target = targetElementById(id);
     if (target) {
       openDetailsForTarget(target);
     }
@@ -78,11 +120,13 @@ onMount(() => {
   }
 
   function handleFindShortcut(event: KeyboardEvent) {
-    if (
-      event.key.toLowerCase() === "f" &&
-      (event.metaKey || event.ctrlKey) &&
-      !event.altKey
-    ) {
+    if (isCommandShortcut(event, "k")) {
+      event.preventDefault();
+      focusReferenceSearch();
+      return;
+    }
+
+    if (isCommandShortcut(event, "f")) {
       openSearchableContent();
     }
   }
@@ -105,7 +149,9 @@ onMount(() => {
       window.clearTimeout(hashScrollTimer);
     }
     window.removeEventListener("hashchange", scheduleHashScroll);
-    window.removeEventListener("keydown", handleFindShortcut, { capture: true });
+    window.removeEventListener("keydown", handleFindShortcut, {
+      capture: true,
+    });
   };
 });
 
@@ -119,7 +165,30 @@ let groupCounts = $derived(
   (reference?.entries ?? []).reduce<Record<string, number>>((counts, entry) => {
     counts[entry.group] = (counts[entry.group] ?? 0) + 1;
     return counts;
-  }, {}),
+  }, Object.create(null)),
+);
+
+let searchIndex = $derived(
+  reference ? createReferenceSearchIndex(reference.entries) : null,
+);
+
+let hasSearchQuery = $derived(searchQuery.trim().length > 0);
+let searchResults = $derived(searchIndex?.search(searchQuery) ?? []);
+let searchSuggestions = $derived(
+  hasSearchQuery && searchResults.length === 0
+    ? (searchIndex?.suggest(searchQuery, 5) ?? [])
+    : [],
+);
+let searchStatus = $derived(
+  reference
+    ? hasSearchQuery
+      ? searchResults.length > 0
+        ? referenceEntryCountLabel(searchResults.length)
+        : searchSuggestions.length > 0
+          ? suggestedReferenceEntryCountLabel(searchSuggestions.length)
+          : referenceEntryCountLabel(0)
+      : referenceEntryCountLabel(reference.entries.length)
+    : "",
 );
 </script>
 
@@ -143,12 +212,63 @@ let groupCounts = $derived(
       {:else}
         <InfoPanels capabilities={reference.capabilities} />
 
-        {#each groups as group}
-          {@const entries = reference.entries.filter((entry) => entry.group === group)}
-          {#if entries.length > 0}
-            <ReferenceGroup {group} {entries} />
-          {/if}
-        {/each}
+        <section class="referenceSearch" aria-label="Search reference">
+          <label for="reference-search">Search reference</label>
+          <div class="searchControl">
+            <input
+              id="reference-search"
+              bind:this={searchInput}
+              bind:value={searchQuery}
+              type="search"
+              autocomplete="off"
+              spellcheck="false"
+              placeholder="tool/path, catalog, source/path..."
+            />
+            {#if searchQuery.length > 0}
+              <button type="button" onclick={() => (searchQuery = "")}>
+                Clear
+              </button>
+            {/if}
+          </div>
+          <p aria-live="polite">
+            {searchStatus}
+          </p>
+        </section>
+
+        {#if hasSearchQuery}
+          <section class="searchResults" aria-label="Search results">
+            {#if searchResults.length > 0}
+              <ol class="entryList">
+                {#each searchResults as result (result.entry.name)}
+                  <li>
+                    <p class="searchResultMeta">{result.entry.group}</p>
+                    <EntryCard entry={result.entry} />
+                  </li>
+                {/each}
+              </ol>
+            {:else}
+              <p class="notice">No reference entries match this search.</p>
+              {#if searchSuggestions.length > 0}
+                <h2>Did you mean</h2>
+                <ol class="entryList">
+                  {#each searchSuggestions as result (result.entry.name)}
+                    <li>
+                      <p class="searchResultMeta">{result.entry.group}</p>
+                      <EntryCard entry={result.entry} />
+                    </li>
+                  {/each}
+                </ol>
+              {/if}
+            {/if}
+          </section>
+        {:else}
+          {#each groups as group (group)}
+            {@const entries = reference.entries.filter((entry) => entry.group === group)}
+            {#if entries.length > 0}
+              <ReferenceGroup {group} {entries} />
+            {/if}
+          {/each}
+        {/if}
       {/if}
     </section>
   </main>

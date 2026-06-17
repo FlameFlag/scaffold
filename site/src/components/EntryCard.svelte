@@ -1,18 +1,33 @@
 <script lang="ts">
-import { anchor, type ReferenceEntry } from "../reference";
+import {
+  entryId,
+  type ReferenceEntry,
+  type RenderedReferenceParam,
+} from "../reference";
 import CopyButton from "./CopyButton.svelte";
 import SourceDisclosure from "./SourceDisclosure.svelte";
 
 let { entry } = $props<{ entry: ReferenceEntry }>();
 
-function renderedParamSummary(name: string) {
+const hasFooterMetadata = $derived(
+  Boolean(
+    entry.effect ||
+      entry.requires_capability.length > 0 ||
+      entry.stability ||
+      entry.since,
+  ),
+);
+
+function renderedParamSummary(name: string): string {
   return (
-    entry.rendered.params.find((item) => item.name === name)?.summaryHtml ?? ""
+    entry.rendered.params.find(
+      (item: RenderedReferenceParam) => item.name === name,
+    )?.summaryHtml ?? ""
   );
 }
 </script>
 
-<details class="entry searchExpandable" id={`entry-${anchor(entry.name)}`}>
+<details class="entry searchExpandable" id={entryId(entry.name)}>
   <summary class="entrySummary">
     <span class="entryTitle">
       <h3><code>{entry.name}</code></h3>
@@ -33,15 +48,15 @@ function renderedParamSummary(name: string) {
       </div>
     {/if}
 
-    {#if entry.markdown}
+    {#if entry.rendered.rawMarkdownHtml}
       <section class="markdown" aria-label="Documentation">
-        {@html entry.rendered.markdownHtml}
+        {@html entry.rendered.rawMarkdownHtml}
       </section>
     {/if}
 
     {#if entry.params.length > 0 || entry.returns}
       <dl class="params">
-        {#each entry.params as param}
+        {#each entry.params as param (param.name)}
           <dt>{param.name}</dt>
           <dd>{@html renderedParamSummary(param.name)}</dd>
         {/each}
@@ -61,17 +76,22 @@ function renderedParamSummary(name: string) {
       </div>
     {/if}
 
-    <footer>
-      {#if entry.effect}
-        <span>{entry.effect}</span>
-      {/if}
-      {#if entry.stability}
-        <span>{entry.stability}</span>
-      {/if}
-      {#if entry.since}
-        <span>since {entry.since}</span>
-      {/if}
-    </footer>
+    {#if hasFooterMetadata}
+      <footer>
+        {#if entry.effect}
+          <span>{entry.effect}</span>
+        {/if}
+        {#each entry.requires_capability as capability (capability)}
+          <span>{capability}</span>
+        {/each}
+        {#if entry.stability}
+          <span>{entry.stability}</span>
+        {/if}
+        {#if entry.since}
+          <span>since {entry.since}</span>
+        {/if}
+      </footer>
+    {/if}
 
     <SourceDisclosure {entry} />
   </div>

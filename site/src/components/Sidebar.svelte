@@ -1,5 +1,5 @@
 <script lang="ts">
-import { anchor } from "../reference";
+import { groupId } from "../reference";
 
 let { groups, groupCounts } = $props<{
   groups: string[];
@@ -17,11 +17,26 @@ type SidebarItem = SidebarSection;
 const sectionPlan = [
   {
     name: "Core",
-    groups: ["Language", "Objects", "Vectors", "Paths", "Filesystem", "Host", "Workspace"],
+    groups: [
+      "Language",
+      "Objects",
+      "Vectors",
+      "Paths",
+      "Filesystem",
+      "Host",
+      "Workspace",
+    ],
   },
   {
     name: "Catalog",
-    groups: ["Catalog", "Actions", "Documentation", "Checks", "Testing", "Transformations"],
+    groups: [
+      "Catalog",
+      "Actions",
+      "Documentation",
+      "Checks",
+      "Testing",
+      "Transformations",
+    ],
   },
   {
     name: "Packages",
@@ -40,7 +55,15 @@ const sectionPlan = [
   },
   {
     name: "Nix",
-    groups: ["Nix", "Nix build", "Nix eval", "Nix flakes", "Nix profiles", "Nix shell", "Nix store"],
+    groups: [
+      "Nix",
+      "Nix build",
+      "Nix eval",
+      "Nix flakes",
+      "Nix profiles",
+      "Nix shell",
+      "Nix store",
+    ],
   },
   {
     name: "OS tools",
@@ -55,11 +78,19 @@ function buildGroupedNav(values: string[]) {
   const used = new Set<string>();
 
   for (const section of sectionPlan) {
-    const sectionGroups = section.groups.filter((group) => values.includes(group));
+    const sectionGroups = section.groups.filter((group) =>
+      values.includes(group),
+    );
 
     if (sectionGroups.length > 0) {
-      items.push({ type: "section", name: section.name, groups: sectionGroups });
-      sectionGroups.forEach((group) => used.add(group));
+      items.push({
+        type: "section",
+        name: section.name,
+        groups: sectionGroups,
+      });
+      for (const group of sectionGroups) {
+        used.add(group);
+      }
     }
   }
 
@@ -72,11 +103,16 @@ function buildGroupedNav(values: string[]) {
 }
 
 function sectionCount(section: SidebarSection) {
-  return section.groups.reduce((count, group) => count + (groupCounts[group] ?? 0), 0);
+  return section.groups.reduce(
+    (count, group) => count + (groupCounts[group] ?? 0),
+    0,
+  );
 }
 
 function childLabel(section: SidebarSection, group: string) {
-  return group === section.name ? "Overview" : group.slice(section.name.length + 1);
+  return group === section.name
+    ? "Overview"
+    : group.slice(section.name.length + 1);
 }
 
 function labelFor(section: SidebarSection, group: string) {
@@ -95,7 +131,7 @@ function labelFor(section: SidebarSection, group: string) {
     <ul class="navList">
       <li><a href="#reference">Reference</a></li>
       <li><a href="#capabilities">Capabilities</a></li>
-    {#each groupedNav as item}
+    {#each groupedNav as item (item.name)}
       <li>
         <details class="navGroup">
           <summary>
@@ -103,9 +139,9 @@ function labelFor(section: SidebarSection, group: string) {
             <small>{sectionCount(item)}</small>
           </summary>
           <ul>
-            {#each item.groups as group}
+            {#each item.groups as group (group)}
               <li>
-                <a href={`#${anchor(group)}`}>
+                <a href={`#${groupId(group)}`}>
                   <span>{labelFor(item, group)}</span>
                   <small>{groupCounts[group]}</small>
                 </a>

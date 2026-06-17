@@ -1,5 +1,5 @@
 <script lang="ts">
-import { anchor, type ReferenceEntry } from "../reference";
+import { groupId, type ReferenceEntry } from "../reference";
 import EntryCard from "./EntryCard.svelte";
 
 let { group, entries } = $props<{
@@ -10,15 +10,15 @@ let { group, entries } = $props<{
 
 <details
   class="referenceGroup searchExpandable"
-  id={anchor(group)}
-  aria-labelledby={`${anchor(group)}-title`}
+  id={groupId(group)}
+  aria-labelledby={`${groupId(group)}-title`}
 >
   <summary class="groupSummary">
-    <h2 id={`${anchor(group)}-title`}>{group}</h2>
+    <h2 id={`${groupId(group)}-title`}>{group}</h2>
     <p>{entries.length} entries</p>
   </summary>
   <ol class="entryList" aria-label={`${group} reference entries`}>
-    {#each entries as entry}
+    {#each entries as entry (entry.name)}
       <li>
         <EntryCard {entry} />
       </li>

@@ -4,10 +4,17 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "reference": "mkdir -p .generated && cargo run --manifest-path ../Cargo.toml -- docs --format json --output .generated/reference.json",
+    "reference": "bun scripts/generate-reference.mjs",
+    "reference:check": "bun scripts/generate-reference.mjs --check",
     "static-reference": "bun scripts/generate-static-reference.mjs",
-    "dev": "bun run reference && bun run static-reference && vite --host 127.0.0.1",
-    "build": "bun run reference && bun run static-reference && NODE_OPTIONS=--disable-warning=DEP0205 vite build",
+    "static-reference:check": "bun scripts/generate-static-reference.mjs --check",
+    "prepare-reference": "bun run reference && bun run static-reference",
+    "check:reference": "bun run reference:check && bun run static-reference:check && bun scripts/check-reference.mjs",
+    "check:reference-search": "bun run check:reference",
+    "typecheck": "NODE_OPTIONS=--disable-warning=DEP0205 svelte-check --tsconfig tsconfig.json",
+    "check": "bun run check:reference && bun run typecheck && NODE_OPTIONS=--disable-warning=DEP0205 vite build",
+    "dev": "bun run prepare-reference && vite --host 127.0.0.1",
+    "build": "bun run prepare-reference && bun scripts/check-reference.mjs && bun run typecheck && NODE_OPTIONS=--disable-warning=DEP0205 vite build",
     "preview": "vite preview --host 127.0.0.1"
   },
   "dependencies": {
@@ -21,6 +28,7 @@
   },
   "devDependencies": {
     "marked": "^18.0.5",
+    "svelte-check": "^4.6.0",
     "typescript": "^6.0.3"
   }
 }

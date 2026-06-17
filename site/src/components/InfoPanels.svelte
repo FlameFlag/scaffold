@@ -23,21 +23,25 @@ let { capabilities } = $props<{
         <tr>
           <th>Library</th>
           <th>Effect</th>
-          <th>Catalog</th>
-          <th>Test</th>
-          <th>Editor</th>
-          <th>WASM</th>
+          <th>Modes</th>
         </tr>
       </thead>
       <tbody>
-        {#each capabilities as capability}
+        {#each capabilities as capability (capability.library)}
           <tr>
-            <td><code>{capability.library}</code></td>
+            <td class="capabilityLibrary">
+              <code>{capability.library}</code>
+              <span class="capabilityMeta">Bridge <code>{capability.bridge_library}</code></span>
+              <span class="capabilityMeta">Docs <code>{capability.docs_source}</code></span>
+              <p>{capability.notes}</p>
+            </td>
             <td>{capability.effect}</td>
-            <td>{capability.modes.catalog ?? "unavailable"}</td>
-            <td>{capability.modes.test ?? "unavailable"}</td>
-            <td>{capability.modes.editor ?? "unavailable"}</td>
-            <td>{capability.modes.wasm ?? "unavailable"}</td>
+            <td class="capabilityModes">
+              <span class="capabilityMode">Catalog <code>{capability.modes.catalog ?? "unavailable"}</code></span>
+              <span class="capabilityMode">Test <code>{capability.modes.test ?? "unavailable"}</code></span>
+              <span class="capabilityMode">Editor <code>{capability.modes.editor ?? "unavailable"}</code></span>
+              <span class="capabilityMode">WASM <code>{capability.modes.wasm ?? "unavailable"}</code></span>
+            </td>
           </tr>
         {/each}
       </tbody>

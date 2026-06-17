@@ -51,6 +51,13 @@
     min-width: 0;
   }
 
+  .searchResultMeta {
+    margin: 0 0 0.25rem 0.05rem;
+    color: var(--muted);
+    font-family: var(--mono-font);
+    font-size: 0.72rem;
+  }
+
   .entry {
     min-width: 0;
     border: 1px solid var(--line);
@@ -96,22 +103,6 @@
     white-space: nowrap;
   }
 
-  .entrySummary > .summary {
-    grid-column: 3;
-  }
-
-  .entryBody {
-    border-top: 1px solid var(--line);
-    padding: 0.75rem 0.85rem 0.85rem;
-  }
-
-  .entry h3 code {
-    background: transparent;
-    border-color: transparent;
-    color: var(--ink);
-    white-space: nowrap;
-  }
-
   .entryTitle > span,
   .entry footer span {
     color: var(--muted-strong);
@@ -130,6 +121,22 @@
     margin: 0;
     color: var(--muted-strong);
     font-size: 0.9rem;
+  }
+
+  .entrySummary > .summary {
+    grid-column: 3;
+  }
+
+  .entryBody {
+    border-top: 1px solid var(--line);
+    padding: 0.75rem 0.85rem 0.85rem;
+  }
+
+  .entry h3 code {
+    background: transparent;
+    border-color: transparent;
+    color: var(--ink);
+    white-space: nowrap;
   }
 
   .markdown {
@@ -268,13 +275,13 @@
     overflow-x: auto;
     margin: 0;
     border-color: var(--code-border);
-    background: #fbfcfe !important;
+    background: #fbfcfe;
     padding: 0.55rem 0;
     font-size: 0.78rem;
     line-height: 1.45;
   }
 
-  .sourceCode code {
+  .sourceCode :where(code) {
     font-family: var(--mono-font);
   }
 

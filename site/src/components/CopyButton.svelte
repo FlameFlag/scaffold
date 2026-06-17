@@ -1,4 +1,6 @@
 <script lang="ts">
+import { onDestroy } from "svelte";
+
 let {
   value,
   label = "Copy",
@@ -7,9 +9,32 @@ let {
   label?: string;
 } = $props();
 
-let status = $state<"idle" | "copied" | "selected" | "failed">("idle");
+type CopyStatus = "idle" | "copied" | "selected" | "failed";
+
+let status = $state<CopyStatus>("idle");
 let resetTimer: number | undefined;
 let buttonElement: HTMLButtonElement;
+
+const buttonTextByStatus: Partial<Record<CopyStatus, string>> = {
+  copied: "Copied",
+  failed: "Failed",
+  selected: "Selected",
+};
+
+const statusMessageByStatus: Partial<Record<CopyStatus, string>> = {
+  copied: "Copied to clipboard.",
+  failed: "Copy failed.",
+  selected: "Copy unavailable; source text selected.",
+};
+
+const buttonText = $derived(buttonTextByStatus[status] ?? label);
+const statusMessage = $derived(statusMessageByStatus[status] ?? "");
+
+onDestroy(() => {
+  if (resetTimer !== undefined) {
+    window.clearTimeout(resetTimer);
+  }
+});
 
 async function copyValue() {
   if (resetTimer !== undefined) {
@@ -117,12 +142,13 @@ function selectNearbyCode(button: HTMLButtonElement | undefined) {
 }
 </script>
 
-<button class="copyButton" type="button" bind:this={buttonElement} onclick={copyValue}>
-  {status === "copied"
-    ? "Copied"
-    : status === "selected"
-      ? "Selected"
-      : status === "failed"
-        ? "Failed"
-        : label}
+<button
+  class="copyButton"
+  type="button"
+  bind:this={buttonElement}
+  onclick={copyValue}
+  aria-label={buttonText}
+>
+  {buttonText}
 </button>
+<span class="srOnly" aria-live="polite">{statusMessage}</span>

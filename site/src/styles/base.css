@@ -17,10 +17,12 @@
   --blue-soft: #eaf2ff;
   --code-bg: #f3f6fa;
   --code-border: #dbe4ef;
-  --body-font: "Inter Variable", -apple-system, BlinkMacSystemFont, "Segoe UI",
-    system-ui, sans-serif;
-  --mono-font: "JetBrains Mono Variable", ui-monospace, "SFMono-Regular",
-    Consolas, "Liberation Mono", monospace;
+  --body-font:
+    "Inter Variable", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui,
+    sans-serif;
+  --mono-font:
+    "JetBrains Mono Variable", ui-monospace, "SFMono-Regular", Consolas,
+    "Liberation Mono", monospace;
 }
 
 @layer base {
@@ -59,6 +61,18 @@
   a:hover {
     color: var(--link-hover);
     text-decoration: underline;
+  }
+
+  .srOnly {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+    padding: 0;
   }
 
   h1,
@@ -119,14 +133,5 @@
     border: 0;
     background: transparent;
     color: inherit;
-  }
-
-  .srOnly {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    white-space: nowrap;
   }
 }

@@ -202,10 +202,58 @@ impl Bin {
         if !output.status.success() {
             return None;
         }
-        let text = String::from_utf8(output.stdout)
-            .or_else(|_| String::from_utf8(output.stderr))
-            .ok()?;
-        let first_line = text.lines().next()?.trim();
-        (!first_line.is_empty()).then(|| first_line.to_owned())
+        first_non_empty_version_line(&output.stdout, &output.stderr)
+    }
+}
+
+fn first_non_empty_version_line(stdout: &[u8], stderr: &[u8]) -> Option<String> {
+    [stdout, stderr]
+        .into_iter()
+        .filter_map(|bytes| std::str::from_utf8(bytes).ok())
+        .flat_map(str::lines)
+        .map(str::trim)
+        .find(|line| !line.is_empty())
+        .map(str::to_owned)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::first_non_empty_version_line;
+
+    #[test]
+    fn version_line_prefers_stdout_when_present() {
+        assert_eq!(
+            first_non_empty_version_line(b"tool 1.2.3\n", b"tool 9.9.9\n").as_deref(),
+            Some("tool 1.2.3")
+        );
+    }
+
+    #[test]
+    fn version_line_uses_stderr_when_stdout_is_empty() {
+        assert_eq!(
+            first_non_empty_version_line(b"", b"tool 1.2.3\n").as_deref(),
+            Some("tool 1.2.3")
+        );
+    }
+
+    #[test]
+    fn version_line_skips_blank_lines() {
+        assert_eq!(
+            first_non_empty_version_line(b"\n  \n tool 1.2.3 \n", b"").as_deref(),
+            Some("tool 1.2.3")
+        );
+    }
+
+    #[test]
+    fn version_line_uses_stderr_when_stdout_is_invalid_utf8() {
+        assert_eq!(
+            first_non_empty_version_line(b"\xff", b"tool 1.2.3\n").as_deref(),
+            Some("tool 1.2.3")
+        );
+    }
+
+    #[test]
+    fn version_line_returns_none_without_usable_text() {
+        assert_eq!(first_non_empty_version_line(b"\n", b"\xff"), None);
     }
 }

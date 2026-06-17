@@ -41,6 +41,15 @@ impl HostOs {
             Self::Linux
         }
     }
+
+    #[must_use]
+    pub const fn label(self) -> &'static str {
+        match self {
+            Self::Linux => "linux",
+            Self::Macos => "macos",
+            Self::Windows => "windows",
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
@@ -57,6 +66,14 @@ impl HostArch {
             Self::Aarch64
         } else {
             Self::X86_64
+        }
+    }
+
+    #[must_use]
+    pub const fn label(self) -> &'static str {
+        match self {
+            Self::Aarch64 => "aarch64",
+            Self::X86_64 => "x86_64",
         }
     }
 }
@@ -106,4 +123,18 @@ fn parse_predicate(value: &str) -> Result<Predicate, String> {
         Some(arch) => return Err(format!("unknown host architecture predicate {arch:?}")),
     };
     Ok(Predicate { os: Some(os), arch })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{HostArch, HostOs};
+
+    #[test]
+    fn host_labels_are_stable_catalog_predicate_strings() {
+        assert_eq!(HostOs::Linux.label(), "linux");
+        assert_eq!(HostOs::Macos.label(), "macos");
+        assert_eq!(HostOs::Windows.label(), "windows");
+        assert_eq!(HostArch::Aarch64.label(), "aarch64");
+        assert_eq!(HostArch::X86_64.label(), "x86_64");
+    }
 }

@@ -3,6 +3,50 @@ use miette::Diagnostic as _;
 use scaffold_platform::{Host, HostOs};
 
 #[test]
+fn action_and_phase_labels_are_stable_lowercase_values() {
+    let catalog = Catalog::from_value(serde_json::json!({
+        "tools": [
+            {
+                "name": "required-demo",
+                "action": { "type": "required" }
+            },
+            {
+                "name": "package-demo",
+                "action": {
+                    "type": "package",
+                    "install_argv": ["pkg", "install", "package-demo"]
+                }
+            },
+            {
+                "name": "build-demo",
+                "action": {
+                    "type": "build",
+                    "path": "vendor/build-demo",
+                    "argv": ["make"]
+                }
+            },
+            {
+                "name": "archive-demo",
+                "action": {
+                    "type": "archive",
+                    "path": "archive.zip"
+                }
+            }
+        ]
+    }))
+    .expect("catalog");
+
+    assert_eq!(catalog.tools[0].action.label(), "required");
+    assert_eq!(catalog.tools[0].phase().label(), "prerequisites");
+    assert_eq!(catalog.tools[1].action.label(), "package");
+    assert_eq!(catalog.tools[1].phase().label(), "packages");
+    assert_eq!(catalog.tools[2].action.label(), "build");
+    assert_eq!(catalog.tools[2].phase().label(), "builds");
+    assert_eq!(catalog.tools[3].action.label(), "archive");
+    assert_eq!(catalog.tools[3].phase().label(), "builds");
+}
+
+#[test]
 fn loads_extension_composition_fixture() {
     let value = scaffold_dsl::catalog_value_from_str(include_str!(
         "../../scaffold-dsl/src/fixtures/extensions/composed-catalog.scm"

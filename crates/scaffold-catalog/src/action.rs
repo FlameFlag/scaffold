@@ -15,6 +15,16 @@ pub enum Action {
 
 impl Action {
     #[must_use]
+    pub const fn label(&self) -> &'static str {
+        match self {
+            Self::Required => "required",
+            Self::Package(_) => "package",
+            Self::Build(_) => "build",
+            Self::Archive(_) => "archive",
+        }
+    }
+
+    #[must_use]
     pub const fn phase(&self) -> Phase {
         match self {
             Self::Required => Phase::Prerequisites,
@@ -39,6 +49,17 @@ pub enum Phase {
     Prerequisites,
     Packages,
     Builds,
+}
+
+impl Phase {
+    #[must_use]
+    pub const fn label(self) -> &'static str {
+        match self {
+            Self::Prerequisites => "prerequisites",
+            Self::Packages => "packages",
+            Self::Builds => "builds",
+        }
+    }
 }
 
 #[derive(Debug, Deserialize)]

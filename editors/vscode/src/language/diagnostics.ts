@@ -16,20 +16,13 @@ import {
 
 import { isSchemeDocument, schemeSelector } from "../scheme";
 import { scaffoldWasm } from "../wasm";
-
-const missingDocCode = "scaffold::dsl::missing-doc";
-
-interface WasmDiagnostic {
-  message: string;
-  offset: number;
-  length: number;
-  severity: "error" | "warning" | "information" | "hint";
-  code: string;
-  data?: {
-    name?: string;
-    line?: number;
-  };
-}
+import { parseWasmJson } from "../wasm/json";
+import {
+  diagnosticLineNumber,
+  isWasmDiagnostic,
+  missingDocCode,
+  type WasmDiagnostic,
+} from "./diagnostics-data";
 
 type ScaffoldDiagnostic = Diagnostic & {
   data?: WasmDiagnostic["data"];
@@ -86,13 +79,12 @@ async function updateDiagnostics(
   }
   diagnostics.set(
     document.uri,
-    (
-      JSON.parse(
-        (await scaffoldWasm(context)).diagnoseScaffoldScheme(
-          document.getText(),
-        ),
-      ) as WasmDiagnostic[]
-    ).map((diagnostic) => toVsCodeDiagnostic(document, diagnostic)),
+    parseWasmJson<WasmDiagnostic[]>(
+      (await scaffoldWasm(context)).diagnoseScaffoldScheme(document.getText()),
+      [],
+    )
+      .filter(isWasmDiagnostic)
+      .map((diagnostic) => toVsCodeDiagnostic(document, diagnostic)),
   );
 }
 
@@ -115,6 +107,9 @@ async function missingDocCodeAction(
     return undefined;
   }
   const line = missingDocLine(document, diagnostic, diagnosticData);
+  if (!line) {
+    return undefined;
+  }
   const action = new CodeAction(
     `Add doc stub for \`${name}\``,
     CodeActionKind.QuickFix,
@@ -146,7 +141,12 @@ function missingDocLine(
   diagnostic: Diagnostic,
   diagnosticData: WasmDiagnostic["data"] | undefined,
 ) {
-  return document.lineAt(diagnosticData?.line ?? diagnostic.range.start.line);
+  const line = diagnosticLineNumber(
+    diagnosticData,
+    diagnostic.range.start.line,
+    document.lineCount,
+  );
+  return line === undefined ? undefined : document.lineAt(line);
 }
 
 async function missingDocStub(

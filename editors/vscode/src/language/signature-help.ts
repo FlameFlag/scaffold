@@ -10,23 +10,14 @@ import {
 
 import { schemeSelector } from "../scheme";
 import { scaffoldWasm } from "../wasm";
+import { parseWasmJson } from "../wasm/json";
 import { wasmWorkspaceJson } from "../workspace";
-
-interface FormContext {
-  head: string;
-  active_argument: number;
-}
-
-interface WasmSignatureHelp {
-  label: string;
-  documentation: string;
-  parameters: WasmSignatureParameter[];
-}
-
-interface WasmSignatureParameter {
-  label: string;
-  documentation?: string | null;
-}
+import {
+  type FormContext,
+  isFormContext,
+  isWasmSignatureHelp,
+  type WasmSignatureHelp,
+} from "./signature-help-data";
 
 export function registerSignatureHelpProvider(
   context: ExtensionContext,
@@ -36,24 +27,26 @@ export function registerSignatureHelpProvider(
     {
       async provideSignatureHelp(document, position) {
         const scaffold = await scaffoldWasm(context);
-        const form = JSON.parse(
+        const form = parseWasmJson<FormContext | null>(
           scaffold.formContextScaffoldScheme(
             document.getText(),
             position.line,
             position.character,
           ),
-        ) as FormContext | null;
-        if (!form) {
+          null,
+        );
+        if (!isFormContext(form)) {
           return undefined;
         }
-        const help = JSON.parse(
+        const help = parseWasmJson<WasmSignatureHelp | null>(
           scaffold.signatureHelpScaffoldSchemeForDocument(
             document.getText(),
             form.head,
             await wasmWorkspaceJson(),
           ),
-        ) as WasmSignatureHelp | null;
-        if (!help) {
+          null,
+        );
+        if (!isWasmSignatureHelp(help)) {
           return undefined;
         }
         return signatureHelp(help, form.active_argument);

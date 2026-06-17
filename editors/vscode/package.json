@@ -144,7 +144,7 @@
     "viewsWelcome": [
       {
         "view": "scaffold.reference",
-        "contents": "Browse Scaffold DSL docs generated from parsable Doc v2 forms.\n[Refresh](command:scaffold.refreshReference) • [Search](command:scaffold.searchReference)"
+        "contents": "Browse targeted Scaffold Scheme reference docs generated from parsable documentation forms.\n[Refresh](command:scaffold.refreshReference) • [Search](command:scaffold.searchReference)"
       }
     ],
     "walkthroughs": [
@@ -167,7 +167,7 @@
           {
             "id": "scaffold-scheme.open-reference",
             "title": "Open the language reference",
-            "description": "Open the generated reference built from Scaffold's parsable DSL documentation forms.",
+            "description": "Open the generated Scaffold Scheme reference built from parsable documentation forms.",
             "media": {
               "markdown": "media/open-reference.md"
             },
@@ -190,11 +190,14 @@
     "sync:sources": "bun scripts/sync-sources.mjs",
     "compile": "tsc -p ./ && bun run bundle:browser",
     "bundle:browser": "esbuild src/browser.ts --bundle --platform=browser --format=cjs --external:vscode --log-override:empty-import-meta=silent --sourcemap --outfile=out/browser.js",
-    "compile:wasm": "cargo build --manifest-path ../../Cargo.toml -p scaffold-wasm --target wasm32-unknown-unknown --release && wasm-bindgen ../../target/wasm32-unknown-unknown/release/scaffold_wasm.wasm --target web --remove-name-section --remove-producers-section --out-dir wasm --out-name scaffold_wasm",
+    "bundle:browser:check": "bun scripts/check-browser-bundle.mjs",
+    "compile:wasm": "cargo build --locked --manifest-path ../../Cargo.toml -p scaffold-wasm --target wasm32-unknown-unknown --release && wasm-bindgen ../../target/wasm32-unknown-unknown/release/scaffold_wasm.wasm --target web --remove-name-section --remove-producers-section --out-dir wasm --out-name scaffold_wasm",
+    "compile:wasm:check": "bun scripts/check-wasm-bindings.mjs",
+    "compile:check": "bun run sync:sources --check && bun run compile:wasm:check && tsc -p ./ --noEmit && bun run bundle:browser:check",
     "compile:all": "bun run sync:sources && bun run compile:wasm && bun run compile",
     "format": "biome format --write .",
     "lint": "biome lint .",
-    "check": "biome check .",
+    "check": "biome check . && bun scripts/sync-sources.mjs --check && bun scripts/check-reference-markdown.mts",
     "check:fix": "biome check --write .",
     "fallow": "fallow",
     "fallow:ci": "fallow --fail-on-issues",
@@ -202,7 +205,9 @@
     "test:web": "vscode-test-web --browser chromium --headless --extensionDevelopmentPath=. --extensionTestsPath=web-test/index.js test-fixtures/workspace",
     "watch": "tsc -watch -p ./",
     "vscode:prepublish": "bun run compile:all",
-    "vsix": "vsce package --no-dependencies --allow-missing-repository --out out",
+    "vsix:pack": "bun scripts/package-vsix.mjs --out-dir out",
+    "vsix:pack:check": "bun scripts/check-vsix-package.mjs",
+    "vsix": "bun run compile:all && bun run vsix:pack",
     "package": "bun run vsix"
   },
   "devDependencies": {
@@ -212,5 +217,8 @@
     "@vscode/vsce": "^3.2.1",
     "esbuild": "^0.28.1",
     "typescript": "^6.0.3"
+  },
+  "dependencies": {
+    "markdown-table": "2.0.0"
   }
 }

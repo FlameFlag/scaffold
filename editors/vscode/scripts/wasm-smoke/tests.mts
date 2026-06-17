@@ -49,6 +49,12 @@ type CatalogSchema = {
   }>;
 };
 
+type ReferenceEntry = {
+  name?: string;
+  effect?: string | null;
+  requires_capability?: string[];
+};
+
 export function runWasmSmokeTest(scaffold: ScaffoldWasmModule): void {
   assertWorkspaceCompletion(scaffold);
   assertWorkspaceHover(scaffold);
@@ -59,6 +65,7 @@ export function runWasmSmokeTest(scaffold: ScaffoldWasmModule): void {
   assertDocumentSymbols(scaffold);
   assertSignatureHelp(scaffold);
   assertSemanticTokens(scaffold);
+  assertReferenceEntries(scaffold);
   assertCatalogSchema(scaffold);
 }
 
@@ -81,6 +88,12 @@ function assertWorkspaceHover(scaffold: ScaffoldWasmModule): void {
   );
 
   assert(hover.includes("Acme."), "workspace hover");
+  assert(hover.includes("**Parameters**"), "workspace hover parameters label");
+  assert(
+    hover.includes("| `name`") && hover.includes("Name docs."),
+    "workspace hover parameter table",
+  );
+  assert(!hover.includes("Parameters:"), "workspace hover avoids old labels");
 }
 
 function assertDefinitions(scaffold: ScaffoldWasmModule): void {
@@ -257,6 +270,39 @@ function assertSemanticTokens(scaffold: ScaffoldWasmModule): void {
       (item) => item.text === "acme-tool" && item.token_type === "function",
     ),
     "workspace semantic token",
+  );
+}
+
+function assertReferenceEntries(scaffold: ScaffoldWasmModule): void {
+  const entries = parseJson<ReferenceEntry[]>(
+    scaffold.referenceEntriesScaffoldScheme(),
+  );
+  const sourcePath = entries.find((item) => item.name === "source/path");
+  assert(
+    sourcePath?.effect === "context-read-only" &&
+      sourcePath.requires_capability?.includes("scaffold.workspace"),
+    "reference entry effect and required capability metadata",
+  );
+
+  const unrelatedSearch = parseJson<ReferenceEntry[]>(
+    scaffold.searchReferenceEntriesScaffoldScheme("nope", 5),
+  );
+  assert(unrelatedSearch.length === 0, "reference search rejects noise");
+
+  const typoSearch = parseJson<ReferenceEntry[]>(
+    scaffold.searchReferenceEntriesScaffoldScheme("ctlg tool", 5),
+  );
+  assert(
+    typoSearch.some((item) => item.name === "catalog/tool"),
+    "reference search keeps useful typo matching",
+  );
+
+  const typoSuggestions = parseJson<ReferenceEntry[]>(
+    scaffold.suggestReferenceEntriesScaffoldScheme("catlgtool", 5),
+  );
+  assert(
+    typoSuggestions[0]?.name === "catalog/tool",
+    "reference suggestions recover compact symbol typos",
   );
 }
 

@@ -1,0 +1,6 @@
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const scriptDir = dirname(fileURLToPath(import.meta.url));
+export const extensionRoot = resolve(scriptDir, "..");
+export const repoRoot = resolve(extensionRoot, "..", "..");

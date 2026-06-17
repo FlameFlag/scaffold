@@ -5,24 +5,29 @@ import {
   workspace,
 } from "vscode";
 
+import {
+  parseBundledSources,
+  type SourceBundle,
+  shouldOpenSourceBundleUri,
+  sourceBundleContent,
+  sourceBundleLoadFailure,
+} from "./bundle";
+
 const sourceScheme = "scaffold-source";
 const bundledSourcesFile = "scaffold-sources.json";
 
-type BundledSources = Record<string, string>;
-
 export class SourceDocumentProvider implements TextDocumentContentProvider {
-  private bundledSources: Promise<BundledSources> | undefined;
+  private sourceBundle: Promise<SourceBundle> | undefined;
 
   constructor(private readonly context: ExtensionContext) {}
 
   async provideTextDocumentContent(uri: Uri): Promise<string> {
     const sourcePath = sourcePathFromUri(uri);
-    const source = (await this.sources())[sourcePath];
-    return source ?? `; Embedded Scaffold source not found: ${sourcePath}\n`;
+    return sourceBundleContent(await this.bundle(), sourcePath);
   }
 
   async uriForSource(source: string): Promise<Uri | undefined> {
-    if (!(await this.hasSource(source))) {
+    if (!shouldOpenSourceBundleUri(await this.bundle(), source)) {
       return undefined;
     }
     return Uri.from({
@@ -31,23 +36,22 @@ export class SourceDocumentProvider implements TextDocumentContentProvider {
     });
   }
 
-  private async hasSource(source: string): Promise<boolean> {
-    return Object.hasOwn(await this.sources(), source);
+  private async bundle(): Promise<SourceBundle> {
+    this.sourceBundle ??= this.loadBundle();
+    return this.sourceBundle;
   }
 
-  private async sources(): Promise<BundledSources> {
-    this.bundledSources ??= this.loadSources();
-    return this.bundledSources;
-  }
-
-  private async loadSources(): Promise<BundledSources> {
+  private async loadBundle(): Promise<SourceBundle> {
     try {
       const bytes = await workspace.fs.readFile(
         Uri.joinPath(this.context.extensionUri, bundledSourcesFile),
       );
-      return JSON.parse(new TextDecoder().decode(bytes)) as BundledSources;
-    } catch {
-      return {};
+      return {
+        sources: parseBundledSources(new TextDecoder().decode(bytes)),
+        error: null,
+      };
+    } catch (error) {
+      return sourceBundleLoadFailure(error, bundledSourcesFile);
     }
   }
 }

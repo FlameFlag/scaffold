@@ -1,23 +1,6 @@
-export interface ReferenceEntry {
-  name: string;
-  signature?: string;
-  summary?: string;
-  markdown?: string;
-  example?: string;
-  params: ReferenceParam[];
-  returns?: string;
-  group: string;
-  see: string[];
-  stability?: string;
-  since?: string;
-  deprecated?: string;
-  source?: string;
-}
+import type { ReferenceEntry } from "../../../../shared/reference";
 
-export interface ReferenceParam {
-  name: string;
-  summary: string;
-}
+export type { ReferenceEntry };
 
 export type ReferenceNode = ReferenceGroupNode | ReferenceEntryNode;
 

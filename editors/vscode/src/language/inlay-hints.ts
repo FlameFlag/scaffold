@@ -9,32 +9,28 @@ import {
 
 import { schemeSelector } from "../scheme";
 import { scaffoldWasm } from "../wasm";
+import { parseWasmJson } from "../wasm/json";
 import { wasmWorkspaceJson } from "../workspace";
-
-interface WasmInlayHint {
-  line: number;
-  start: number;
-  label: string;
-  tooltip: string;
-}
+import { isWasmInlayHint, type WasmInlayHint } from "./inlay-hints-data";
 
 export function registerInlayHintsProvider(
   context: ExtensionContext,
 ): Disposable {
   return languages.registerInlayHintsProvider(schemeSelector, {
     async provideInlayHints(document, range) {
-      return (
-        JSON.parse(
-          (await scaffoldWasm(context)).inlayHintsScaffoldSchemeForDocument(
-            document.getText(),
-            await wasmWorkspaceJson(),
-            range.start.line,
-            range.start.character,
-            range.end.line,
-            range.end.character,
-          ),
-        ) as WasmInlayHint[]
-      ).map(toVsCodeInlayHint);
+      return parseWasmJson<WasmInlayHint[]>(
+        (await scaffoldWasm(context)).inlayHintsScaffoldSchemeForDocument(
+          document.getText(),
+          await wasmWorkspaceJson(),
+          range.start.line,
+          range.start.character,
+          range.end.line,
+          range.end.character,
+        ),
+        [],
+      )
+        .filter(isWasmInlayHint)
+        .map(toVsCodeInlayHint);
     },
   });
 }

@@ -3,7 +3,7 @@
     "module": "Node16",
     "moduleResolution": "Node16",
     "target": "ES2022",
-    "lib": ["ES2022"],
+    "lib": ["ES2022", "DOM"],
     "outDir": "out/scripts",
     "rootDir": "scripts",
     "strict": true,
@@ -11,5 +11,5 @@
     "types": ["node"],
     "noEmitOnError": true
   },
-  "include": ["scripts/**/*.mts"]
+  "include": ["scripts/smoke-wasm.mts", "scripts/wasm-smoke/**/*.mts"]
 }

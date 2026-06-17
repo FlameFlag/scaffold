@@ -11,6 +11,7 @@ import {
 
 import { scaffoldWasm } from "../wasm";
 import { wasmWorkspaceJson } from "../workspace";
+import { parseReferenceEntriesJson } from "./data";
 import { groupedEntries, renderReferenceEntryMarkdown } from "./markdown";
 import type { ReferenceEntry, ReferenceNode } from "./types";
 
@@ -32,12 +33,39 @@ export class ReferenceProvider implements TreeDataProvider<ReferenceNode> {
     if (this.cachedEntries) {
       return this.cachedEntries;
     }
-    this.cachedEntries = JSON.parse(
+    this.cachedEntries = parseReferenceEntriesJson(
       (
         await scaffoldWasm(this.context)
       ).referenceEntriesScaffoldSchemeForWorkspace(await wasmWorkspaceJson()),
-    ) as ReferenceEntry[];
+    );
     return this.cachedEntries;
+  }
+
+  async searchEntries(query: string, limit: number): Promise<ReferenceEntry[]> {
+    return parseReferenceEntriesJson(
+      (
+        await scaffoldWasm(this.context)
+      ).searchReferenceEntriesScaffoldSchemeForWorkspace(
+        query,
+        await wasmWorkspaceJson(),
+        limit,
+      ),
+    );
+  }
+
+  async suggestEntries(
+    query: string,
+    limit: number,
+  ): Promise<ReferenceEntry[]> {
+    return parseReferenceEntriesJson(
+      (
+        await scaffoldWasm(this.context)
+      ).suggestReferenceEntriesScaffoldSchemeForWorkspace(
+        query,
+        await wasmWorkspaceJson(),
+        limit,
+      ),
+    );
   }
 
   async getChildren(element?: ReferenceNode): Promise<ReferenceNode[]> {
@@ -97,7 +125,7 @@ function entryTreeItem(
 }
 
 function entryDescription(entry: ReferenceEntry): string | undefined {
-  return entry.signature ?? entry.summary;
+  return entry.signature ?? entry.summary ?? undefined;
 }
 
 function referenceTooltip(entry: ReferenceEntry): MarkdownString {

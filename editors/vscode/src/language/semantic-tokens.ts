@@ -10,21 +10,19 @@ import {
 
 import { schemeSelector } from "../scheme";
 import { scaffoldWasm } from "../wasm";
+import { parseWasmJson } from "../wasm/json";
 import { wasmWorkspaceJson } from "../workspace";
+import {
+  isWasmSemanticToken,
+  semanticTokenModifierNames,
+  semanticTokenTypeNames,
+  type WasmSemanticToken,
+} from "./semantic-tokens-data";
 
 const semanticTokensLegend = new SemanticTokensLegend(
-  ["function", "keyword", "string", "comment", "parameter"],
-  ["defaultLibrary", "documentation", "deprecated", "definition"],
+  [...semanticTokenTypeNames],
+  [...semanticTokenModifierNames],
 );
-
-interface WasmSemanticToken {
-  text: string;
-  line: number;
-  start: number;
-  length: number;
-  token_type: string;
-  modifiers: string[];
-}
 
 export function registerSemanticTokensProvider(
   context: ExtensionContext,
@@ -33,14 +31,15 @@ export function registerSemanticTokensProvider(
     schemeSelector,
     {
       async provideDocumentSemanticTokens(document) {
-        const tokens = JSON.parse(
+        const tokens = parseWasmJson<WasmSemanticToken[]>(
           (await scaffoldWasm(context)).semanticTokensScaffoldSchemeForDocument(
             document.getText(),
             await wasmWorkspaceJson(),
           ),
-        ) as WasmSemanticToken[];
+          [],
+        );
         const builder = new SemanticTokensBuilder(semanticTokensLegend);
-        for (const token of tokens) {
+        for (const token of tokens.filter(isWasmSemanticToken)) {
           builder.push(
             new Range(
               new Position(token.line, token.start),

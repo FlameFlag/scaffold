@@ -11,34 +11,27 @@ import {
 
 import { schemeSelector } from "../scheme";
 import { scaffoldWasm } from "../wasm";
+import { parseWasmJson } from "../wasm/json";
 import { wasmWorkspaceJson } from "../workspace";
-
-interface WasmCompletionItem {
-  label: string;
-  kind: "function" | "keyword";
-  detail?: string;
-  documentation: string;
-  insert_text: string;
-  insert_text_is_snippet: boolean;
-  sort_text: string;
-  deprecated: boolean;
-}
+import {
+  isWasmCompletionItem,
+  type WasmCompletionItem,
+} from "./completion-data";
 
 export function registerCompletionProvider(
   context: ExtensionContext,
 ): Disposable {
   return languages.registerCompletionItemProvider(schemeSelector, {
     async provideCompletionItems(document) {
-      return (
-        JSON.parse(
-          (
-            await scaffoldWasm(context)
-          ).completionItemsScaffoldSchemeForDocument(
-            document.getText(),
-            await wasmWorkspaceJson(),
-          ),
-        ) as WasmCompletionItem[]
-      ).map(toVsCodeCompletionItem);
+      return parseWasmJson<WasmCompletionItem[]>(
+        (await scaffoldWasm(context)).completionItemsScaffoldSchemeForDocument(
+          document.getText(),
+          await wasmWorkspaceJson(),
+        ),
+        [],
+      )
+        .filter(isWasmCompletionItem)
+        .map(toVsCodeCompletionItem);
     },
   });
 }

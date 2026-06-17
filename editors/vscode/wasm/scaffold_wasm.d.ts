@@ -15,6 +15,11 @@ export function formContextScaffoldScheme(text: string, line: number, character:
 
 export function formatScaffoldScheme(text: string): string;
 
+/**
+ * Format the GitHub Flavored Markdown tables in the `doc` string.
+ */
+export function format_tables(doc: string): string;
+
 export function hoverScaffoldScheme(symbol: string): string;
 
 export function hoverScaffoldSchemeForDocument(text: string, symbol: string, workspace_json: string): string;
@@ -37,6 +42,10 @@ export function referenceEntriesScaffoldSchemeForWorkspace(workspace_json: strin
 
 export function referenceLocationsScaffoldScheme(symbol: string, workspace_json: string): string;
 
+export function searchReferenceEntriesScaffoldScheme(query: string, limit: number): string;
+
+export function searchReferenceEntriesScaffoldSchemeForWorkspace(query: string, workspace_json: string, limit: number): string;
+
 export function semanticTokensScaffoldScheme(text: string): string;
 
 export function semanticTokensScaffoldSchemeForDocument(text: string, workspace_json: string): string;
@@ -44,6 +53,10 @@ export function semanticTokensScaffoldSchemeForDocument(text: string, workspace_
 export function signatureHelpScaffoldScheme(symbol: string): string;
 
 export function signatureHelpScaffoldSchemeForDocument(text: string, symbol: string, workspace_json: string): string;
+
+export function suggestReferenceEntriesScaffoldScheme(query: string, limit: number): string;
+
+export function suggestReferenceEntriesScaffoldSchemeForWorkspace(query: string, workspace_json: string, limit: number): string;
 
 export function symbolAtScaffoldScheme(text: string, line: number, character: number): string;
 
@@ -71,12 +84,17 @@ export interface InitOutput {
     readonly referenceEntriesScaffoldSchemeForDocument: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => void;
     readonly referenceEntriesScaffoldSchemeForWorkspace: (a: number, b: number, c: number) => void;
     readonly referenceLocationsScaffoldScheme: (a: number, b: number, c: number, d: number, e: number) => void;
+    readonly searchReferenceEntriesScaffoldScheme: (a: number, b: number, c: number, d: number) => void;
+    readonly searchReferenceEntriesScaffoldSchemeForWorkspace: (a: number, b: number, c: number, d: number, e: number, f: number) => void;
     readonly semanticTokensScaffoldScheme: (a: number, b: number, c: number) => void;
     readonly semanticTokensScaffoldSchemeForDocument: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly signatureHelpScaffoldScheme: (a: number, b: number, c: number) => void;
     readonly signatureHelpScaffoldSchemeForDocument: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => void;
+    readonly suggestReferenceEntriesScaffoldScheme: (a: number, b: number, c: number, d: number) => void;
+    readonly suggestReferenceEntriesScaffoldSchemeForWorkspace: (a: number, b: number, c: number, d: number, e: number, f: number) => void;
     readonly symbolAtScaffoldScheme: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly workspaceSymbolsScaffoldScheme: (a: number, b: number, c: number, d: number, e: number) => void;
+    readonly format_tables: (a: number, b: number, c: number) => void;
     readonly __wbindgen_add_to_stack_pointer: (a: number) => number;
     readonly __wbindgen_export: (a: number, b: number, c: number) => void;
     readonly __wbindgen_export2: (a: number, b: number) => number;

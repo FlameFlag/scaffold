@@ -16,31 +16,16 @@ import {
 import { schemeSelector } from "../scheme";
 import type { SourceDocumentProvider } from "../source";
 import { type ScaffoldWasm, scaffoldWasm } from "../wasm";
+import { parseWasmJson } from "../wasm/json";
 import { wasmWorkspaceJson } from "../workspace";
-
-interface WasmSymbolRange {
-  line: number;
-  start: number;
-  length: number;
-}
-
-interface WasmDocumentSymbol extends WasmSymbolRange {
-  name: string;
-  detail?: string | null;
-  kind: "function" | "keyword";
-}
-
-interface WasmDefinitionLocation extends WasmSymbolRange {
-  uri: string;
-}
-
-interface WasmWorkspaceSymbol extends WasmSymbolRange {
-  name: string;
-  kind: "function" | "keyword";
-  group?: string;
-  deprecated: boolean;
-  uri: string;
-}
+import {
+  isWasmDefinitionLocation,
+  isWasmDocumentSymbol,
+  isWasmWorkspaceSymbol,
+  type WasmDefinitionLocation,
+  type WasmDocumentSymbol,
+  type WasmWorkspaceSymbol,
+} from "./navigation-data";
 
 export function registerNavigationProviders(
   context: ExtensionContext,
@@ -58,7 +43,7 @@ export function registerNavigationProviders(
         if (!symbol) {
           return undefined;
         }
-        const definition = JSON.parse(
+        const definition = parseWasmJson<WasmDefinitionLocation | null>(
           scaffold.definitionScaffoldScheme(
             document.getText(),
             document.uri.toString(),
@@ -66,8 +51,9 @@ export function registerNavigationProviders(
             position.character,
             await wasmWorkspaceJson(),
           ),
-        ) as WasmDefinitionLocation | null;
-        if (!definition) {
+          null,
+        );
+        if (!isWasmDefinitionLocation(definition)) {
           return undefined;
         }
         return new Location(
@@ -104,16 +90,17 @@ export function registerNavigationProviders(
     }),
     languages.registerWorkspaceSymbolProvider({
       async provideWorkspaceSymbols(query) {
-        const symbols = JSON.parse(
+        const symbols = parseWasmJson<WasmWorkspaceSymbol[]>(
           (await scaffoldWasm(context)).workspaceSymbolsScaffoldScheme(
             query,
             await wasmWorkspaceJson(),
           ),
-        ) as WasmWorkspaceSymbol[];
+          [],
+        );
         return Promise.all(
-          symbols.map((symbol) =>
-            toWorkspaceSymbol(symbol, sourceDocumentProvider),
-          ),
+          symbols
+            .filter(isWasmWorkspaceSymbol)
+            .map((symbol) => toWorkspaceSymbol(symbol, sourceDocumentProvider)),
         );
       },
     }),
@@ -126,11 +113,12 @@ async function referencesForSymbol(
   workspaceJson: string,
   sourceDocumentProvider: SourceDocumentProvider,
 ): Promise<Location[]> {
-  const locations = JSON.parse(
+  const locations = parseWasmJson<WasmDefinitionLocation[]>(
     scaffold.referenceLocationsScaffoldScheme(symbol, workspaceJson),
-  ) as WasmDefinitionLocation[];
+    [],
+  );
   return Promise.all(
-    locations.map(async (location) => {
+    locations.filter(isWasmDefinitionLocation).map(async (location) => {
       return new Location(
         await uriForDefinition(location.uri, sourceDocumentProvider),
         rangeForSymbol(location),
@@ -143,9 +131,10 @@ function documentSymbols(
   scaffold: ScaffoldWasm,
   document: TextDocument,
 ): WasmDocumentSymbol[] {
-  return JSON.parse(
+  return parseWasmJson<WasmDocumentSymbol[]>(
     scaffold.documentReferenceSymbolsScaffoldScheme(document.getText()),
-  ) as WasmDocumentSymbol[];
+    [],
+  ).filter(isWasmDocumentSymbol);
 }
 
 function toDocumentSymbol(symbol: WasmDocumentSymbol): DocumentSymbol {
@@ -158,7 +147,9 @@ function toDocumentSymbol(symbol: WasmDocumentSymbol): DocumentSymbol {
   );
 }
 
-function rangeForSymbol(symbol: WasmSymbolRange): Range {
+function rangeForSymbol(
+  symbol: WasmDefinitionLocation | WasmDocumentSymbol | WasmWorkspaceSymbol,
+): Range {
   return new Range(
     new Position(symbol.line, symbol.start),
     new Position(symbol.line, symbol.start + symbol.length),

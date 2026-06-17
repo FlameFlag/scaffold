@@ -1,12 +1,16 @@
-import { readdir, readFile, writeFile } from "node:fs/promises";
+import { readdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import { parseArgs } from "node:util";
 
 const extensionRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const repoRoot = resolve(extensionRoot, "..", "..");
 const dslRoot = join(repoRoot, "crates", "scaffold-dsl", "src");
+const outputPath = join(extensionRoot, "scaffold-sources.json");
+const temporaryOutputPath = `${outputPath}.${process.pid}.${Date.now()}.tmp`;
+const checkOnly = scriptArgs().check;
 
-const sources = {};
+const sources = Object.create(null);
 
 await addSources(join(dslRoot, "std"), "src/dsl/std");
 await addSources(join(dslRoot, "extensions"), "src/extensions");
@@ -14,11 +18,24 @@ await addSources(join(dslRoot, "extensions"), "src/extensions");
 const orderedSources = Object.fromEntries(
   Object.entries(sources).sort(([left], [right]) => left.localeCompare(right)),
 );
+const output = `${JSON.stringify(orderedSources)}\n`;
 
-await writeFile(
-  join(extensionRoot, "scaffold-sources.json"),
-  `${JSON.stringify(orderedSources)}\n`,
-);
+if (checkOnly) {
+  const existing = await readFile(outputPath, "utf8");
+  if (existing !== output) {
+    throw new Error(
+      "editors/vscode/scaffold-sources.json is stale; run `bun run --cwd editors/vscode sync:sources`",
+    );
+  }
+} else {
+  try {
+    await writeFile(temporaryOutputPath, output);
+    await rename(temporaryOutputPath, outputPath);
+  } catch (error) {
+    await rm(temporaryOutputPath, { force: true });
+    throw error;
+  }
+}
 
 async function addSources(root, virtualRoot) {
   for (const file of await schemeFiles(root)) {
@@ -49,4 +66,13 @@ async function collectSchemeFiles(dir, output) {
 
 function portablePath(path) {
   return path.split(sep).join("/");
+}
+
+function scriptArgs() {
+  return parseArgs({
+    options: {
+      check: { type: "boolean", default: false },
+    },
+    strict: true,
+  }).values;
 }

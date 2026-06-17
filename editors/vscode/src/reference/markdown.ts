@@ -1,3 +1,6 @@
+import markdownTable from "markdown-table";
+
+import { entryId, groupId } from "../../../../shared/reference-ids.js";
 import type { ReferenceEntry } from "./types";
 
 export function renderReferenceDocumentMarkdown(
@@ -6,25 +9,54 @@ export function renderReferenceDocumentMarkdown(
   const groups = groupedEntries(entries);
   return `${[
     "# Scaffold Scheme Reference",
-    "Generated from parsable Doc v2 forms such as `(doc ...)`, `(doc-next ...)`, `(extern-doc ...)`, `(moduledoc ...)`, and `(typedoc ...)`.",
+    "Generated from parsable documentation forms such as `(doc ...)`, `(doc-next ...)`, `(extern-doc ...)`, `(moduledoc ...)`, and `(typedoc ...)`.",
     referenceStatsMarkdown(entries, groups.length),
     "## Contents",
     groups
       .map(
         (group) =>
-          `- [${group.name}](#${anchor(group.name)}) (${group.entries.length})`,
+          `- [${markdownText(group.name)}](#${groupId(group.name)}) (${group.entries.length})`,
       )
       .join("\n"),
     ...groups.flatMap((group) => [
-      `## ${group.name}`,
+      anchoredHeading(2, markdownText(group.name), groupId(group.name)),
       referenceGroupTableMarkdown(group.entries),
-      ...group.entries.map(renderReferenceEntryMarkdown),
+      ...group.entries.map((entry) =>
+        renderReferenceEntryMarkdown(entry, { headingLevel: 3 }),
+      ),
     ]),
   ].join("\n\n")}\n`;
 }
 
-export function renderReferenceEntryMarkdown(entry: ReferenceEntry): string {
-  return `${referenceEntrySections(entry).join("\n\n")}\n`;
+type ReferenceEntryMarkdownOptions = {
+  headingLevel?: 1 | 2 | 3;
+};
+
+export function renderReferenceEntryMarkdown(
+  entry: ReferenceEntry,
+  options: ReferenceEntryMarkdownOptions = {},
+): string {
+  const headingLevel = options.headingLevel ?? 1;
+  const sourceHeading = "#".repeat(Math.min(headingLevel + 1, 6));
+  return `${[
+    anchoredHeading(
+      headingLevel,
+      markdownCodeSpan(entry.name),
+      entryId(entry.name),
+    ),
+    entry.rendered_markdown.trim(),
+    sourceMarkdown(entry, sourceHeading),
+  ]
+    .filter((part): part is string => Boolean(part))
+    .join("\n\n")}\n`;
+}
+
+export function renderMissingReferenceEntryMarkdown(name?: string): string {
+  const detail = name
+    ? `Reference entry ${markdownCodeSpan(name)} was not found.`
+    : "Reference entry not found.";
+
+  return `# Scaffold Scheme Reference\n\n${detail}\n`;
 }
 
 export function groupedEntries(entries: ReferenceEntry[]) {
@@ -45,78 +77,25 @@ export function groupedEntries(entries: ReferenceEntry[]) {
     }));
 }
 
-function metadataMarkdown(entry: ReferenceEntry): string | undefined {
-  const metadata = [
-    `Group: ${entry.group}`,
-    entry.since ? `Since: ${entry.since}` : undefined,
-    entry.stability ? `Stability: ${entry.stability}` : undefined,
-  ].filter((item): item is string => item !== undefined);
-  if (metadata.length === 0) {
-    return undefined;
-  }
-  return metadata.join("  \n");
+function sourceMarkdown(
+  entry: ReferenceEntry,
+  heading = "##",
+): string | undefined {
+  const source = entry.source_location ?? entry.source;
+  return source
+    ? `${heading} Source\n\n${referenceTableMarkdown([
+        ["Field", "Value"],
+        ["Source", markdownCodeSpan(source)],
+      ])}`
+    : undefined;
 }
 
-function referenceEntrySections(entry: ReferenceEntry): string[] {
-  return [
-    `# ${entry.name}`,
-    entry.summary ? `> ${entry.summary}` : undefined,
-    metadataMarkdown(entry),
-    entry.deprecated ? `> Deprecated: ${entry.deprecated}` : undefined,
-    "## Signature",
-    signatureMarkdown(entry),
-    "## Parameters",
-    paramsMarkdown(entry),
-    entry.returns ? `## Returns\n\n${entry.returns}` : undefined,
-    entry.markdown ? "## Details" : undefined,
-    entry.markdown,
-    "## Example",
-    exampleMarkdown(entry),
-    entry.see.length > 0 ? "## See Also" : undefined,
-    seeAlsoMarkdown(entry),
-    entry.source ? `## Source\n\n\`${entry.source}\`` : undefined,
-  ].filter((part): part is string => Boolean(part));
-}
-
-function signatureMarkdown(entry: ReferenceEntry): string | undefined {
-  if (!entry.signature) {
-    return "_No signature documented._";
-  }
-  return `\`\`\`scheme\n${entry.signature}\n\`\`\``;
-}
-
-function paramsMarkdown(entry: ReferenceEntry): string | undefined {
-  if (entry.params.length === 0) {
-    return "_No parameters documented._";
-  }
-  return [
-    "| Parameter | Description |",
-    "| --- | --- |",
-    ...entry.params.map(
-      (param) => `| \`${param.name}\` | ${escapeTableCell(param.summary)} |`,
-    ),
-  ].join("\n");
-}
-
-function exampleMarkdown(entry: ReferenceEntry): string | undefined {
-  if (!entry.example) {
-    return "_No example documented._";
-  }
-  return `Example:\n\n\`\`\`scheme\n${entry.example}\n\`\`\``;
-}
-
-function seeAlsoMarkdown(entry: ReferenceEntry): string | undefined {
-  if (entry.see.length === 0) {
-    return undefined;
-  }
-  return `See also: ${entry.see.map((name) => `\`${name}\``).join(", ")}`;
-}
-
-function anchor(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
+function anchoredHeading(
+  level: 1 | 2 | 3,
+  markdown: string,
+  id: string,
+): string {
+  return `${"#".repeat(level)} <a id="${id}"></a>${markdown}`;
 }
 
 function referenceStatsMarkdown(
@@ -125,24 +104,78 @@ function referenceStatsMarkdown(
 ): string {
   const deprecated = entries.filter((entry) => entry.deprecated).length;
   const documentedExamples = entries.filter((entry) => entry.example).length;
-  return [
-    "| Entries | Groups | Examples | Deprecated |",
-    "| ---: | ---: | ---: | ---: |",
-    `| ${entries.length} | ${groupCount} | ${documentedExamples} | ${deprecated} |`,
-  ].join("\n");
+  return referenceTableMarkdown(
+    [
+      ["Entries", "Groups", "Examples", "Deprecated"],
+      [
+        String(entries.length),
+        String(groupCount),
+        String(documentedExamples),
+        String(deprecated),
+      ],
+    ],
+    { align: ["r", "r", "r", "r"] },
+  );
 }
 
 function referenceGroupTableMarkdown(entries: ReferenceEntry[]): string {
-  return [
-    "| Name | Summary |",
-    "| --- | --- |",
+  return referenceTableMarkdown([
+    ["Name", "Summary"],
     ...entries.map((entry) => {
-      const name = `[\`${entry.name}\`](#${anchor(entry.name)})`;
-      return `| ${name} | ${escapeTableCell(entry.summary ?? "")} |`;
+      const name = `[${markdownCodeSpan(entry.name)}](#${entryId(entry.name)})`;
+      return [name, entry.summary ?? ""];
     }),
-  ].join("\n");
+  ]);
 }
 
-function escapeTableCell(text: string): string {
-  return text.replaceAll("|", "\\|").replace(/\s+/g, " ").trim();
+function referenceTableMarkdown(
+  rows: string[][],
+  options?: Parameters<typeof markdownTable>[1],
+): string {
+  return markdownTable(
+    rows.map((row) => row.map(tableCell)),
+    {
+      alignDelimiters: true,
+      ...options,
+    },
+  );
+}
+
+function tableCell(text: string): string {
+  return text
+    .trim()
+    .replaceAll("\r\n", "\n")
+    .replaceAll("\r", "\n")
+    .replaceAll("|", "\\|")
+    .replaceAll("\n", "<br>");
+}
+
+export function markdownCodeSpan(value: string): string {
+  const delimiter = "`".repeat(maxConsecutiveBackticks(value) + 1);
+  if (value.includes("`") || value.startsWith(" ") || value.endsWith(" ")) {
+    return `${delimiter} ${value} ${delimiter}`;
+  }
+  return `${delimiter}${value}${delimiter}`;
+}
+
+function markdownText(value: string): string {
+  return value
+    .replaceAll("\r\n", "\n")
+    .replaceAll("\r", "\n")
+    .replaceAll("\n", " ")
+    .replace(/[\\`*_{}[\]<>()#+\-.!]/g, "\\$&");
+}
+
+function maxConsecutiveBackticks(value: string): number {
+  let maxRun = 0;
+  let run = 0;
+  for (const character of value) {
+    if (character === "`") {
+      run += 1;
+      maxRun = Math.max(maxRun, run);
+    } else {
+      run = 0;
+    }
+  }
+  return maxRun;
 }

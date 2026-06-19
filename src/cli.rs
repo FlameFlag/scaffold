@@ -34,7 +34,7 @@ enum ContextCommand {
     List,
     Check,
     Test(args::TestArgs),
-    Paths,
+    Paths(args::PathsArgs),
 }
 
 struct CommandInfo {
@@ -120,7 +120,7 @@ pub fn run() -> Result<(), CliError> {
         Command::List(_) => run_with_context(ContextCommand::List, catalog),
         Command::Check(_) => run_with_context(ContextCommand::Check, catalog),
         Command::Test(args) => run_with_context(ContextCommand::Test(args), catalog),
-        Command::Paths(_) => run_with_context(ContextCommand::Paths, catalog),
+        Command::Paths(args) => run_with_context(ContextCommand::Paths(args), catalog),
     }
 }
 
@@ -197,7 +197,7 @@ fn command_info(command: &Command) -> CommandInfo {
         },
         Command::Paths(args) => CommandInfo {
             name: "paths",
-            catalog: CatalogSupport::Accepted(args.catalog.clone()),
+            catalog: CatalogSupport::Accepted(args.catalog.catalog.clone()),
         },
         Command::Completions(_) => CommandInfo {
             name: "completions",
@@ -341,8 +341,8 @@ fn run_with_context(command: ContextCommand, catalog: Option<PathBuf>) -> Result
             }
             write_stdout(&render_test_results(&rows))?;
         }
-        ContextCommand::Paths => {
-            write_stdout(&render_paths(&path_rows(&ctx)))?;
+        ContextCommand::Paths(args) => {
+            write_stdout(&render_paths(&path_rows(&ctx, args.sources)))?;
         }
     }
 
@@ -514,7 +514,7 @@ enum PathStatus {
     Missing,
 }
 
-fn path_rows(ctx: &Context) -> Vec<PathRow> {
+fn path_rows(ctx: &Context, include_sources: bool) -> Vec<PathRow> {
     let mut rows = vec![
         PathRow::new("catalog", &ctx.catalog_path),
         PathRow::new("root", &ctx.root_dir),
@@ -534,6 +534,18 @@ fn path_rows(ctx: &Context) -> Vec<PathRow> {
             resolved,
         }
     }));
+    if include_sources {
+        rows.extend(
+            ctx.source_paths()
+                .into_iter()
+                .map(|path| PathRow::new("source", &path)),
+        );
+        rows.extend(
+            ctx.test_paths()
+                .into_iter()
+                .map(|path| PathRow::new("test", &path)),
+        );
+    }
     rows
 }
 
@@ -769,7 +781,7 @@ mod tests {
 
     use super::{
         CatalogCheckRow, PathRow, PathStatus, TestRow, TestStatus, ToolPresenceStatus,
-        catalog_check_rows, contextualize_catalog_error, install, render_catalog_check,
+        catalog_check_rows, contextualize_catalog_error, install, path_rows, render_catalog_check,
         render_catalog_list, render_format_check_failures, render_install_events, render_paths,
         render_test_results, require_catalog_for_discovery, require_catalog_for_workspace,
         selected_catalog, uninstall_targets, write_output_file, write_stream,
@@ -1128,6 +1140,38 @@ mod tests {
         assert!(rendered.contains("missing"));
         assert!(rendered.contains("/workspace/actual"));
         assert!(!rendered.contains("catalog\t/workspace/scaffold.scm"));
+    }
+
+    #[test]
+    fn path_rows_can_include_discovered_scheme_sources() {
+        let root = unique_test_dir("paths-sources");
+        drop(std::fs::remove_dir_all(&root));
+        let entries = root.join("extensions").join("entries");
+        std::fs::create_dir_all(&entries).expect("entries");
+        std::fs::write(root.join("scaffold.scm"), "(import (rnrs))\n").expect("catalog");
+        std::fs::write(
+            entries.join("demo.scm"),
+            "(library (entries demo) (export demo) (import (rnrs)) (define demo 'ok))\n",
+        )
+        .expect("source");
+        std::fs::write(entries.join("test.scm"), "(import (rnrs))\n").expect("test");
+        let ctx = scaffold_context::Context {
+            catalog_path: root.join("scaffold.scm"),
+            root_dir: root.clone(),
+            bin_dir: root.join("bin"),
+            state_dir: root.join("state"),
+        };
+
+        let rows = path_rows(&ctx, true);
+
+        assert!(rows.iter().any(|row| {
+            row.kind == "source" && row.path.ends_with("extensions/entries/demo.scm")
+        }));
+        assert!(rows.iter().any(|row| {
+            row.kind == "test" && row.path.ends_with("extensions/entries/test.scm")
+        }));
+
+        drop(std::fs::remove_dir_all(root));
     }
 
     #[test]

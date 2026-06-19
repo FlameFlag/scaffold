@@ -75,7 +75,12 @@ directory. You can also pass a catalog explicitly:
 ```sh
 scaffold --catalog /path/to/scaffold.scm check
 scaffold --catalog /path/to/scaffold.scm install ripgrep
+scaffold --catalog /path/to/scaffold.scm paths --sources
 ```
+
+`paths --sources` prints the catalog root, extension root, and discovered `.scm`
+source/test files, which is useful when debugging split local libraries such as
+`extensions/entries/...`.
 
 Useful development commands:
 

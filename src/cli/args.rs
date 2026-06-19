@@ -35,6 +35,17 @@ pub(super) struct CatalogArgs {
     pub(super) catalog: Option<PathBuf>,
 }
 
+#[derive(Debug, Args)]
+pub(super) struct PathsArgs {
+    #[command(flatten)]
+    pub(super) catalog: CatalogArgs,
+    #[arg(
+        long,
+        help = "Include discovered Scheme source and test files under the catalog root"
+    )]
+    pub(super) sources: bool,
+}
+
 #[derive(Debug, Subcommand)]
 pub(super) enum Command {
     #[command(about = "Analyze Scaffold Scheme files for static issues")]
@@ -68,7 +79,7 @@ pub(super) enum Command {
     #[command(about = "Run Scheme tests")]
     Test(TestArgs),
     #[command(about = "Print resolved paths")]
-    Paths(CatalogArgs),
+    Paths(PathsArgs),
     #[command(about = "Generate shell completions")]
     Completions(CompletionArgs),
 }

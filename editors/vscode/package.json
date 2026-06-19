@@ -219,6 +219,6 @@
     "typescript": "^6.0.3"
   },
   "dependencies": {
-    "markdown-table": "2.0.0"
+    "markdown-table": "3.0.4"
   }
 }

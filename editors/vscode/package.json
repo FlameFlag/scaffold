@@ -211,7 +211,7 @@
     "package": "bun run vsix"
   },
   "devDependencies": {
-    "@types/node": "^25.9.3",
+    "@types/node": "^26.0.0",
     "@types/vscode": "^1.95.0",
     "@vscode/test-web": "^0.0.80",
     "@vscode/vsce": "^3.2.1",

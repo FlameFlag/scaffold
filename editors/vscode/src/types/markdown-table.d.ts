@@ -10,8 +10,8 @@ declare module "markdown-table" {
     stringLength?: (value: string) => number;
   }
 
-  export default function markdownTable(
-    table: string[][],
+  export function markdownTable(
+    table: ReadonlyArray<ReadonlyArray<string | null | undefined>>,
     options?: Options,
   ): string;
 }

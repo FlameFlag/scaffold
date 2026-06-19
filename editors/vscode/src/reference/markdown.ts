@@ -1,4 +1,4 @@
-import markdownTable from "markdown-table";
+import { markdownTable } from "markdown-table";
 
 import { entryId, groupId } from "../../../../shared/reference-ids.js";
 import type { ReferenceEntry } from "./types";

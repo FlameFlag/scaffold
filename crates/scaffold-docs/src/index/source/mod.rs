@@ -441,12 +441,17 @@ fn render_datum(datum: Ref<'_>) -> String {
         return symbol.to_owned();
     }
     if let Some(string) = sexpr::string_text(datum) {
-        return scaffold_scheme::string_literal(string);
+        return string_literal(string);
     }
     if let Some(items) = sexpr::list_items(datum) {
         return render_signature_list(&items);
     }
     datum.to_string()
+}
+
+fn string_literal(value: &str) -> String {
+    let escaped = value.replace('\\', "\\\\").replace('"', "\\\"");
+    format!("\"{escaped}\"")
 }
 
 fn symbol_range(text: &str, datum: Ref<'_>, symbol: &str) -> SourceRange {

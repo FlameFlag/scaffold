@@ -2419,7 +2419,6 @@ dependencies = [
  "scaffold-catalog",
  "scaffold-dsl",
  "scaffold-editor",
- "scaffold-scheme",
  "serde",
  "serde_json",
  "strsim 0.11.1",

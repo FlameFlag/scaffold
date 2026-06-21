@@ -11,7 +11,10 @@ use scaffold_context::Context;
 use scaffold_platform::Host;
 
 pub use error::InstallError;
-pub use presence::{ToolPresenceStatus, tool_is_present, tool_presence_status};
+pub use presence::{
+    ToolPresenceStatus, ToolPresenceSummary, tool_is_present, tool_presence_status,
+    tool_presence_summary,
+};
 pub use report::{InstallEvent, InstallEventKind, InstallReporter, NoopReporter};
 
 use execute::install_tool;
@@ -428,27 +431,19 @@ mod tests {
         }
     }
 
-    fn escape_scheme_string(value: &str) -> String {
-        value.replace('\\', "\\\\").replace('"', "\\\"")
-    }
-
     fn write_catalog_fixture(path: &std::path::Path, fixture: &str) {
         let current_exe = std::env::current_exe().expect("current test executable");
         let source = fixture
             .replace(
                 "{{ current_exe }}",
-                &escape_scheme_string(&current_exe.to_string_lossy()),
+                &scaffold_scheme::escape_string_literal_body(&current_exe.to_string_lossy()),
             )
             .replace("{{ current_host_os }}", current_host_os_symbol())
             .replace("{{ unsupported_host_os }}", unsupported_host_os_symbol());
         std::fs::write(path, source).expect("catalog");
     }
 
-    const fn current_host_os_symbol() -> &'static str {
-        match Host::current().os {
-            HostOs::Linux => "linux",
-            HostOs::Macos => "macos",
-            HostOs::Windows => "windows",
-        }
+    fn current_host_os_symbol() -> &'static str {
+        Host::current().os.label()
     }
 }

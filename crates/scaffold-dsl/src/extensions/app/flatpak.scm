@@ -34,24 +34,26 @@
       "A tool with package action, Flatpak info check, binary metadata, and Linux platform tag."))
 
   (define (flatpak/app name app-id . fields)
-    (apply
-      tool
-      name
-      (package
-        (field 'name app-id)
-        (field 'install-argv (flatpak/install-argv "flathub" "{{ package }}")))
-      (field 'platforms (arr 'linux))
-      (field 'checks (arr (command/check "flatpak" "info" app-id)))
-      (field
-        'bins
-        (arr (bin app-id (field 'version-argv (arr "flatpak" "info" app-id)))))
-      (field
-        'uninstall
-        (uninstall
-          (field
-            'commands
-            (arr
-              (host/uninstall-command 'linux (flatpak/uninstall-argv "{{ package }}"))))))
+    (object/merge
+      (tool
+        name
+        (package
+          (field 'name app-id)
+          (field 'install-argv (flatpak/install-argv "flathub" "{{ package }}")))
+        (field 'platforms (arr 'linux))
+        (field 'checks (arr (command/check "flatpak" "info" app-id)))
+        (field
+          'bins
+          (arr (bin app-id (field 'version-argv (arr "flatpak" "info" app-id)))))
+        (field
+          'uninstall
+          (uninstall
+            (field
+              'commands
+              (arr
+                (host/uninstall-command
+                  'linux
+                  (flatpak/uninstall-argv "{{ package }}")))))))
       fields))
 
   (doc-next
@@ -61,12 +63,12 @@
     (param 'field "Additional platform fields that override defaults."))
 
   (define (flatpak/package-platform app-id . fields)
-    (apply
-      package/platform
-      'linux
-      (arr "flatpak")
-      (flatpak/install-argv "flathub" "{{ package }}")
-      (field 'name app-id)
+    (object/merge
+      (package/platform
+        'linux
+        (arr "flatpak")
+        (flatpak/install-argv "flathub" "{{ package }}")
+        (field 'name app-id))
       fields))
 
   (moduledoc (summary "Flatpak application catalog helpers.") (group "Applications")))

@@ -14,11 +14,14 @@ test-support = []
 ignored = ["walkdir"]
 
 [dependencies]
-miette = { version = "7.6.0", default-features = false, features = ["fancy-no-backtrace", "derive"] }
+clean-path = "0.2.1"
+miette = { version = "7.6.0", default-features = false, features = ["derive"] }
 scaffold-context = { path = "../scaffold-context" }
 scaffold-diagnostic = { path = "../scaffold-diagnostic" }
+scaffold-platform = { path = "../scaffold-platform" }
 scaffold-process = { path = "../scaffold-process" }
 scaffold-scheme = { path = "../scaffold-scheme" }
+scaffold-template = { path = "../scaffold-template" }
 scheme-rs = { version = "0.2.0", default-features = false }
 serde_json = "1.0.150"
 thiserror = "2.0.18"

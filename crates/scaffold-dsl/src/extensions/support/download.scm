@@ -27,19 +27,21 @@
     (string-append (tool-cache-dir tool-name) "/extract"))
 
   (doc-next
+    (hidden)
+    (summary "Return the POSIX shell-quoted representation of one character."))
+
+  (define (sh/quoted-character character)
+    (if (char=? character #\') "'\\''" (string character)))
+
+  (doc-next
     (signature "(sh/quote value)")
     (summary "Single-quote a string for POSIX shell code."))
 
   (define (sh/quote value)
-    (let ((length (string-length value)))
-      (let loop
-        ((index 0) (parts (list "'")))
-        (if (= index length)
-          (apply string-append (reverse (cons "'" parts)))
-          (let ((piece (substring value index (+ index 1))))
-            (loop
-              (+ index 1)
-              (cons (if (string=? piece "'") "'\\''" piece) parts)))))))
+    (fold-right
+      string-append
+      "'"
+      (cons "'" (map sh/quoted-character (string->list value)))))
 
   (doc-next
     (signature "(sh-set name value)")
@@ -84,16 +86,10 @@
       (package/platform-argvs
         predicate-value
         (arr "bash" "curl" "env" "mkdir")
-        (list->vector
-          (list
-            (list->vector (append (list "mkdir" "-p" root "{{ bin_dir }}") extra-dirs))
-            (arr "curl" "-fsSL" "--retry" "3" "-o" script-path url)
-            (list->vector
-              (append
-                (list "env")
-                (append
-                  (vector->list env-vars)
-                  (append (list "bash" script-path) (vector->list args))))))))))
+        (arr
+          (arr/append-list (arr "mkdir" "-p" root "{{ bin_dir }}") extra-dirs)
+          (arr "curl" "-fsSL" "--retry" "3" "-o" script-path url)
+          (vector/append (arr "env") env-vars (arr "bash" script-path) args)))))
 
   (doc-next
     (summary

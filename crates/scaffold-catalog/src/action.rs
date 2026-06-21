@@ -4,8 +4,9 @@ use scaffold_platform::Host;
 
 use super::{ArchiveAction, PackageAction};
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, strum::IntoStaticStr, strum::VariantNames)]
 #[serde(tag = "type", rename_all = "snake_case")]
+#[strum(serialize_all = "snake_case")]
 pub enum Action {
     Required,
     Package(PackageAction),
@@ -15,13 +16,8 @@ pub enum Action {
 
 impl Action {
     #[must_use]
-    pub const fn label(&self) -> &'static str {
-        match self {
-            Self::Required => "required",
-            Self::Package(_) => "package",
-            Self::Build(_) => "build",
-            Self::Archive(_) => "archive",
-        }
+    pub fn label(&self) -> &'static str {
+        self.into()
     }
 
     #[must_use]
@@ -43,8 +39,20 @@ impl Action {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Deserialize)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Deserialize,
+    strum::IntoStaticStr,
+    strum::VariantNames,
+)]
 #[serde(rename_all = "snake_case")]
+#[strum(serialize_all = "snake_case")]
 pub enum Phase {
     Prerequisites,
     Packages,
@@ -53,12 +61,8 @@ pub enum Phase {
 
 impl Phase {
     #[must_use]
-    pub const fn label(self) -> &'static str {
-        match self {
-            Self::Prerequisites => "prerequisites",
-            Self::Packages => "packages",
-            Self::Builds => "builds",
-        }
+    pub fn label(self) -> &'static str {
+        self.into()
     }
 }
 
@@ -75,12 +79,19 @@ impl BuildAction {
     pub const fn apply_defaults(&mut self) {}
 
     pub fn command_argvs(&self) -> Vec<&[String]> {
-        if !self.argvs.is_empty() {
-            self.argvs.iter().map(Vec::as_slice).collect()
-        } else if !self.argv.is_empty() {
-            vec![self.argv.as_slice()]
-        } else {
-            Vec::new()
-        }
+        argvs_with_fallback(&self.argvs, &self.argv)
+    }
+}
+
+pub(super) fn argvs_with_fallback<'a>(
+    argvs: &'a [Vec<String>],
+    argv: &'a [String],
+) -> Vec<&'a [String]> {
+    if !argvs.is_empty() {
+        argvs.iter().map(Vec::as_slice).collect()
+    } else if !argv.is_empty() {
+        vec![argv]
+    } else {
+        Vec::new()
     }
 }

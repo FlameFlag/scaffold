@@ -18,7 +18,7 @@
     (param 'part "Additional path components.")
     (returns "A string path. Absolute later components may replace earlier components."))
 
-  (define path/join %path/join)
+  (define (path/join first . parts) (fold-left %path/join first parts))
 
   (extern-doc path/normalize
     (signature "(path/normalize path)")
@@ -64,7 +64,7 @@
     (summary "Return whether a path is relative on the current host.")
     (param 'path "Path string to inspect."))
 
-  (define path/relative? %path/relative?)
+  (define (path/relative? path) (not (path/absolute? path)))
 
   (extern-doc path/separator
     (signature "path/separator")

@@ -15,20 +15,10 @@
     (summary "Transform install argv fields inside one package platform object."))
 
   (define (map-package-platform-install-argvs platform proc)
-    (let
-      ((with-install-argv
-         (if (object/has-field? platform 'install-argv)
-           (object/replace-field
-             platform
-             'install-argv
-             (proc (object/ref platform 'install-argv)))
-           platform)))
-      (if (object/has-field? with-install-argv 'install-argvs)
-        (object/replace-field
-          with-install-argv
-          'install-argvs
-          (vector/map proc (object/ref with-install-argv 'install-argvs)))
-        with-install-argv)))
+    (object/map-vector-field
+      (object/update-field platform 'install-argv proc)
+      'install-argvs
+      proc))
 
   (doc-next
     (summary "Apply a transformation to all install argv fields in a package action.")
@@ -39,29 +29,15 @@
 
   (define (package/map-install-argvs package-action proc)
     (let
-      ((with-install-argv
-         (if (object/has-field? package-action 'install-argv)
-           (object/replace-field
-             package-action
-             'install-argv
-             (proc (object/ref package-action 'install-argv)))
-           package-action)))
-      (let
-        ((with-install-argvs
-           (if (object/has-field? with-install-argv 'install-argvs)
-             (object/replace-field
-               with-install-argv
-               'install-argvs
-               (vector/map proc (object/ref with-install-argv 'install-argvs)))
-             with-install-argv)))
-        (if (object/has-field? with-install-argvs 'platforms)
-          (object/replace-field
-            with-install-argvs
-            'platforms
-            (vector/map
-              (lambda (platform) (map-package-platform-install-argvs platform proc))
-              (object/ref with-install-argvs 'platforms)))
-          with-install-argvs))))
+      ((with-install-argvs
+         (object/map-vector-field
+           (object/update-field package-action 'install-argv proc)
+           'install-argvs
+           proc)))
+      (object/map-vector-field
+        with-install-argvs
+        'platforms
+        (lambda (platform) (map-package-platform-install-argvs platform proc)))))
 
   (doc-next (summary "Transform package install argv fields inside a tool's action."))
 
@@ -74,18 +50,11 @@
   (doc-next (summary "Transform each check argv vector in a tool."))
 
   (define (tool/map-check-argvs tool-value proc)
-    (if (object/has-field? tool-value 'checks)
-      (object/replace-field
-        tool-value
-        'checks
-        (vector/map
-          (lambda (check-value)
-            (object/replace-field
-              check-value
-              'argv
-              (proc (object/ref check-value 'argv))))
-          (object/ref tool-value 'checks)))
-      tool-value))
+    (object/map-vector-field
+      tool-value
+      'checks
+      (lambda (check-value)
+        (object/update-field check-value 'argv proc))))
 
   (doc-next
     (summary "Transform each uninstall command argv vector.")
@@ -93,28 +62,19 @@
     (param 'proc "Procedure that receives and returns an argv vector."))
 
   (define (uninstall/map-command-argvs uninstall-value proc)
-    (if (object/has-field? uninstall-value 'commands)
-      (object/replace-field
-        uninstall-value
-        'commands
-        (vector/map
-          (lambda (command-value)
-            (object/replace-field
-              command-value
-              'argv
-              (proc (object/ref command-value 'argv))))
-          (object/ref uninstall-value 'commands)))
-      uninstall-value))
+    (object/map-vector-field
+      uninstall-value
+      'commands
+      (lambda (command-value)
+        (object/update-field command-value 'argv proc))))
 
   (doc-next (summary "Transform uninstall command argv fields inside a tool."))
 
   (define (tool/map-uninstall-command-argvs tool-value proc)
-    (if (object/has-field? tool-value 'uninstall)
-      (object/replace-field
-        tool-value
-        'uninstall
-        (uninstall/map-command-argvs (object/ref tool-value 'uninstall) proc))
-      tool-value))
+    (object/update-field
+      tool-value
+      'uninstall
+      (lambda (uninstall-value) (uninstall/map-command-argvs uninstall-value proc))))
 
   (doc-next
     (signature "(install-argv/prepend obj argv ...)")
@@ -124,7 +84,7 @@
     (object/replace-field
       obj
       'install-argv
-      (vector/append (list->vector argv) (object/ref obj 'install-argv (arr)))))
+      (arr/prepend-list argv (object/ref obj 'install-argv (arr)))))
 
   (doc-next (summary "Append a Scheme list of argv items to an argv vector."))
 

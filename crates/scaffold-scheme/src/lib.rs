@@ -34,6 +34,21 @@ pub fn parse_error_offset(error: &ParseSyntaxError, source: &str) -> usize {
     }
 }
 
+#[must_use]
+pub fn source_position_byte_offset(source: &str, line: u32, column: usize) -> usize {
+    // scheme-rs spans are 1-indexed by line and 0-indexed by column.
+    let line_start = source
+        .split_inclusive('\n')
+        .take(line.saturating_sub(1) as usize)
+        .map(str::len)
+        .sum::<usize>();
+    line_start
+        + source[line_start..]
+            .char_indices()
+            .nth(column)
+            .map_or(0, |(offset, _)| offset)
+}
+
 pub const fn parse_error_is_incomplete(error: &ParseSyntaxError) -> bool {
     matches!(
         error,
@@ -69,6 +84,17 @@ pub fn value_to_string(value: &Value) -> Result<String, Exception> {
     value.try_to_scheme_type::<WideString>().map(Into::into)
 }
 
+#[must_use]
+pub fn escape_string_literal_body(value: &str) -> String {
+    value.replace('\\', "\\\\").replace('"', "\\\"")
+}
+
+#[must_use]
+pub fn string_literal(value: &str) -> String {
+    let escaped = escape_string_literal_body(value);
+    format!("\"{escaped}\"")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -88,5 +114,30 @@ mod tests {
         let forms = proper_list(&syntax).expect("top-level source is a proper list");
 
         assert_eq!(forms.len(), 1);
+    }
+
+    #[test]
+    fn source_position_byte_offset_uses_scheme_span_coordinates() {
+        let source = "λ\n(define café 1)";
+
+        assert_eq!(source_position_byte_offset(source, 1, 0), 0);
+        assert_eq!(
+            source_position_byte_offset(source, 2, 8),
+            source.find("café").expect("identifier appears")
+        );
+    }
+
+    #[test]
+    fn string_literal_escapes_scheme_string_delimiters() {
+        assert_eq!(string_literal("bin/demo"), "\"bin/demo\"");
+        assert_eq!(escape_string_literal_body("bin/demo"), "bin/demo");
+        assert_eq!(
+            string_literal("C:\\Tools\\\"demo\""),
+            "\"C:\\\\Tools\\\\\\\"demo\\\"\""
+        );
+        assert_eq!(
+            escape_string_literal_body("C:\\Tools\\\"demo\""),
+            "C:\\\\Tools\\\\\\\"demo\\\""
+        );
     }
 }

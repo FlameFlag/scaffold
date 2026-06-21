@@ -11,7 +11,6 @@ mod fs;
 mod host;
 mod json;
 mod libraries;
-mod literal;
 mod path;
 mod stdlib;
 mod workspace;
@@ -43,16 +42,17 @@ pub struct SourceSpan {
 
 #[must_use]
 pub fn documentation_sources() -> Vec<DocumentationSource> {
-    let mut sources = stdlib::core_documentation_sources();
-    sources.extend(
-        bundled::BUNDLED_EXTENSION_SOURCES
-            .iter()
-            .map(|source| DocumentationSource {
-                path: source.path,
-                source: source.source,
-            }),
-    );
-    sources
+    stdlib::core_documentation_sources()
+        .into_iter()
+        .chain(
+            bundled::BUNDLED_EXTENSION_SOURCES
+                .iter()
+                .map(|source| DocumentationSource {
+                    path: source.path,
+                    source: source.source,
+                }),
+        )
+        .collect()
 }
 
 #[must_use]
@@ -86,7 +86,7 @@ pub type Result<T> = std::result::Result<T, DslError>;
 pub fn values_from_path(path: impl AsRef<Path>) -> Result<Vec<serde_json::Value>> {
     let path = path.as_ref();
     let root = parent_dir(path);
-    let extension_dirs = libraries::extension_dirs_for_root(root);
+    let extension_dirs = scaffold_context::extension_dirs_for_root(root);
     let source = std::fs::read_to_string(path)?;
     let root = absolute_lexical_path(root)?;
     let path = absolute_lexical_path(path)?;
@@ -106,7 +106,7 @@ pub fn values_from_path_with_catalog_path(
     let path = path.as_ref();
     let catalog_path = catalog_path.as_ref();
     let root = parent_dir(catalog_path);
-    let extension_dirs = libraries::extension_dirs_for_catalog_path(catalog_path);
+    let extension_dirs = scaffold_context::extension_dirs_for_catalog_path(catalog_path);
     let source = std::fs::read_to_string(path)?;
     let root = absolute_lexical_path(root)?;
     let path = absolute_lexical_path(path)?;
@@ -125,7 +125,7 @@ pub fn values_from_path_with_extension_root(
 ) -> Result<Vec<serde_json::Value>> {
     let path = path.as_ref();
     let extension_root = extension_root.as_ref();
-    let extension_dirs = libraries::extension_dirs_for_root(extension_root);
+    let extension_dirs = scaffold_context::extension_dirs_for_root(extension_root);
     let source = std::fs::read_to_string(path)?;
     let context_root = absolute_lexical_path(extension_root)?;
     let context_path = absolute_lexical_path(path)?;
@@ -144,7 +144,7 @@ pub fn session_with_catalog_path(
 ) -> Result<DslSession> {
     let catalog_path = catalog_path.as_ref();
     let root = parent_dir(catalog_path);
-    let extension_dirs = libraries::extension_dirs_for_catalog_path(catalog_path);
+    let extension_dirs = scaffold_context::extension_dirs_for_catalog_path(catalog_path);
     let context_root = absolute_lexical_path(root)?;
     DslSession::with_context(
         &extension_dirs,
@@ -158,7 +158,7 @@ pub fn session_with_extension_root(
     default_imports: bool,
 ) -> Result<DslSession> {
     let extension_root = extension_root.as_ref();
-    let extension_dirs = libraries::extension_dirs_for_root(extension_root);
+    let extension_dirs = scaffold_context::extension_dirs_for_root(extension_root);
     let context_root = absolute_lexical_path(extension_root)?;
     DslSession::with_context(
         &extension_dirs,
@@ -174,7 +174,7 @@ pub fn catalog_value_from_path(path: impl AsRef<Path>) -> Result<serde_json::Val
 pub fn catalog_document_from_path(path: impl AsRef<Path>) -> Result<CatalogDocument> {
     let path = path.as_ref();
     let root = parent_dir(path);
-    let extension_dirs = libraries::extension_dirs_for_catalog_path(path);
+    let extension_dirs = scaffold_context::extension_dirs_for_catalog_path(path);
     let source = std::fs::read_to_string(path)?;
     let root = absolute_lexical_path(root)?;
     let path = absolute_lexical_path(path)?;

@@ -1,4 +1,4 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
 use scaffold_platform::{Host, HostOs, Predicate};
@@ -40,7 +40,7 @@ pub struct Tool {
     pub action: Action,
 }
 
-#[derive(Debug, Default, Deserialize)]
+#[derive(Debug, Default, Deserialize, Serialize)]
 pub struct ToolMeta {
     #[serde(default)]
     pub home_page: Option<String>,
@@ -123,6 +123,14 @@ impl Tool {
             .join(", ")
     }
 
+    pub fn bin_summary(&self) -> String {
+        self.bin_names().collect::<Vec<_>>().join(", ")
+    }
+
+    pub fn bin_names(&self) -> impl Iterator<Item = &str> {
+        self.bins.iter().map(|bin| bin.name.as_str())
+    }
+
     #[must_use]
     pub fn wants_first(&self) -> bool {
         self.before
@@ -193,12 +201,14 @@ pub struct Bin {
 
 impl Bin {
     fn version(&self) -> Option<String> {
+        let default_argv;
         let argv = if self.version_argv.is_empty() {
-            vec![self.name.clone(), "--version".to_owned()]
+            default_argv = [self.name.clone(), "--version".to_owned()];
+            &default_argv[..]
         } else {
-            self.version_argv.clone()
+            &self.version_argv
         };
-        let output = process::capture(&argv).ok()?;
+        let output = process::capture(argv).ok()?;
         if !output.status.success() {
             return None;
         }

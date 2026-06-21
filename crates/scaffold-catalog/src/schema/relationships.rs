@@ -42,10 +42,6 @@ pub(super) fn validate_install_order(
     names: &BTreeMap<String, usize>,
 ) -> Result<(), String> {
     let mut graph = DiGraphMap::<usize, ()>::new();
-    for index in 0..tools.len() {
-        graph.add_node(index);
-    }
-
     for (index, tool) in tools.iter().enumerate() {
         let object = tool.as_object().expect("tool shape already validated");
         for (_, dependency) in string_array_items(object, "depends") {

@@ -15,7 +15,7 @@
     (returns "Vector argv suitable for a package action `install-argv`."))
 
   (define (dnf/install-argv . packages)
-    (apply arr "sudo" "dnf" "install" "-y" packages))
+    (arr/append-list (arr "sudo" "dnf" "install" "-y") packages))
 
   (doc-next
     (signature "(dnf/remove-argv package ...)")
@@ -23,7 +23,8 @@
     (param 'package "DNF package names.")
     (returns "Vector argv suitable for uninstall metadata."))
 
-  (define (dnf/remove-argv . packages) (apply arr "sudo" "dnf" "remove" "-y" packages))
+  (define (dnf/remove-argv . packages)
+    (arr/append-list (arr "sudo" "dnf" "remove" "-y") packages))
 
   (doc-next
     (signature "(dnf/package name field ...)")
@@ -33,20 +34,20 @@
     (returns "A tool with a DNF package action and `rpm -q` check."))
 
   (define (dnf/package name . fields)
-    (apply
-      tool
-      name
-      (package
-        (field 'name name)
-        (field 'install-argv (dnf/install-argv "{{ package }}")))
-      (field 'platforms (arr 'linux))
-      (field 'checks (arr (command/check "rpm" "-q" "{{ package }}")))
-      (field
-        'uninstall
-        (uninstall
-          (field
-            'commands
-            (arr (host/uninstall-command 'linux (dnf/remove-argv "{{ package }}"))))))
+    (object/merge
+      (tool
+        name
+        (package
+          (field 'name name)
+          (field 'install-argv (dnf/install-argv "{{ package }}")))
+        (field 'platforms (arr 'linux))
+        (field 'checks (arr (command/check "rpm" "-q" "{{ package }}")))
+        (field
+          'uninstall
+          (uninstall
+            (field
+              'commands
+              (arr (host/uninstall-command 'linux (dnf/remove-argv "{{ package }}")))))))
       fields))
 
   (doc-next
@@ -59,21 +60,21 @@
     (param 'field "Additional tool fields that override defaults."))
 
   (define (dnf/package-tool name package-name bin-name . fields)
-    (apply
-      tool
-      name
-      (package
-        (field 'name package-name)
-        (field 'install-argv (dnf/install-argv "{{ package }}")))
-      (field 'platforms (arr 'linux))
-      (field 'checks (arr (command/check "rpm" "-q" "{{ package }}")))
-      (field 'bins (arr (bin bin-name)))
-      (field
-        'uninstall
-        (uninstall
-          (field
-            'commands
-            (arr (host/uninstall-command 'linux (dnf/remove-argv "{{ package }}"))))))
+    (object/merge
+      (tool
+        name
+        (package
+          (field 'name package-name)
+          (field 'install-argv (dnf/install-argv "{{ package }}")))
+        (field 'platforms (arr 'linux))
+        (field 'checks (arr (command/check "rpm" "-q" "{{ package }}")))
+        (field 'bins (arr (bin bin-name)))
+        (field
+          'uninstall
+          (uninstall
+            (field
+              'commands
+              (arr (host/uninstall-command 'linux (dnf/remove-argv "{{ package }}")))))))
       fields))
 
   (doc-next
@@ -83,12 +84,12 @@
     (param 'field "Additional platform fields that override defaults."))
 
   (define (dnf/package-platform package-name . fields)
-    (apply
-      package/platform
-      'linux
-      (arr "dnf")
-      (dnf/install-argv "{{ package }}")
-      (field 'name package-name)
+    (object/merge
+      (package/platform
+        'linux
+        (arr "dnf")
+        (dnf/install-argv "{{ package }}")
+        (field 'name package-name))
       fields))
 
   (moduledoc

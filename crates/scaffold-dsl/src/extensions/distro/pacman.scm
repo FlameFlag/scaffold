@@ -16,7 +16,7 @@
     (returns "Vector argv suitable for a package action `install-argv`."))
 
   (define (pacman/install-argv . packages)
-    (apply arr "sudo" "pacman" "-S" "--needed" "--noconfirm" packages))
+    (arr/append-list (arr "sudo" "pacman" "-S" "--needed" "--noconfirm") packages))
 
   (doc-next
     (signature "(pacman/remove-argv package ...)")
@@ -25,7 +25,7 @@
     (returns "Vector argv suitable for uninstall metadata."))
 
   (define (pacman/remove-argv . packages)
-    (apply arr "sudo" "pacman" "-R" "--noconfirm" packages))
+    (arr/append-list (arr "sudo" "pacman" "-R" "--noconfirm") packages))
 
   (doc-next
     (signature "(pacman/package name field ...)")
@@ -35,20 +35,21 @@
     (returns "A tool with a Pacman package action and `pacman -Q` check."))
 
   (define (pacman/package name . fields)
-    (apply
-      tool
-      name
-      (package
-        (field 'name name)
-        (field 'install-argv (pacman/install-argv "{{ package }}")))
-      (field 'platforms (arr 'linux))
-      (field 'checks (arr (command/check "pacman" "-Q" "{{ package }}")))
-      (field
-        'uninstall
-        (uninstall
-          (field
-            'commands
-            (arr (host/uninstall-command 'linux (pacman/remove-argv "{{ package }}"))))))
+    (object/merge
+      (tool
+        name
+        (package
+          (field 'name name)
+          (field 'install-argv (pacman/install-argv "{{ package }}")))
+        (field 'platforms (arr 'linux))
+        (field 'checks (arr (command/check "pacman" "-Q" "{{ package }}")))
+        (field
+          'uninstall
+          (uninstall
+            (field
+              'commands
+              (arr
+                (host/uninstall-command 'linux (pacman/remove-argv "{{ package }}")))))))
       fields))
 
   (doc-next
@@ -61,21 +62,22 @@
     (param 'field "Additional tool fields that override defaults."))
 
   (define (pacman/package-tool name package-name bin-name . fields)
-    (apply
-      tool
-      name
-      (package
-        (field 'name package-name)
-        (field 'install-argv (pacman/install-argv "{{ package }}")))
-      (field 'platforms (arr 'linux))
-      (field 'checks (arr (command/check "pacman" "-Q" "{{ package }}")))
-      (field 'bins (arr (bin bin-name)))
-      (field
-        'uninstall
-        (uninstall
-          (field
-            'commands
-            (arr (host/uninstall-command 'linux (pacman/remove-argv "{{ package }}"))))))
+    (object/merge
+      (tool
+        name
+        (package
+          (field 'name package-name)
+          (field 'install-argv (pacman/install-argv "{{ package }}")))
+        (field 'platforms (arr 'linux))
+        (field 'checks (arr (command/check "pacman" "-Q" "{{ package }}")))
+        (field 'bins (arr (bin bin-name)))
+        (field
+          'uninstall
+          (uninstall
+            (field
+              'commands
+              (arr
+                (host/uninstall-command 'linux (pacman/remove-argv "{{ package }}")))))))
       fields))
 
   (doc-next
@@ -85,12 +87,12 @@
     (param 'field "Additional platform fields that override defaults."))
 
   (define (pacman/package-platform package-name . fields)
-    (apply
-      package/platform
-      'linux
-      (arr "pacman")
-      (pacman/install-argv "{{ package }}")
-      (field 'name package-name)
+    (object/merge
+      (package/platform
+        'linux
+        (arr "pacman")
+        (pacman/install-argv "{{ package }}")
+        (field 'name package-name))
       fields))
 
   (moduledoc

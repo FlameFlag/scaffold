@@ -19,19 +19,19 @@
       'name
       "Tool name dependency. Requested installs include dependencies automatically."))
 
-  (define (depends . names) (field 'depends (list->vector names)))
+  (define (depends . names) (field 'depends (list->arr names)))
 
   (doc-next
     (signature "(install/before name ...)")
     (summary "Declare tools that should be installed after this tool."))
 
-  (define (install/before . names) (field 'before (list->vector names)))
+  (define (install/before . names) (field 'before (list->arr names)))
 
   (doc-next
     (signature "(install/after name ...)")
     (summary "Declare tools that should be installed before this tool."))
 
-  (define (install/after . names) (field 'after (list->vector names)))
+  (define (install/after . names) (field 'after (list->arr names)))
 
   (moduledoc
     (summary "Catalog install ordering and dependency field helpers.")

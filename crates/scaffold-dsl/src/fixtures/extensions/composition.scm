@@ -112,6 +112,14 @@
   (arr "curl" "head" "install" "mkdir" "rm" "sed" "tar")
   (object/ref github-platform 'requires-commands))
 
+(assert/equal "''" (sh/quote ""))
+
+(assert/equal "'plain'" (sh/quote "plain"))
+
+(assert/equal "'it'\\''s'" (sh/quote "it's"))
+
+(assert/equal "repo='owner/repo'\n" (sh-set "repo" "owner/repo"))
+
 (assert/equal
   (arr
     "npm"

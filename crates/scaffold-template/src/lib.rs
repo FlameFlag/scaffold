@@ -2,12 +2,13 @@ use std::collections::HashMap;
 
 #[must_use]
 pub fn render(input: &str, bindings: &HashMap<&str, &str>) -> String {
-    let mut rendered = input.to_owned();
-    for (name, value) in bindings {
-        rendered = rendered.replace(&format!("{{{{ {name} }}}}"), value);
-        rendered = rendered.replace(&format!("{{{{{name}}}}}"), value);
-    }
-    rendered
+    bindings
+        .iter()
+        .fold(input.to_owned(), |rendered, (name, value)| {
+            rendered
+                .replace(&format!("{{{{ {name} }}}}"), value)
+                .replace(&format!("{{{{{name}}}}}"), value)
+        })
 }
 
 #[must_use]

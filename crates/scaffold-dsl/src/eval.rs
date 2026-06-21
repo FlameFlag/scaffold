@@ -124,52 +124,59 @@ impl DslSession {
         text: &str,
         source_name: Option<&str>,
     ) -> Result<Vec<serde_json::Value>> {
-        let values = self.eval_values(text, source_name)?;
-        let mut output = Vec::new();
-        for (index, value) in values.into_iter().enumerate() {
-            if value.is_undefined() {
-                continue;
-            }
-            if value_is_null(&value) {
-                continue;
-            }
-            let value = value_to_json(value, &format!("$[{index}]"))?;
-            if !json_is_scaffold_doc(&value) {
-                output.push(value);
-            }
-        }
-        Ok(output)
+        self.eval_values(text, source_name)?
+            .into_iter()
+            .enumerate()
+            .filter_map(|(index, value)| {
+                if value.is_undefined() || value_is_null(&value) {
+                    return None;
+                }
+                match value_to_json(value, &format!("$[{index}]")) {
+                    Ok(value) if json_is_scaffold_doc(&value) => None,
+                    result => Some(result),
+                }
+            })
+            .collect()
     }
 
     pub(crate) fn eval_values(&self, text: &str, source_name: Option<&str>) -> Result<Vec<Value>> {
         let source_name = source_name.unwrap_or("<unknown>");
         let syntax = parse_syntax(text, source_name)?;
         let forms = top_level_forms(&syntax)?;
-        let mut output = Vec::new();
+        forms
+            .iter()
+            .enumerate()
+            .filter_map(|(index, form)| {
+                self.eval_form_value(text, source_name, index, form)
+                    .transpose()
+            })
+            .collect()
+    }
 
-        for (index, form) in forms.iter().enumerate() {
-            if is_top_level_doc_form(form) {
-                continue;
-            }
-            let values = self
-                .env
-                .eval_sexpr(self.import_policy.clone(), form.clone())
-                .map_err(|err| eval_diagnostic(err, source_name, text, form))?;
-            match values.as_slice() {
-                [] => {}
-                [value] if value.is_undefined() => {}
-                [value] if value_is_null(value) && is_top_level_syntax_definition(form) => {}
-                [value] => output.push(value.clone()),
-                values => {
-                    return Err(DslError::Shape {
-                        path: format!("$[{index}]"),
-                        message: format!("expected one value, got {}", values.len()),
-                    });
-                }
-            }
+    fn eval_form_value(
+        &self,
+        text: &str,
+        source_name: &str,
+        index: usize,
+        form: &Syntax,
+    ) -> Result<Option<Value>> {
+        if is_top_level_doc_form(form) {
+            return Ok(None);
         }
-
-        Ok(output)
+        let values = self
+            .env
+            .eval_sexpr(self.import_policy.clone(), form.clone())
+            .map_err(|err| eval_diagnostic(err, source_name, text, form))?;
+        match values.as_slice() {
+            [] => Ok(None),
+            [value] if value.is_undefined() => Ok(None),
+            [value] if value_is_null(value) && is_top_level_syntax_definition(form) => Ok(None),
+            [value] => Ok(Some(value.clone())),
+            values => Err(DslError::Shape {
+                path: format!("$[{index}]"),
+                message: format!("expected one value, got {}", values.len()),
+            }),
+        }
     }
 
     fn import_default_libraries(&self) -> Result<()> {
@@ -206,36 +213,16 @@ pub(super) fn values_from_str_with_context(
     let session = DslSession::with_context(extension_dirs, false, context)?;
     let syntax = parse_syntax(text, source_name.unwrap_or("<unknown>"))?;
     let forms = top_level_forms(&syntax)?;
-    let mut output = Vec::new();
-
-    for (index, form) in forms.iter().enumerate() {
-        if is_top_level_doc_form(form) {
-            continue;
-        }
-        let values = session
-            .env
-            .eval_sexpr(session.import_policy.clone(), form.clone())
-            .map_err(|err| eval_diagnostic(err, source_name.unwrap_or("<unknown>"), text, form))?;
-        match values.as_slice() {
-            [] => {}
-            [value] if value.is_undefined() => {}
-            [value] if value_is_null(value) && is_top_level_syntax_definition(form) => {}
-            [value] => {
-                let value = value_to_json(value.clone(), &format!("$[{index}]"))?;
-                if !json_is_scaffold_doc(&value) {
-                    output.push(value);
-                }
-            }
-            values => {
-                return Err(DslError::Shape {
-                    path: format!("$[{index}]"),
-                    message: format!("expected one value, got {}", values.len()),
-                });
-            }
-        }
-    }
-
-    Ok(output)
+    let source_name = source_name.unwrap_or("<unknown>");
+    forms
+        .iter()
+        .enumerate()
+        .filter_map(|(index, form)| {
+            session
+                .eval_form_json(text, source_name, index, form)
+                .transpose()
+        })
+        .collect()
 }
 
 pub(super) fn catalog_document_from_str_with_context(
@@ -252,33 +239,12 @@ pub(super) fn catalog_document_from_str_with_context(
     let mut value_spans = Vec::new();
 
     for (index, form) in forms.iter().enumerate() {
-        if is_top_level_doc_form(form) {
-            continue;
-        }
-        let output = session
-            .env
-            .eval_sexpr(session.import_policy.clone(), form.clone())
-            .map_err(|err| eval_diagnostic(err, &source_name, &text, form))?;
-        match output.as_slice() {
-            [] => {}
-            [value] if value.is_undefined() => {}
-            [value] if value_is_null(value) && is_top_level_syntax_definition(form) => {}
-            [value] => {
-                let value = value_to_json(value.clone(), &format!("$[{index}]"))?;
-                if !json_is_scaffold_doc(&value) {
-                    values.push(value);
-                    value_spans.push(form_spans.get(index).copied().unwrap_or(SourceSpan {
-                        offset: form_source_start(&text, form.span().offset),
-                        len: form_source_len(&text, form_source_start(&text, form.span().offset)),
-                    }));
-                }
-            }
-            values => {
-                return Err(DslError::Shape {
-                    path: format!("$[{index}]"),
-                    message: format!("expected one value, got {}", values.len()),
-                });
-            }
+        if let Some(value) = session.eval_form_json(&text, &source_name, index, form)? {
+            values.push(value);
+            value_spans.push(form_spans.get(index).copied().unwrap_or(SourceSpan {
+                offset: form_source_start(&text, form.span().offset),
+                len: form_source_len(&text, form_source_start(&text, form.span().offset)),
+            }));
         }
     }
 
@@ -310,6 +276,21 @@ fn json_is_scaffold_doc(value: &serde_json::Value) -> bool {
         .get("scaffold:kind")
         .and_then(serde_json::Value::as_str)
         .is_some_and(|kind| kind == "doc")
+}
+
+impl DslSession {
+    fn eval_form_json(
+        &self,
+        text: &str,
+        source_name: &str,
+        index: usize,
+        form: &Syntax,
+    ) -> Result<Option<serde_json::Value>> {
+        self.eval_form_value(text, source_name, index, form)?
+            .map(|value| value_to_json(value, &format!("$[{index}]")))
+            .transpose()
+            .map(|value| value.filter(|value| !json_is_scaffold_doc(value)))
+    }
 }
 
 fn is_top_level_doc_form(form: &Syntax) -> bool {

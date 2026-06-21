@@ -41,6 +41,10 @@ impl InstallEventKind {
     }
 }
 
+pub(super) fn command_detail(argv: &[String]) -> String {
+    shlex::try_join(argv.iter().map(String::as_str)).unwrap_or_else(|_err| argv.join(" "))
+}
+
 pub trait InstallReporter {
     fn report(&mut self, event: InstallEvent);
 }
@@ -54,7 +58,7 @@ impl InstallReporter for NoopReporter {
 
 #[cfg(test)]
 mod tests {
-    use super::InstallEventKind;
+    use super::{InstallEventKind, command_detail};
 
     #[test]
     fn event_kind_labels_are_stable_lowercase_values() {
@@ -63,5 +67,20 @@ mod tests {
         assert_eq!(InstallEventKind::Run.label(), "run");
         assert_eq!(InstallEventKind::Extract.label(), "extract");
         assert_eq!(InstallEventKind::Remove.label(), "remove");
+    }
+
+    #[test]
+    fn command_detail_quotes_shell_arguments() {
+        let argv = vec![
+            "pkg".to_owned(),
+            "install".to_owned(),
+            "demo tool".to_owned(),
+            "author's tool".to_owned(),
+        ];
+
+        assert_eq!(
+            command_detail(&argv),
+            "pkg install 'demo tool' \"author's tool\""
+        );
     }
 }

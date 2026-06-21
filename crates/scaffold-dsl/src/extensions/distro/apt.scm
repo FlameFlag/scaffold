@@ -15,7 +15,7 @@
     (returns "Vector argv suitable for a package action `install-argv`."))
 
   (define (apt-get/install-argv . packages)
-    (apply arr "sudo" "apt-get" "install" "-y" packages))
+    (arr/append-list (arr "sudo" "apt-get" "install" "-y") packages))
 
   (doc-next
     (signature "(apt-get/remove-argv package ...)")
@@ -24,7 +24,7 @@
     (returns "Vector argv suitable for uninstall metadata."))
 
   (define (apt-get/remove-argv . packages)
-    (apply arr "sudo" "apt-get" "remove" "-y" packages))
+    (arr/append-list (arr "sudo" "apt-get" "remove" "-y") packages))
 
   (doc-next
     (signature "(apt/package name field ...)")
@@ -34,20 +34,21 @@
     (returns "A tool with an APT package action and `dpkg-query -W` check."))
 
   (define (apt/package name . fields)
-    (apply
-      tool
-      name
-      (package
-        (field 'name name)
-        (field 'install-argv (apt-get/install-argv "{{ package }}")))
-      (field 'platforms (arr 'linux))
-      (field 'checks (arr (command/check "dpkg-query" "-W" "{{ package }}")))
-      (field
-        'uninstall
-        (uninstall
-          (field
-            'commands
-            (arr (host/uninstall-command 'linux (apt-get/remove-argv "{{ package }}"))))))
+    (object/merge
+      (tool
+        name
+        (package
+          (field 'name name)
+          (field 'install-argv (apt-get/install-argv "{{ package }}")))
+        (field 'platforms (arr 'linux))
+        (field 'checks (arr (command/check "dpkg-query" "-W" "{{ package }}")))
+        (field
+          'uninstall
+          (uninstall
+            (field
+              'commands
+              (arr
+                (host/uninstall-command 'linux (apt-get/remove-argv "{{ package }}")))))))
       fields))
 
   (doc-next
@@ -60,21 +61,22 @@
     (param 'field "Additional tool fields that override defaults."))
 
   (define (apt/package-tool name package-name bin-name . fields)
-    (apply
-      tool
-      name
-      (package
-        (field 'name package-name)
-        (field 'install-argv (apt-get/install-argv "{{ package }}")))
-      (field 'platforms (arr 'linux))
-      (field 'checks (arr (command/check "dpkg-query" "-W" "{{ package }}")))
-      (field 'bins (arr (bin bin-name)))
-      (field
-        'uninstall
-        (uninstall
-          (field
-            'commands
-            (arr (host/uninstall-command 'linux (apt-get/remove-argv "{{ package }}"))))))
+    (object/merge
+      (tool
+        name
+        (package
+          (field 'name package-name)
+          (field 'install-argv (apt-get/install-argv "{{ package }}")))
+        (field 'platforms (arr 'linux))
+        (field 'checks (arr (command/check "dpkg-query" "-W" "{{ package }}")))
+        (field 'bins (arr (bin bin-name)))
+        (field
+          'uninstall
+          (uninstall
+            (field
+              'commands
+              (arr
+                (host/uninstall-command 'linux (apt-get/remove-argv "{{ package }}")))))))
       fields))
 
   (doc-next
@@ -84,12 +86,12 @@
     (param 'field "Additional platform fields that override defaults."))
 
   (define (apt/package-platform package-name . fields)
-    (apply
-      package/platform
-      'linux
-      (arr "apt-get")
-      (apt-get/install-argv "{{ package }}")
-      (field 'name package-name)
+    (object/merge
+      (package/platform
+        'linux
+        (arr "apt-get")
+        (apt-get/install-argv "{{ package }}")
+        (field 'name package-name))
       fields))
 
   (moduledoc

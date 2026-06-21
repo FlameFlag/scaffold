@@ -3,7 +3,11 @@
   (export
     tool/prefer-present
     workspace/build
+    tool/bins
+    tool/checks
+    tool/paths
     tool/platforms
+    tool/skip-verify-after-install
     host/package-platform
     host/package-platform-argvs
     uninstall/paths)
@@ -26,7 +30,9 @@
     (returns "A tool object with either a `required` or package action."))
 
   (define (tool/prefer-present name package-action . fields)
-    (apply tool name (if (command/available? name) (required) package-action) fields))
+    (object/merge
+      (tool name (if (command/available? name) (required) package-action))
+      fields))
 
   (doc-next
     (signature "(workspace/build path field ...)")
@@ -36,14 +42,41 @@
     (param 'field "Build fields such as `argv` or ordered `argvs`."))
 
   (define (workspace/build path . fields)
-    (apply build (field 'path (workspace/path path)) fields))
+    (object/merge (build (field 'path (workspace/path path))) fields))
+
+  (doc-next
+    (signature "(tool/bins bin ...)")
+    (summary "Create a `bins` field for a tool.")
+    (param 'bin "Binary descriptor such as `(bin \"name\")` or `(bin/version \"name\" \"--version\")`."))
+
+  (define (tool/bins . bins) (field 'bins (list->arr bins)))
+
+  (doc-next
+    (signature "(tool/checks check ...)")
+    (summary "Create a `checks` field for a tool.")
+    (param 'check "Check descriptor created with `check` or `host/check`."))
+
+  (define (tool/checks . checks) (field 'checks (list->arr checks)))
+
+  (doc-next
+    (signature "(tool/paths path ...)")
+    (summary "Create a `paths` field for a tool.")
+    (param 'path "Path descriptor created with `tool/path`."))
+
+  (define (tool/paths . paths) (field 'paths (list->arr paths)))
 
   (doc-next
     (signature "(tool/platforms platform ...)")
     (summary "Create a `platforms` field for a tool.")
     (param 'platform "Host OS symbol or string such as `linux`, `macos`, or `windows`."))
 
-  (define (tool/platforms . platforms) (field 'platforms (list->vector platforms)))
+  (define (tool/platforms . platforms) (field 'platforms (list->arr platforms)))
+
+  (doc-next
+    (signature "(tool/skip-verify-after-install)")
+    (summary "Disable automatic post-install binary verification for a tool."))
+
+  (define (tool/skip-verify-after-install) (field 'verify-after-install #f))
 
   (doc-next
     (signature "(host/package-platform requires install-argv field ...)")
@@ -52,7 +85,9 @@
     (param 'install-argv "Install command argv vector."))
 
   (define (host/package-platform requires install-argv . fields)
-    (apply package/platform host/os requires install-argv fields))
+    (object/merge
+      (package/platform host/os requires install-argv)
+      fields))
 
   (doc-next
     (signature "(host/package-platform-argvs requires install-argvs field ...)")
@@ -63,7 +98,9 @@
     (param 'field "Additional platform fields."))
 
   (define (host/package-platform-argvs requires install-argvs . fields)
-    (apply package/platform-argvs host/os requires install-argvs fields))
+    (object/merge
+      (package/platform-argvs host/os requires install-argvs)
+      fields))
 
   (doc-next
     (signature "(uninstall/paths path ...)")
@@ -73,6 +110,6 @@
   (define (uninstall/paths . paths)
     (field
       'uninstall
-      (uninstall (field 'paths (list->vector (map uninstall/path paths))))))
+      (uninstall (field 'paths (list->arr (map uninstall/path paths))))))
 
   (moduledoc (summary "Catalog domain convenience helpers.") (group "Catalog")))

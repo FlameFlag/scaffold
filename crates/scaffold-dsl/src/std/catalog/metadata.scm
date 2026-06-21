@@ -20,7 +20,7 @@
       "Metadata fields such as `home-page`, `description`, `license`, `maintainers`, `tags`, `main-program`, or `source`.")
     (returns "A `meta` field accepted by `tool`."))
 
-  (define (meta . fields) (field 'meta (apply object fields)))
+  (define (meta . fields) (field 'meta fields))
 
   (doc-next (summary "Create a metadata field for the tool's upstream homepage."))
 
@@ -38,13 +38,13 @@
     (signature "(maintainers name ...)")
     (summary "Create a metadata field listing maintainers for a catalog tool."))
 
-  (define (maintainers . names) (field 'maintainers (list->vector names)))
+  (define (maintainers . names) (field 'maintainers (list->arr names)))
 
   (doc-next
     (signature "(tags tag ...)")
     (summary "Create a metadata field listing searchable labels for a catalog tool."))
 
-  (define (tags . values) (field 'tags (list->vector values)))
+  (define (tags . values) (field 'tags (list->arr values)))
 
   (doc-next
     (summary "Create a metadata field naming the primary executable for a tool."))
@@ -63,7 +63,7 @@
       'field
       "Arbitrary object fields preserved in evaluated catalog JSON but ignored by installation."))
 
-  (define (passthru . fields) (field 'passthru (apply object fields)))
+  (define (passthru . fields) (field 'passthru fields))
 
   (moduledoc
     (summary "Tool metadata and open extension-data helpers.")

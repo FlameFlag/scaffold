@@ -10,6 +10,6 @@
     (returns "A `check` object with `argv` converted to a vector.")
     (example "(command/check \"git\" \"--version\")"))
 
-  (define (command/check . argv) (check (list->vector argv)))
+  (define (command/check . argv) (check (list->arr argv)))
 
   (moduledoc (summary "Convenience constructors for catalog checks.") (group "Checks")))

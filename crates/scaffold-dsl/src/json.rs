@@ -131,17 +131,22 @@ fn object_from_alist(
     values: &[Value],
     path: &str,
 ) -> Result<Option<Map<String, serde_json::Value>>> {
-    let mut object = Map::new();
-    for (index, value) in values.iter().enumerate() {
-        let Some((key, entry_value)) = value.cast_to_scheme_type::<(Value, Value)>() else {
-            return Ok(None);
-        };
-        let Some(key) = object_key(key) else {
-            return Ok(None);
-        };
-        let _previous = object.insert(key, value_to_json(entry_value, &format!("{path}.{index}"))?);
-    }
-    Ok(Some(object))
+    values
+        .iter()
+        .enumerate()
+        .map(|(index, value)| {
+            let Some((key, entry_value)) = value.cast_to_scheme_type::<(Value, Value)>() else {
+                return Ok(None);
+            };
+            let Some(key) = object_key(key) else {
+                return Ok(None);
+            };
+            Ok(Some((
+                key,
+                value_to_json(entry_value, &format!("{path}.{index}"))?,
+            )))
+        })
+        .collect()
 }
 
 fn object_key(value: Value) -> Option<String> {

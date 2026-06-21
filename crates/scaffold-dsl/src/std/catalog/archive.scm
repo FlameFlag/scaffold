@@ -11,7 +11,8 @@
     (returns
       "An action object with type `archive`. Supported formats are `.zip`, `.tar`, `.tar.gz`, `.tgz`, `.tar.bz2`, `.tbz2`, `.tar.xz`, `.txz`, and `.dmg`."))
 
-  (define (archive path . fields) (apply action 'archive (field 'path path) fields))
+  (define (archive path . fields)
+    (cons* (field 'type 'archive) (field 'path path) fields))
 
   (doc-next
     (signature "(archive/strip-components path count field ...)")
@@ -22,7 +23,11 @@
     (param 'field "Additional archive fields."))
 
   (define (archive/strip-components path count . fields)
-    (apply archive path (field 'strip-components count) fields))
+    (cons*
+      (field 'type 'archive)
+      (field 'path path)
+      (field 'strip-components count)
+      fields))
 
   (doc-next
     (signature "(dmg path field ...)")
@@ -32,6 +37,7 @@
     (returns
       "An archive action for `.dmg` files. DMG extraction requires macOS `hdiutil` and `ditto`."))
 
-  (define (dmg path . fields) (apply archive path fields))
+  (define (dmg path . fields)
+    (cons* (field 'type 'archive) (field 'path path) fields))
 
   (moduledoc (summary "Catalog archive extraction action helpers.") (group "Archives")))

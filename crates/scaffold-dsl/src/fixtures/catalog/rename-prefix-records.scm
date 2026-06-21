@@ -12,7 +12,9 @@
 (define spec (make-tool-spec "demo" "democtl"))
 
 (make-catalog
-  (tool:tool
-    (tool-spec-name spec)
-    (action-required)
-    (field 'bins (arr (tool:bin (tool-spec-bin spec))))))
+  (apply
+    tool:tool
+    (cons*
+      (tool-spec-name spec)
+      (action-required)
+      (list (field 'bins (arr (tool:bin (tool-spec-bin spec))))))))

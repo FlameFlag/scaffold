@@ -7,14 +7,6 @@ use super::{DslError, Result, bundled};
 use scaffold_scheme::{identifier_text, is_identifier, parse_source, proper_list};
 use scheme_rs::syntax::Syntax;
 
-pub(super) fn extension_dirs_for_root(root: &Path) -> Vec<PathBuf> {
-    scaffold_context::extension_dirs_for_root(root)
-}
-
-pub(super) fn extension_dirs_for_catalog_path(catalog_path: &Path) -> Vec<PathBuf> {
-    scaffold_context::extension_dirs_for_catalog_path(catalog_path)
-}
-
 pub(super) fn load_bundled_libraries() -> Result<Vec<SchemeLibrary>> {
     let mut names = HashSet::<Vec<String>>::new();
     let mut libraries = Vec::new();
@@ -35,11 +27,16 @@ pub(super) fn load_bundled_libraries() -> Result<Vec<SchemeLibrary>> {
 }
 
 pub(super) fn load_user_libraries(extension_dirs: &[PathBuf]) -> Result<Vec<SchemeLibrary>> {
-    let mut paths = Vec::new();
     let mut seen_files = HashSet::new();
-    for dir in extension_dirs {
-        collect_scheme_files(dir, &mut paths, &mut seen_files);
-    }
+    let mut paths = extension_dirs
+        .iter()
+        .flat_map(|dir| scaffold_context::scheme_paths(dir))
+        .filter(|path| path.file_name().is_none_or(|name| name != "test.scm"))
+        .filter(|path| {
+            let canonical_path = std::fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
+            seen_files.insert(canonical_path)
+        })
+        .collect::<Vec<_>>();
     paths.sort();
 
     let mut names = HashMap::<Vec<String>, String>::new();
@@ -71,20 +68,6 @@ pub(super) fn load_user_libraries(extension_dirs: &[PathBuf]) -> Result<Vec<Sche
         });
     }
     Ok(libraries)
-}
-
-fn collect_scheme_files(dir: &Path, output: &mut Vec<PathBuf>, seen_files: &mut HashSet<PathBuf>) {
-    for path in scaffold_context::scheme_paths(dir) {
-        if path.file_name().is_none_or(|name| name != "test.scm")
-            && seen_files.insert(canonical_path(&path).unwrap_or_else(|_| path.to_path_buf()))
-        {
-            output.push(path);
-        }
-    }
-}
-
-fn canonical_path(path: &Path) -> std::io::Result<PathBuf> {
-    std::fs::canonicalize(path)
 }
 
 fn looks_like_library_source(source: &str) -> bool {

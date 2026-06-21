@@ -5,7 +5,8 @@
     rpm-ostree/uninstall-argv
     rpm-ostree/package
     rpm-ostree/package-tool
-    rpm-ostree/package-platform)
+    rpm-ostree/package-platform
+    rpm-ostree/packages-platform)
   (import (rnrs) (scaffold catalog base) (scaffold extensions support checks))
 
   (doc-next
@@ -15,8 +16,17 @@
     (param 'package "RPM package names.")
     (returns "Vector argv suitable for a package action `install-argv`."))
 
+  (doc-next
+    (hidden)
+    (summary "Build rpm-ostree install argv from an existing package list."))
+
+  (define (rpm-ostree/install-argv-list packages)
+    (arr/append-list
+      (arr "sudo" "rpm-ostree" "install" "--idempotent" "-y")
+      packages))
+
   (define (rpm-ostree/install-argv . packages)
-    (apply arr "sudo" "rpm-ostree" "install" "--idempotent" "-y" packages))
+    (rpm-ostree/install-argv-list packages))
 
   (doc-next
     (signature "(rpm-ostree/uninstall-argv package ...)")
@@ -26,7 +36,7 @@
     (returns "Vector argv suitable for uninstall metadata."))
 
   (define (rpm-ostree/uninstall-argv . packages)
-    (apply arr "sudo" "rpm-ostree" "uninstall" "-y" packages))
+    (arr/append-list (arr "sudo" "rpm-ostree" "uninstall" "-y") packages))
 
   (doc-next
     (signature "(rpm-ostree/package name field ...)")
@@ -36,23 +46,23 @@
     (returns "A tool with an rpm-ostree package action and `rpm -q` check."))
 
   (define (rpm-ostree/package name . fields)
-    (apply
-      tool
-      name
-      (package
-        (field 'name name)
-        (field 'install-argv (rpm-ostree/install-argv "{{ package }}")))
-      (field 'platforms (arr 'linux))
-      (field 'checks (arr (command/check "rpm" "-q" "{{ package }}")))
-      (field
-        'uninstall
-        (uninstall
-          (field
-            'commands
-            (arr
-              (host/uninstall-command
-                'linux
-                (rpm-ostree/uninstall-argv "{{ package }}"))))))
+    (object/merge
+      (tool
+        name
+        (package
+          (field 'name name)
+          (field 'install-argv (rpm-ostree/install-argv "{{ package }}")))
+        (field 'platforms (arr 'linux))
+        (field 'checks (arr (command/check "rpm" "-q" "{{ package }}")))
+        (field
+          'uninstall
+          (uninstall
+            (field
+              'commands
+              (arr
+                (host/uninstall-command
+                  'linux
+                  (rpm-ostree/uninstall-argv "{{ package }}")))))))
       fields))
 
   (doc-next
@@ -65,24 +75,24 @@
     (param 'field "Additional tool fields that override defaults."))
 
   (define (rpm-ostree/package-tool name package-name bin-name . fields)
-    (apply
-      tool
-      name
-      (package
-        (field 'name package-name)
-        (field 'install-argv (rpm-ostree/install-argv "{{ package }}")))
-      (field 'platforms (arr 'linux))
-      (field 'checks (arr (command/check "rpm" "-q" "{{ package }}")))
-      (field 'bins (arr (bin bin-name)))
-      (field
-        'uninstall
-        (uninstall
-          (field
-            'commands
-            (arr
-              (host/uninstall-command
-                'linux
-                (rpm-ostree/uninstall-argv "{{ package }}"))))))
+    (object/merge
+      (tool
+        name
+        (package
+          (field 'name package-name)
+          (field 'install-argv (rpm-ostree/install-argv "{{ package }}")))
+        (field 'platforms (arr 'linux))
+        (field 'checks (arr (command/check "rpm" "-q" "{{ package }}")))
+        (field 'bins (arr (bin bin-name)))
+        (field
+          'uninstall
+          (uninstall
+            (field
+              'commands
+              (arr
+                (host/uninstall-command
+                  'linux
+                  (rpm-ostree/uninstall-argv "{{ package }}")))))))
       fields))
 
   (doc-next
@@ -92,13 +102,31 @@
     (param 'field "Additional platform fields that override defaults."))
 
   (define (rpm-ostree/package-platform package-name . fields)
-    (apply
-      package/platform
-      'linux
-      (arr "rpm-ostree")
-      (rpm-ostree/install-argv "{{ package }}")
-      (field 'name package-name)
+    (object/merge
+      (package/platform
+        'linux
+        (arr "rpm-ostree")
+        (rpm-ostree/install-argv "{{ package }}")
+        (field 'name package-name))
       fields))
+
+  (doc-next
+    (signature "(rpm-ostree/packages-platform name package-or-field ...)")
+    (summary "Create a named Linux package/platform override for one or more rpm-ostree packages.")
+    (param 'name "Platform rule name.")
+    (param 'package-or-field "RPM package names followed by optional platform fields."))
+
+  (define (rpm-ostree/packages-platform name . options)
+    (call-with-split-fields
+      options
+      (lambda (packages fields)
+        (object/merge
+          (package/platform
+            'linux
+            (arr "rpm-ostree")
+            (rpm-ostree/install-argv-list packages)
+            (field 'name name))
+          fields))))
 
   (moduledoc
     (summary "rpm-ostree package helpers for image-based Fedora systems.")

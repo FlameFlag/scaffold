@@ -1,6 +1,6 @@
 (library
   (scaffold config vector)
-  (export arr vector/map vector/append arr/append-list arr/prepend-list)
+  (export arr list->arr vector/map vector/append arr/append-list arr/prepend-list)
   (import (rnrs) (scaffold core vector) (scaffold core doc))
 
   (moduledoc (summary "Focused facade for Scaffold vector helpers.") (group "Vectors"))
@@ -14,6 +14,10 @@
     (summary "Create a Scaffold vector value.")
     (param 'value "Values to store in order.")
     (returns "A Scheme vector that serializes as a JSON array."))
+
+  (extern-doc list->arr
+    (signature "(list->arr values)")
+    (summary "Convert a Scheme list into a Scaffold vector value."))
 
   (extern-doc vector/map
     (signature "(vector/map proc values)")

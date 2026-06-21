@@ -14,12 +14,12 @@
     (returns "A required catalog tool constrained to macOS."))
 
   (define (macos/command-tool command . fields)
-    (apply
-      tool
-      command
-      (required)
-      (field 'platforms (arr 'macos))
-      (field 'bins (arr (bin command)))
+    (object/merge
+      (tool
+        command
+        (required)
+        (field 'platforms (arr 'macos))
+        (field 'bins (arr (bin command))))
       fields))
 
   (doc-next

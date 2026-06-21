@@ -1,7 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
 use petgraph::Direction;
-use petgraph::algo::toposort;
 use petgraph::graphmap::DiGraphMap;
 use scaffold_catalog::{Catalog, Phase, Tool};
 
@@ -13,10 +12,8 @@ fn validate_requested_tools(catalog: &Catalog, names: &[String]) -> Result<(), I
         .iter()
         .map(|tool| tool.name.as_str())
         .collect::<HashSet<_>>();
-    for name in names {
-        if !available.contains(name.as_str()) {
-            return Err(InstallError::MissingNamedTool(name.clone()));
-        }
+    if let Some(name) = names.iter().find(|name| !available.contains(name.as_str())) {
+        return Err(InstallError::MissingNamedTool(name.clone()));
     }
     Ok(())
 }
@@ -83,10 +80,6 @@ pub(super) fn resolve_install_order<'a>(
         }
     }
 
-    if toposort(&graph, None).is_err() {
-        return Err(InstallError::CyclicInstallOrder);
-    }
-
     let mut indegree = graph
         .nodes()
         .map(|index| {
@@ -121,7 +114,7 @@ pub(super) fn resolve_install_order<'a>(
         }
     }
     if ordered.len() != selected.len() {
-        return Err(InstallError::InvalidInstallOrderGraph);
+        return Err(InstallError::CyclicInstallOrder);
     }
 
     Ok(ordered

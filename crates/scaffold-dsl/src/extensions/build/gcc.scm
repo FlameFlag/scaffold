@@ -21,14 +21,16 @@
     (summary "Build argv for `gcc -c` object compilation."))
 
   (define (gcc/object-argv source output . flags)
-    (vector/append (arr "gcc" "-c" source "-o" output) (list->vector flags)))
+    (arr/append-list (arr "gcc" "-c" source "-o" output) flags))
 
   (doc-next
     (signature "(gcc/tool field ...)")
     (summary "Create a required host GCC tool descriptor."))
 
   (define (gcc/tool . fields)
-    (apply tool "gcc" (required) (field 'bins (arr (bin/version "gcc"))) fields))
+    (object/merge
+      (tool "gcc" (required) (field 'bins (arr (bin/version "gcc"))))
+      fields))
 
   (doc-next
     (signature "(gcc/c-tool name path source field ...)")
@@ -36,18 +38,18 @@
       "Create a build action that compiles one C source into the Scaffold prefix."))
 
   (define (gcc/c-tool name path source . fields)
-    (apply
-      tool
-      name
-      (build
-        (field 'path path)
-        (field
-          'argv
-          (gcc/compile-argv
-            (string-append "{{ prefix }}/bin/" name)
-            (arr (string-append "{{ source_dir }}/" source))
-            (arr "-O2"))))
-      (field 'bins (arr (bin name)))
+    (object/merge
+      (tool
+        name
+        (build
+          (field 'path path)
+          (field
+            'argv
+            (gcc/compile-argv
+              (string-append "{{ prefix }}/bin/" name)
+              (arr (string-append "{{ source_dir }}/" source))
+              (arr "-O2"))))
+        (field 'bins (arr (bin name))))
       fields))
 
   (moduledoc

@@ -1,3 +1,3 @@
-(import (rnrs) (software-packaging catalog))
+(import (rnrs) (examples catalog))
 
-(software-packaging/catalog)
+(examples/catalog)

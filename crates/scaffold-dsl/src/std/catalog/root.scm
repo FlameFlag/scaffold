@@ -1,6 +1,6 @@
 (library
   (scaffold catalog root)
-  (export catalog catalog/tool required/tool)
+  (export catalog catalog/from-lists tool-list/from-lists catalog/tool required/tool)
   (import (rnrs) (scaffold config))
 
   (doc-next
@@ -11,7 +11,38 @@
       "Tool objects produced by `tool`, `required/tool`, or extension helpers.")
     (returns "An object with a `tools` vector ready for Scaffold catalog output."))
 
-  (define (catalog . tools) (object (field 'tools (list->vector tools))))
+  (define (catalog . tools) (object (field 'tools (list->arr tools))))
+
+  (doc-next
+    (signature "(catalog/from-lists tool-list ...)")
+    (summary "Build a catalog by appending multiple Scheme lists of tool objects.")
+    (param
+      'tool-list
+      "A Scheme list of tool objects, such as the result of a grouped `*/tools` helper.")
+    (returns "An object with a `tools` vector containing every tool in order.")
+    (markdown
+      "Use this when catalogs are organized into modules that each return a list of tools. It avoids the usual `(apply catalog (append ...))` boilerplate while preserving list order.")
+    (example
+      "(catalog/from-lists\n  (prerequisites/tools)\n  (ecosystem/tools)\n  (apps/tools))")
+    (see 'catalog))
+
+  (define (catalog/from-lists . tool-lists)
+    (object (field 'tools (list->arr (fold-right append '() tool-lists)))))
+
+  (doc-next
+    (signature "(tool-list/from-lists tool-list ...)")
+    (summary "Append grouped Scheme lists of tool objects into one tool list.")
+    (param
+      'tool-list
+      "A Scheme list of tool objects, such as the result of a grouped `*/tools` helper.")
+    (returns "A Scheme list containing every tool in order.")
+    (markdown
+      "Use this inside catalog library modules that return lists of tools. It is the list-returning companion to `catalog/from-lists`.")
+    (example
+      "(define (desktop/tools)\n  (tool-list/from-lists\n    (terminal/tools)\n    (editor/tools)))")
+    (see 'catalog/from-lists))
+
+  (define (tool-list/from-lists . tool-lists) (fold-right append '() tool-lists))
 
   (doc-next
     (signature "(catalog/tool name action field ...)")

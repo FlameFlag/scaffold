@@ -1,4 +1,9 @@
 use serde_json::{Value, json};
+use strum::VariantNames as _;
+
+use scaffold_platform::{HostArch, HostOs};
+
+use crate::{Action, Phase};
 
 #[must_use]
 pub fn catalog_schema() -> Value {
@@ -28,10 +33,10 @@ pub fn catalog_schema() -> Value {
             object_schema("required_action", REQUIRED_ACTION_FIELDS, &["type"]),
         ],
         "enums": {
-            "action_type": ["archive", "build", "package", "required"],
-            "host_os": ["linux", "macos", "windows"],
-            "host_arch": ["aarch64", "x86_64"],
-            "phase": ["prerequisites", "packages", "builds"]
+            "action_type": Action::VARIANTS,
+            "host_os": HostOs::VARIANTS,
+            "host_arch": HostArch::VARIANTS,
+            "phase": Phase::VARIANTS
         },
         "relationships": [
             {

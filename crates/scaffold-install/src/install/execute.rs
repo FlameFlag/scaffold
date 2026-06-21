@@ -8,7 +8,8 @@ use scaffold_process as process;
 use scaffold_template as template;
 
 use super::bindings::ToolBindings;
-use super::presence::{tool_is_present, tool_is_present_after_install};
+use super::presence::tool_is_present;
+use super::report::command_detail;
 use super::{InstallError, InstallEvent, InstallEventKind, InstallReporter, Policy};
 
 pub(super) fn install_tool(
@@ -62,7 +63,7 @@ pub(super) fn install_tool(
                 reporter.report(InstallEvent::new(
                     &tool.name,
                     InstallEventKind::Run,
-                    argv.join(" "),
+                    command_detail(&argv),
                 ));
                 process::run(&argv)?;
             }
@@ -86,7 +87,7 @@ pub(super) fn install_tool(
                 reporter.report(InstallEvent::new(
                     &tool.name,
                     InstallEventKind::Run,
-                    argv.join(" "),
+                    command_detail(&argv),
                 ));
                 process::run_in(Some(&source_dir), &argv)?;
             }
@@ -108,7 +109,7 @@ pub(super) fn install_tool(
         }
     }?;
 
-    if tool.verify_after_install && !tool_is_present_after_install(ctx, tool)? {
+    if tool.verify_after_install && !tool_is_present(ctx, tool) {
         return Err(InstallError::VerificationFailed {
             tool: tool.name.clone(),
         });

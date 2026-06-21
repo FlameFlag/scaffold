@@ -62,29 +62,17 @@
     (returns "A tool with a build action that runs `cargo install`."))
 
   (define (cargo/tool name path . fields)
-    (apply
-      tool
-      name
-      (build
-        (field 'path path)
-        (field 'argv (cargo/install-argv "{{ source_dir }}" (arr))))
-      (field
-        'uninstall
-        (uninstall
-          (field 'commands (arr (uninstall/command (cargo/uninstall-argv name))))))
+    (object/merge
+      (tool
+        name
+        (build
+          (field 'path path)
+          (field 'argv (cargo/install-argv "{{ source_dir }}" (arr))))
+        (field
+          'uninstall
+          (uninstall
+            (field 'commands (arr (uninstall/command (cargo/uninstall-argv name)))))))
       fields))
-
-  (doc-next
-    (hidden)
-    (summary "Split Cargo crate helper options into install flags and object fields."))
-
-  (define (cargo/crate-options options)
-    (let loop
-      ((rest options) (flags '()) (fields '()))
-      (cond
-        ((null? rest) (cons (reverse flags) (reverse fields)))
-        ((pair? (car rest)) (loop (cdr rest) flags (cons (car rest) fields)))
-        (else (loop (cdr rest) (cons (car rest) flags) fields)))))
 
   (doc-next
     (signature "(cargo/crate-tool name crate bin-name option ...)")
@@ -97,26 +85,25 @@
       "Additional cargo install flags or tool fields. Field values are applied after defaults."))
 
   (define (cargo/crate-tool name crate bin-name . options)
-    (let*
-      ((parsed (cargo/crate-options options))
-        (flags (car parsed))
-        (fields (cdr parsed)))
-      (apply
-        tool
-        name
-        (package
-          (field 'name crate)
-          (field
-            'install-argv
-            (cargo/crate-install-argv "{{ package }}" (list->vector flags))))
-        (field 'bins (arr (bin bin-name)))
-        (field
-          'uninstall
-          (uninstall
+    (call-with-split-fields
+      options
+      (lambda (flags fields)
+        (object/merge
+          (tool
+            name
+            (package
+              (field 'name crate)
+              (field
+                'install-argv
+                (cargo/crate-install-argv "{{ package }}" (arr/append-list (arr) flags))))
+            (field 'bins (arr (bin bin-name)))
             (field
-              'commands
-              (arr (uninstall/command (cargo/uninstall-argv "{{ package }}"))))))
-        fields)))
+              'uninstall
+              (uninstall
+                (field
+                  'commands
+                  (arr (uninstall/command (cargo/uninstall-argv "{{ package }}")))))))
+          fields))))
 
   (doc-next
     (signature "(cargo/crate-platform predicate crate option ...)")
@@ -129,17 +116,16 @@
       "Additional cargo install flags or package platform fields. Field values are applied after defaults."))
 
   (define (cargo/crate-platform predicate-value crate . options)
-    (let*
-      ((parsed (cargo/crate-options options))
-        (flags (car parsed))
-        (fields (cdr parsed)))
-      (apply
-        package/platform
-        predicate-value
-        (arr "cargo")
-        (cargo/crate-install-argv "{{ package }}" (list->vector flags))
-        (field 'name crate)
-        fields)))
+    (call-with-split-fields
+      options
+      (lambda (flags fields)
+        (object/merge
+          (package/platform
+            predicate-value
+            (arr "cargo")
+            (cargo/crate-install-argv "{{ package }}" (arr/append-list (arr) flags))
+            (field 'name crate))
+          fields))))
 
   (moduledoc
     (summary "Cargo helpers for Rust tools installed from source or published crates.")

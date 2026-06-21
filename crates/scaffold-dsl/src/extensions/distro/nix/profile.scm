@@ -13,18 +13,17 @@
     (summary "Build argv for `nix profile add`.")
     (param 'package-ref "Installable refs; defaults to `{{ package }}` when omitted."))
 
-  (define (nix/profile-add-argv . package-refs)
-    (arr/append-list
-      (nix/argv "profile" "add")
-      (if (null? package-refs) (list "{{ package }}") package-refs)))
+  (define nix/profile-add-argv
+    (case-lambda
+      (() (nix/profile-add-argv "{{ package }}"))
+      (package-refs (arr/append-list (nix/argv "profile" "add") package-refs))))
 
   (doc-next
     (signature "(nix/profile-install-argv package-ref ...)")
     (summary "Build argv for `nix profile install`, an alias of `nix profile add`.")
     (param 'package-ref "Installable refs; defaults to `{{ package }}` when omitted."))
 
-  (define (nix/profile-install-argv . package-refs)
-    (apply nix/profile-add-argv package-refs))
+  (define nix/profile-install-argv nix/profile-add-argv)
 
   (doc-next
     (signature "(nix/profile-remove-argv name ...)")
@@ -42,14 +41,14 @@
     (returns "A tool with a package action and Nix profile uninstall metadata."))
 
   (define (nix/profile-package name package-ref . fields)
-    (apply
-      tool
-      name
-      (package (field 'name package-ref) (field 'install-argv (nix/profile-add-argv)))
-      (field
-        'uninstall
-        (uninstall
-          (field 'commands (arr (uninstall/command (nix/profile-remove-argv name))))))
+    (object/merge
+      (tool
+        name
+        (package (field 'name package-ref) (field 'install-argv (nix/profile-add-argv)))
+        (field
+          'uninstall
+          (uninstall
+            (field 'commands (arr (uninstall/command (nix/profile-remove-argv name)))))))
       fields))
 
   (doc-next
@@ -60,12 +59,12 @@
     (param 'field "Additional platform fields that override defaults."))
 
   (define (nix/profile-platform predicate-value package-ref . fields)
-    (apply
-      package/platform
-      predicate-value
-      (arr "nix")
-      (nix/profile-add-argv "{{ package }}")
-      (field 'name package-ref)
+    (object/merge
+      (package/platform
+        predicate-value
+        (arr "nix")
+        (nix/profile-add-argv "{{ package }}")
+        (field 'name package-ref))
       fields))
 
   (moduledoc

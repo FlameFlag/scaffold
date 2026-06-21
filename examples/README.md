@@ -1,18 +1,21 @@
-# Software Packaging Example
+# Scaffold Examples
 
-This example shows how Scaffold can describe a small mixed packaging setup:
+This folder is a compact tour of a real Scaffold catalog. The examples are
+split into small modules so each file shows one idea clearly instead of hiding
+everything in one large scenario.
 
-- build a minimal Git from source for Linux, macOS, and Windows
-- download MSYS2 and its MinGW-w64 compiler packages for Windows Git builds
-- install VS Code from native package/application installers
-- create Arch, Fedora, and Debian Distrobox environments
-- install native packages inside each Distrobox with `pacman`, `dnf`, or `apt`
-- install shared CLI tools inside each Distrobox with `nix profile install`
-- add Bun and uv managed tools.
+## Layout
 
-The example is intentionally declarative. Running validation does not install
-Git, VS Code, or containers. It only proves the catalog evaluates, validates,
-and produces the expected argv shapes.
+- [`catalog.scm`](catalog.scm) is the root catalog entry point.
+- [`test.scm`](test.scm) contains pure assertions for the example helpers.
+- [`extensions/examples/catalog.scm`](extensions/examples/catalog.scm) composes
+  the focused tool groups into the root catalog.
+- [`extensions/examples/tools/`](extensions/examples/tools/) contains focused
+  tool groups.
+- [`extensions/examples/targets/distrobox.scm`](extensions/examples/targets/distrobox.scm)
+  shows how to derive wrapped tools with catalog transformations.
+- [`sources/hello/`](sources/hello/) is a tiny source tree used by the workspace
+  build example.
 
 ## Validate
 
@@ -21,32 +24,30 @@ From the repository root:
 ```sh
 cargo run -- --catalog examples/catalog.scm list
 cargo run -- --catalog examples/catalog.scm test
-cargo run -- fmt --check examples/catalog.scm examples/test.scm examples/extensions/software-packaging/catalog.scm examples/extensions/software-packaging/*/*.scm
+cargo run -- fmt --check examples/catalog.scm examples/test.scm examples/extensions/**/*.scm
 ```
 
-You can also run the Docker validation harness from the repository root:
+The tests do not install anything. They validate that the catalog evaluates and
+that key generated argv shapes stay stable.
+
+## Try Individual Tools
+
+List the example catalog:
 
 ```sh
-docker build -t scaffold-packaging-example .
-docker compose build packaging-example
+cargo run -- --catalog examples/catalog.scm list
 ```
 
-## Preparing Git Sources
-
-The Git build tools point at `examples/sources/git`. Populate
-that directory before actually running the source build actions:
+Install a specific tool when you are on a machine where the install action makes
+sense:
 
 ```sh
-examples/scripts/fetch-git-source.sh
+cargo run -- --catalog examples/catalog.scm install ripgrep
+cargo run -- --catalog examples/catalog.scm install prettier
 ```
 
-Pass a version to fetch a specific upstream release:
+Inspect paths and discovered local extension modules:
 
 ```sh
-examples/scripts/fetch-git-source.sh 2.45.2
+cargo run -- --catalog examples/catalog.scm paths --sources
 ```
-
-The Windows source build depends on the `mingw-w64-toolchain` example tool. That
-tool installs MSYS2 with WinGet, then uses MSYS2 `pacman` to download the
-MinGW-w64 compiler and Git build dependencies before running the Git build
-through `C:/msys64/usr/bin/bash.exe`.

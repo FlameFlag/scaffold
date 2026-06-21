@@ -118,7 +118,7 @@ fn extract_tar<R: Read>(
         let Some(path) = stripped_relative_path(&path, strip_components)? else {
             continue;
         };
-        let target = safe_join(destination, &path)?;
+        let target = destination.join(path);
         let entry_type = entry.header().entry_type();
         if entry_type.is_dir() {
             std::fs::create_dir_all(&target)?;
@@ -149,7 +149,7 @@ fn extract_zip(
         let Some(path) = stripped_relative_path(&path, strip_components)? else {
             continue;
         };
-        let target = safe_join(destination, &path)?;
+        let target = destination.join(path);
         if entry.is_dir() {
             std::fs::create_dir_all(&target)?;
         } else {
@@ -226,37 +226,26 @@ fn stripped_relative_path(
     path: &Path,
     strip_components: usize,
 ) -> Result<Option<PathBuf>, ArchiveError> {
-    let mut parts = Vec::new();
-    for component in path.components() {
-        match component {
-            Component::Normal(part) => parts.push(part.to_owned()),
-            Component::CurDir => {}
-            _ => {
-                return Err(ArchiveError::UnsafePath {
-                    path: path.to_path_buf(),
-                });
+    let (_, stripped) = path.components().try_fold(
+        (0, PathBuf::new()),
+        |(normal_count, mut stripped), component| match component {
+            Component::Normal(part) => {
+                if normal_count >= strip_components {
+                    stripped.push(part);
+                }
+                Ok((normal_count + 1, stripped))
             }
-        }
-    }
-
-    if parts.len() <= strip_components {
+            Component::CurDir => Ok((normal_count, stripped)),
+            _ => Err(ArchiveError::UnsafePath {
+                path: path.to_path_buf(),
+            }),
+        },
+    )?;
+    if stripped.as_os_str().is_empty() {
         return Ok(None);
     }
 
-    Ok(Some(parts.into_iter().skip(strip_components).collect()))
-}
-
-fn safe_join(destination: &Path, path: &Path) -> Result<PathBuf, ArchiveError> {
-    if path.as_os_str().is_empty()
-        || path
-            .components()
-            .any(|component| !matches!(component, Component::Normal(_)))
-    {
-        return Err(ArchiveError::UnsafePath {
-            path: path.to_path_buf(),
-        });
-    }
-    Ok(destination.join(path))
+    Ok(Some(stripped))
 }
 
 #[cfg(test)]

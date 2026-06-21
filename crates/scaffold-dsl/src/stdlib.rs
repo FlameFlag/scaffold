@@ -292,22 +292,23 @@ pub(crate) const fn rust_backed_capabilities() -> &'static [CapabilityDescriptor
 }
 
 pub(super) fn core_documentation_sources() -> Vec<DocumentationSource> {
-    let mut sources = SCAFFOLD_CORE_STDLIB
+    SCAFFOLD_CORE_STDLIB
         .iter()
         .map(|library| DocumentationSource {
             path: library.path,
             source: library.source,
         })
-        .collect::<Vec<_>>();
-    sources.push(DocumentationSource {
-        path: "src/dsl/std/host.scm",
-        source: include_str!("std/host.scm"),
-    });
-    sources.push(DocumentationSource {
-        path: "src/dsl/std/workspace.scm",
-        source: include_str!("std/workspace.scm"),
-    });
-    sources
+        .chain([
+            DocumentationSource {
+                path: "src/dsl/std/host.scm",
+                source: include_str!("std/host.scm"),
+            },
+            DocumentationSource {
+                path: "src/dsl/std/workspace.scm",
+                source: include_str!("std/workspace.scm"),
+            },
+        ])
+        .collect()
 }
 
 pub(super) fn import_policy(

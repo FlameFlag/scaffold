@@ -1,6 +1,10 @@
 use std::collections::BTreeMap;
 
+use scaffold_platform::{HostArch, HostOs, parse_predicate};
 use serde_json::Value;
+use strum::VariantNames as _;
+
+use crate::Phase;
 
 mod description;
 mod relationships;
@@ -197,28 +201,18 @@ fn validate_predicate(value: &Value, path: &str) -> Result<(), String> {
     let object = expect_object(value, path)?;
     unknown_fields(object, path, PREDICATE_FIELDS)?;
     if let Some(os) = object.get("os") {
-        validate_one_of(os, &format!("{path}.os"), &["linux", "macos", "windows"])?;
+        validate_one_of(os, &format!("{path}.os"), HostOs::VARIANTS)?;
     }
     if let Some(arch) = object.get("arch") {
-        validate_one_of(arch, &format!("{path}.arch"), &["aarch64", "x86_64"])?;
+        validate_one_of(arch, &format!("{path}.arch"), HostArch::VARIANTS)?;
     }
     Ok(())
 }
 
 fn validate_short_predicate(value: &str, path: &str) -> Result<(), String> {
-    let (os, arch) = value
-        .split_once('-')
-        .map_or((value, None), |(os, arch)| (os, Some(arch)));
-    match os {
-        "linux" | "macos" | "darwin" | "windows" | "win32" => {}
-        _ => return Err(format!("{path} has unknown host OS predicate {os:?}")),
-    }
-    match arch {
-        None | Some("aarch64" | "arm64" | "x86_64" | "amd64" | "x64") => Ok(()),
-        Some(arch) => Err(format!(
-            "{path} has unknown host architecture predicate {arch:?}"
-        )),
-    }
+    parse_predicate(value)
+        .map(drop)
+        .map_err(|message| format!("{path} has {message}"))
 }
 
 fn validate_array_of_objects(
@@ -227,14 +221,7 @@ fn validate_array_of_objects(
     path: &str,
     validate: fn(&Value, &str) -> Result<(), String>,
 ) -> Result<(), String> {
-    let Some(values) = object.get(field) else {
-        return Ok(());
-    };
-    let values = expect_array(values, &format!("{path}.{field}"))?;
-    for (index, value) in values.iter().enumerate() {
-        validate(value, &format!("{path}.{field}[{index}]"))?;
-    }
-    Ok(())
+    validate_optional_array_items(object, field, path, validate)
 }
 
 fn validate_optional_predicate_array(
@@ -242,14 +229,7 @@ fn validate_optional_predicate_array(
     field: &str,
     path: &str,
 ) -> Result<(), String> {
-    let Some(values) = object.get(field) else {
-        return Ok(());
-    };
-    let values = expect_array(values, &format!("{path}.{field}"))?;
-    for (index, value) in values.iter().enumerate() {
-        validate_predicate(value, &format!("{path}.{field}[{index}]"))?;
-    }
-    Ok(())
+    validate_optional_array_items(object, field, path, validate_predicate)
 }
 
 fn validate_optional_string_array(
@@ -257,14 +237,7 @@ fn validate_optional_string_array(
     field: &str,
     path: &str,
 ) -> Result<(), String> {
-    let Some(values) = object.get(field) else {
-        return Ok(());
-    };
-    let values = expect_array(values, &format!("{path}.{field}"))?;
-    for (index, value) in values.iter().enumerate() {
-        let _item = expect_string(value, &format!("{path}.{field}[{index}]"))?;
-    }
-    Ok(())
+    validate_optional_array_items(object, field, path, validate_string)
 }
 
 fn validate_optional_argv(
@@ -272,10 +245,7 @@ fn validate_optional_argv(
     field: &str,
     path: &str,
 ) -> Result<(), String> {
-    if let Some(value) = object.get(field) {
-        validate_argv(value, &format!("{path}.{field}"))?;
-    }
-    Ok(())
+    validate_optional_field(object, field, path, validate_argv)
 }
 
 fn validate_optional_argvs(
@@ -283,12 +253,21 @@ fn validate_optional_argvs(
     field: &str,
     path: &str,
 ) -> Result<(), String> {
+    validate_optional_array_items(object, field, path, validate_argv)
+}
+
+fn validate_optional_array_items(
+    object: &serde_json::Map<String, Value>,
+    field: &str,
+    path: &str,
+    mut validate: impl FnMut(&Value, &str) -> Result<(), String>,
+) -> Result<(), String> {
     let Some(value) = object.get(field) else {
         return Ok(());
     };
     let values = expect_array(value, &format!("{path}.{field}"))?;
     for (index, value) in values.iter().enumerate() {
-        validate_argv(value, &format!("{path}.{field}[{index}]"))?;
+        validate(value, &format!("{path}.{field}[{index}]"))?;
     }
     Ok(())
 }
@@ -309,10 +288,7 @@ fn validate_optional_string(
     field: &str,
     path: &str,
 ) -> Result<(), String> {
-    if let Some(value) = object.get(field) {
-        let _value = expect_string(value, &format!("{path}.{field}"))?;
-    }
-    Ok(())
+    validate_optional_field(object, field, path, validate_string)
 }
 
 fn validate_optional_bool(
@@ -320,12 +296,7 @@ fn validate_optional_bool(
     field: &str,
     path: &str,
 ) -> Result<(), String> {
-    if let Some(value) = object.get(field)
-        && !value.is_boolean()
-    {
-        return Err(format!("{path}.{field} must be a boolean"));
-    }
-    Ok(())
+    validate_optional_field(object, field, path, validate_bool)
 }
 
 fn validate_optional_i64(
@@ -333,12 +304,7 @@ fn validate_optional_i64(
     field: &str,
     path: &str,
 ) -> Result<(), String> {
-    if let Some(value) = object.get(field)
-        && value.as_i64().is_none()
-    {
-        return Err(format!("{path}.{field} must be an integer"));
-    }
-    Ok(())
+    validate_optional_field(object, field, path, validate_i64)
 }
 
 fn validate_optional_usize(
@@ -346,12 +312,7 @@ fn validate_optional_usize(
     field: &str,
     path: &str,
 ) -> Result<(), String> {
-    if let Some(value) = object.get(field)
-        && value.as_u64().is_none()
-    {
-        return Err(format!("{path}.{field} must be a non-negative integer"));
-    }
-    Ok(())
+    validate_optional_field(object, field, path, validate_usize)
 }
 
 fn validate_optional_phase(
@@ -359,14 +320,21 @@ fn validate_optional_phase(
     field: &str,
     path: &str,
 ) -> Result<(), String> {
-    if let Some(value) = object.get(field) {
-        validate_one_of(
-            value,
-            &format!("{path}.{field}"),
-            &["prerequisites", "packages", "builds"],
-        )?;
-    }
-    Ok(())
+    validate_optional_field(object, field, path, |value, value_path| {
+        validate_one_of(value, value_path, Phase::VARIANTS)
+    })
+}
+
+fn validate_optional_field(
+    object: &serde_json::Map<String, Value>,
+    field: &str,
+    path: &str,
+    validate: impl FnOnce(&Value, &str) -> Result<(), String>,
+) -> Result<(), String> {
+    let Some(value) = object.get(field) else {
+        return Ok(());
+    };
+    validate(value, &format!("{path}.{field}"))
 }
 
 fn validate_one_of(value: &Value, path: &str, allowed: &[&str]) -> Result<(), String> {
@@ -415,6 +383,31 @@ fn expect_string<'a>(value: &'a Value, path: &str) -> Result<&'a str, String> {
     value
         .as_str()
         .ok_or_else(|| format!("{path} must be a string"))
+}
+
+fn validate_string(value: &Value, path: &str) -> Result<(), String> {
+    expect_string(value, path).map(drop)
+}
+
+fn validate_bool(value: &Value, path: &str) -> Result<(), String> {
+    value
+        .as_bool()
+        .map(drop)
+        .ok_or_else(|| format!("{path} must be a boolean"))
+}
+
+fn validate_i64(value: &Value, path: &str) -> Result<(), String> {
+    value
+        .as_i64()
+        .map(drop)
+        .ok_or_else(|| format!("{path} must be an integer"))
+}
+
+fn validate_usize(value: &Value, path: &str) -> Result<(), String> {
+    value
+        .as_u64()
+        .map(drop)
+        .ok_or_else(|| format!("{path} must be a non-negative integer"))
 }
 
 fn unknown_fields(

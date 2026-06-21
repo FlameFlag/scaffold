@@ -47,6 +47,24 @@ fn action_and_phase_labels_are_stable_lowercase_values() {
 }
 
 #[test]
+fn tool_bin_names_preserve_catalog_bin_names() {
+    let catalog = Catalog::from_value(serde_json::json!({
+        "tools": [{
+            "name": "demo",
+            "bins": [{ "name": "demo" }, { "name": "democtl" }],
+            "action": { "type": "required" }
+        }]
+    }))
+    .expect("catalog");
+
+    assert_eq!(
+        catalog.tools[0].bin_names().collect::<Vec<_>>(),
+        vec!["demo", "democtl"]
+    );
+    assert_eq!(catalog.tools[0].bin_summary(), "demo, democtl");
+}
+
+#[test]
 fn loads_extension_composition_fixture() {
     let value = scaffold_dsl::catalog_value_from_str(include_str!(
         "../../scaffold-dsl/src/fixtures/extensions/composed-catalog.scm"
@@ -100,11 +118,6 @@ fn build_actions_support_multiple_commands() {
 #[test]
 fn package_platforms_support_multiple_install_commands() {
     let host = Host::current();
-    let host_os = match host.os {
-        HostOs::Linux => "linux",
-        HostOs::Macos => "macos",
-        HostOs::Windows => "windows",
-    };
     let value = serde_json::json!({
         "tools": [{
             "name": "multi-platform",
@@ -112,7 +125,7 @@ fn package_platforms_support_multiple_install_commands() {
                 "type": "package",
                 "name": "fallback-package",
                 "platforms": [{
-                    "when": host_os,
+                    "when": host.os.label(),
                     "name": "platform-package",
                     "install_argvs": [
                         ["pkg", "prepare", "{{ package }}"],
@@ -129,6 +142,38 @@ fn package_platforms_support_multiple_install_commands() {
     };
     let package = action.for_host(host).expect("platform package");
     assert_eq!(package.name, "platform-package");
+    assert_eq!(package.install_argvs.len(), 2);
+    assert_eq!(
+        package.install_argvs[0],
+        ["pkg", "prepare", "{{ package }}"]
+    );
+    assert_eq!(
+        package.install_argvs[1],
+        ["pkg", "install", "{{ package }}"]
+    );
+}
+
+#[test]
+fn package_actions_support_multiple_fallback_install_commands() {
+    let value = serde_json::json!({
+        "tools": [{
+            "name": "multi-package",
+            "action": {
+                "type": "package",
+                "install_argvs": [
+                    ["pkg", "prepare", "{{ package }}"],
+                    ["pkg", "install", "{{ package }}"]
+                ]
+            }
+        }]
+    });
+    let catalog = Catalog::from_value(value).expect("catalog");
+
+    let super::Action::Package(action) = &catalog.tools[0].action else {
+        panic!("package action");
+    };
+    let package = action.for_host(Host::current()).expect("fallback package");
+    assert_eq!(package.name, "multi-package");
     assert_eq!(package.install_argvs.len(), 2);
     assert_eq!(
         package.install_argvs[0],
@@ -179,18 +224,13 @@ fn package_platforms_infer_tool_platforms() {
 #[test]
 fn package_platform_support_requires_matching_installer() {
     let host = Host::current();
-    let host_os = match host.os {
-        HostOs::Linux => "linux",
-        HostOs::Macos => "macos",
-        HostOs::Windows => "windows",
-    };
     let value = serde_json::json!({
         "tools": [{
             "name": "native",
             "action": {
                 "type": "package",
                 "platforms": [{
-                    "when": host_os,
+                    "when": host.os.label(),
                     "requires_commands": ["definitely-not-a-real-scaffold-installer"],
                     "install_argv": ["definitely-not-a-real-scaffold-installer", "install"]
                 }]

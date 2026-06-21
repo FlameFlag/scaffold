@@ -15,26 +15,26 @@
     (signature "(powershell/tool field ...)")
     (summary "Create a required descriptor for legacy Windows PowerShell `powershell`."))
 
-  (define (powershell/tool . fields) (apply windows/command-tool "powershell" fields))
+  (define powershell/tool (windows/command-tool-proc "powershell"))
 
   (doc-next
     (signature "(pwsh/tool field ...)")
     (summary
       "Create a required descriptor for modern cross-platform PowerShell `pwsh`."))
 
-  (define (pwsh/tool . fields) (apply windows/command-tool "pwsh" fields))
+  (define pwsh/tool (windows/command-tool-proc "pwsh"))
 
   (doc-next
     (signature "(cmd/tool field ...)")
     (summary "Create a required descriptor for `cmd`."))
 
-  (define (cmd/tool . fields) (apply windows/command-tool "cmd" fields))
+  (define cmd/tool (windows/command-tool-proc "cmd"))
 
   (doc-next
     (signature "(where/tool field ...)")
     (summary "Create a required descriptor for command lookup tool `where`."))
 
-  (define (where/tool . fields) (apply windows/command-tool "where" fields))
+  (define where/tool (windows/command-tool-proc "where"))
 
   (doc-next
     (summary

@@ -14,13 +14,13 @@
     (see 'required))
 
   (define (tool name action-value . fields)
-    (apply object (field 'name name) (field 'action action-value) fields))
+    (cons* (field 'name name) (field 'action action-value) fields))
 
   (doc-next
     (signature "(inherit base field ...)")
     (summary "Derive a tool object by replacing fields on an existing tool."))
 
-  (define (inherit base . fields) (apply object/inherit base fields))
+  (define inherit object/inherit)
 
   (doc-next
     (summary "Derive a tool from overrides computed from the existing tool object.")
@@ -36,19 +36,19 @@
     (summary "Append binary descriptors to an object's `bins` vector."))
 
   (define (tool/append-bins obj . bins)
-    (object/append-field-vector obj 'bins (list->vector bins)))
+    (object/append-field-vector obj 'bins (list->arr bins)))
 
   (doc-next
     (signature "(bin name field ...)")
     (summary "Describe a binary exposed by an installed tool."))
 
-  (define (bin name . fields) (apply object (field 'name name) fields))
+  (define (bin name . fields) (cons* (field 'name name) fields))
 
   (doc-next
     (signature "(bin/version name argv ...)")
     (summary "Describe a binary whose version can be queried by running the binary."))
 
   (define (bin/version name . argv)
-    (bin name (field 'version-argv (list->vector (cons name argv)))))
+    (bin name (field 'version-argv (arr/append-list (arr name) argv))))
 
   (moduledoc (summary "Catalog tool and binary constructors.") (group "Catalog")))

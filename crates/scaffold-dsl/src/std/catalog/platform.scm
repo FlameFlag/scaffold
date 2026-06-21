@@ -8,14 +8,14 @@
     (summary "Create an OS/architecture predicate for platform-specific catalog data."))
 
   (define (predicate os arch . fields)
-    (apply object (field 'os os) (field 'arch arch) fields))
+    (cons* (field 'os os) (field 'arch arch) fields))
 
   (doc-next
     (signature "(platform/package predicate field ...)")
     (summary "Create a platform-specific package override."))
 
   (define (platform/package predicate-value . fields)
-    (apply object (field 'when predicate-value) fields))
+    (cons* (field 'when predicate-value) fields))
 
   (doc-next
     (summary "Describe a platform-specific path where a tool may already exist."))
@@ -28,9 +28,8 @@
     (summary "Create a platform-specific package install rule with required commands."))
 
   (define (package/platform predicate-value requires install-argv . fields)
-    (apply
-      platform/package
-      predicate-value
+    (cons*
+      (field 'when predicate-value)
       (field 'requires-commands requires)
       (field 'install-argv install-argv)
       fields))
@@ -44,9 +43,8 @@
     (param 'field "Additional platform fields."))
 
   (define (package/platform-argvs predicate-value requires install-argvs . fields)
-    (apply
-      platform/package
-      predicate-value
+    (cons*
+      (field 'when predicate-value)
       (field 'requires-commands requires)
       (field 'install-argvs install-argvs)
       fields))

@@ -1,13 +1,15 @@
 (library
-  (software-packaging desktop vscode)
-  (export vscode)
+  (examples tools desktop)
+  (export vscode desktop/tools)
   (import
     (rnrs)
     (scaffold catalog)
     (scaffold extensions app flatpak)
     (scaffold extensions app winget))
 
-  (doc-next (summary "Example Visual Studio Code desktop tool."))
+  (moduledoc (summary "Desktop application examples.") (group "Examples"))
+
+  (doc-next (summary "VS Code from platform application installers."))
 
   (define vscode
     (tool
@@ -28,6 +30,12 @@
             'windows
             (arr "winget" "list" "--id" "Microsoft.VisualStudioCode" "--exact"))))
       (meta
-        (description "VS Code installed from platform package/application installers.")
+        (description "Editor installed through Flatpak on Linux or WinGet on Windows.")
         (home-page "https://code.visualstudio.com/")
-        (tags "editor")))))
+        (license "Proprietary")
+        (tags "editor" "desktop")
+        (main-program "code"))))
+
+  (doc-next (summary "Return desktop application examples."))
+
+  (define (desktop/tools) (list vscode)))

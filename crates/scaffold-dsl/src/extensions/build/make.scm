@@ -19,17 +19,20 @@
     (signature "(make/prefix-install-argv prefix target ...)")
     (summary "Build argv for `make PREFIX=<prefix> install` or custom targets."))
 
-  (define (make/prefix-install-argv prefix . targets)
-    (arr/append-list
-      (arr "make" (string-append "PREFIX=" prefix))
-      (if (null? targets) (list "install") targets)))
+  (define make/prefix-install-argv
+    (case-lambda
+      ((prefix) (arr "make" (string-append "PREFIX=" prefix) "install"))
+      ((prefix . targets)
+        (arr/append-list (arr "make" (string-append "PREFIX=" prefix)) targets))))
 
   (doc-next
     (signature "(make/tool field ...)")
     (summary "Create a required host Make tool descriptor."))
 
   (define (make/tool . fields)
-    (apply tool "make" (required) (field 'bins (arr (bin/version "make"))) fields))
+    (object/merge
+      (tool "make" (required) (field 'bins (arr (bin/version "make"))))
+      fields))
 
   (doc-next
     (signature "(make/project-tool name path field ...)")
@@ -40,13 +43,13 @@
     (param 'field "Additional tool fields that override defaults."))
 
   (define (make/project-tool name path . fields)
-    (apply
-      tool
-      name
-      (build
-        (field 'path path)
-        (field 'argvs (arr (make/argv) (make/prefix-install-argv "{{ prefix }}"))))
-      (field 'bins (arr (bin name)))
+    (object/merge
+      (tool
+        name
+        (build
+          (field 'path path)
+          (field 'argvs (arr (make/argv) (make/prefix-install-argv "{{ prefix }}"))))
+        (field 'bins (arr (bin name))))
       fields))
 
   (moduledoc

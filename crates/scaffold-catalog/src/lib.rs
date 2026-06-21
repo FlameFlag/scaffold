@@ -207,19 +207,11 @@ fn nth_catalog_tool_span(
     index: usize,
 ) -> Option<dsl::SourceSpan> {
     let bounded = bounded_source(source, parent)?;
-    let mut seen = 0usize;
-    let mut relative = 0usize;
-    while let Some(found) = bounded[relative..].find("(tool") {
-        let offset = relative + found;
-        if list_head_matches(bounded, offset, "tool") {
-            if seen == index {
-                return Some(list_span_at(source, parent.offset + offset));
-            }
-            seen += 1;
-        }
-        relative = offset + 1;
-    }
-    None
+    bounded
+        .match_indices("(tool")
+        .filter(|(offset, _)| list_head_matches(bounded, *offset, "tool"))
+        .nth(index)
+        .map(|(offset, _)| list_span_at(source, parent.offset + offset))
 }
 
 fn list_head_matches(source: &str, offset: usize, head: &str) -> bool {

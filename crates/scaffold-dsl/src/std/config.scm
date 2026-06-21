@@ -2,10 +2,12 @@
   (scaffold config)
   (export
     field
+    field?
     field/name
     field/value
     object
     arr
+    list->arr
     vector/map
     vector/append
     arr/append-list
@@ -18,8 +20,12 @@
     object/inherit
     object/override
     object/replace-field
+    object/update-field
+    object/map-vector-field
     object/append-field-vector
     object/append-vector
+    split-fields
+    call-with-split-fields
     doc
     doc-next
     extern-doc

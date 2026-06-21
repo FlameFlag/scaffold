@@ -50,8 +50,8 @@ jobs:
           cargo run --locked -- fmt --check
           examples/catalog.scm
           examples/test.scm
-          examples/extensions/software-packaging/catalog.scm
-          examples/extensions/software-packaging/*/*.scm
+          examples/extensions/examples/catalog.scm
+          examples/extensions/examples/*/*.scm
 
       - name: Smoke test CLI
         run: |

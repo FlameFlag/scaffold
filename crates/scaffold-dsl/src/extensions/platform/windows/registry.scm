@@ -7,7 +7,7 @@
     (signature "(reg/tool field ...)")
     (summary "Create a required descriptor for Windows Registry CLI `reg`."))
 
-  (define (reg/tool . fields) (apply windows/command-tool "reg" fields))
+  (define reg/tool (windows/command-tool-proc "reg"))
 
   (doc-next
     (summary "Build argv for querying one Windows Registry value.")

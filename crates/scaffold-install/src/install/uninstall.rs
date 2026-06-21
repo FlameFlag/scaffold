@@ -8,7 +8,7 @@ use scaffold_template as template;
 
 use super::InstallError;
 use super::bindings::ToolBindings;
-use super::report::{InstallEvent, InstallEventKind, InstallReporter};
+use super::report::{InstallEvent, InstallEventKind, InstallReporter, command_detail};
 
 pub(super) fn uninstall_tool(
     ctx: &Context,
@@ -34,7 +34,7 @@ pub(super) fn uninstall_tool(
         reporter.report(InstallEvent::new(
             &tool.name,
             InstallEventKind::Run,
-            argv.join(" "),
+            command_detail(&argv),
         ));
         if !dry_run {
             process::run(&argv)?;

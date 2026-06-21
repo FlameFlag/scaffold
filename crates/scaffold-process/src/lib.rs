@@ -1,10 +1,14 @@
 use std::collections::BTreeSet;
-use std::env;
 use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::sync::LazyLock;
 
+use regex::Regex;
 use thiserror::Error;
+
+static ANY_COMMAND: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(".+").expect("valid command matcher"));
 
 #[derive(Debug, Error)]
 pub enum ProcessError {
@@ -40,26 +44,15 @@ pub fn path_of(bin: &str) -> Option<PathBuf> {
 }
 
 pub fn available_commands() -> Vec<String> {
-    let Some(paths) = env::var_os("PATH") else {
-        return Vec::new();
-    };
-    let mut commands = BTreeSet::new();
-    for dir in env::split_paths(&paths) {
-        let Ok(entries) = std::fs::read_dir(dir) else {
-            continue;
-        };
-        for entry in entries.filter_map(Result::ok) {
-            let path = entry.path();
-            if !is_command_file(&path) {
-                continue;
-            }
-            let Some(name) = command_name(&path) else {
-                continue;
-            };
-            let _inserted = commands.insert(name);
-        }
-    }
-    commands.into_iter().collect()
+    which::which_re(&*ANY_COMMAND)
+        .map(|paths| {
+            paths
+                .filter_map(|path| command_name(&path))
+                .collect::<BTreeSet<_>>()
+                .into_iter()
+                .collect()
+        })
+        .unwrap_or_default()
 }
 
 pub fn run(argv: &[String]) -> Result<(), ProcessError> {
@@ -155,6 +148,7 @@ fn is_command_file(path: &Path) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::env;
 
     #[test]
     fn rejects_empty_command() {

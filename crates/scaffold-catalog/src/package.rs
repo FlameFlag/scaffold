@@ -3,6 +3,8 @@ use serde::Deserialize;
 use scaffold_platform::{Host, HostOs, Predicate};
 use scaffold_process as process;
 
+use super::action::argvs_with_fallback;
+
 #[derive(Debug, Deserialize)]
 pub struct PackageAction {
     #[serde(default)]
@@ -39,11 +41,8 @@ impl PackageAction {
             });
         }
 
-        let install_argvs = if !self.install_argvs.is_empty() {
-            self.install_argvs.iter().map(Vec::as_slice).collect()
-        } else if !self.install_argv.is_empty() {
-            vec![self.install_argv.as_slice()]
-        } else {
+        let install_argvs = argvs_with_fallback(&self.install_argvs, &self.install_argv);
+        if install_argvs.is_empty() {
             return None;
         };
 
@@ -105,12 +104,6 @@ impl PackagePlatform {
     }
 
     fn install_argvs(&self) -> Vec<&[String]> {
-        if !self.install_argvs.is_empty() {
-            self.install_argvs.iter().map(Vec::as_slice).collect()
-        } else if !self.install_argv.is_empty() {
-            vec![self.install_argv.as_slice()]
-        } else {
-            Vec::new()
-        }
+        argvs_with_fallback(&self.install_argvs, &self.install_argv)
     }
 }

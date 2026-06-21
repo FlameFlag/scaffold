@@ -19,19 +19,20 @@
     (returns
       "A host OS symbol such as `linux`, populated by Scaffold before evaluation."))
 
-  (define host/os '@HOST_OS@)
+  (define host/os (string->symbol "{{ host_os }}"))
 
   (extern-doc host/arch
     (signature "host/arch")
     (summary "Symbol for the current CPU architecture."))
 
-  (define host/arch '@HOST_ARCH@)
+  (define host/arch (string->symbol "{{ host_arch }}"))
 
   (extern-doc host/platform
     (signature "host/platform")
     (summary "String describing the detected host platform."))
 
-  (define host/platform @HOST_PLATFORM@)
+  (define host/platform
+    (string-append (symbol->string host/os) "-" (symbol->string host/arch)))
 
   (extern-doc command/available
     (signature "command/available")
@@ -41,13 +42,20 @@
 
   (define command/available (%command/available))
 
+  (doc-next
+    (hidden)
+    (summary "Command availability as a Scheme list for R6RS list predicates."))
+
+  (define command/available-list (vector->list command/available))
+
   (extern-doc command/available?
     (signature "(command/available? name)")
     (summary "Return whether a command is available on the current host.")
     (param 'name "Command name to check.")
     (returns "`#t` when the command is detected, otherwise `#f`."))
 
-  (define command/available? %command/available?)
+  (define (command/available? name)
+    (and (member name command/available-list) #t))
 
   (extern-doc command/path
     (signature "(command/path name)")
@@ -62,7 +70,7 @@
     (param 'name "Command name to resolve.")
     (returns "`#t` when the command resolves, otherwise `#f`."))
 
-  (define (command/path? name) (if (%command/path name) #t #f))
+  (define (command/path? name) (and (%command/path name) #t))
 
   (doc-next
     (summary "Return whether a platform target matches the current host.")
@@ -77,7 +85,7 @@
         (and
           (eq? (object/ref target 'os) host/os)
           (let ((target-arch (object/ref target 'arch #f)))
-            (if target-arch (eq? target-arch host/arch) #t))))
+            (or (not target-arch) (eq? target-arch host/arch)))))
       (else #f)))
 
   (extern-doc env/var
@@ -94,7 +102,7 @@
     (param 'name "Environment variable name.")
     (returns "`#t` when the variable is set, otherwise `#f`."))
 
-  (define (env/var? name) (if (%env/var name) #t #f))
+  (define (env/var? name) (and (%env/var name) #t))
 
   (moduledoc
     (summary

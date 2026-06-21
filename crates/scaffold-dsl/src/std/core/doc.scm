@@ -54,30 +54,27 @@
   (define (hidden) (doc-field 'hidden #t))
 
   (define (doc subject . fields)
-    (apply
-      object
+    (cons*
       (field 'scaffold:kind "doc")
       (field 'doc:kind "value")
       (field 'subject subject)
       fields))
 
   (define (doc-next . fields)
-    (apply object (field 'scaffold:kind "doc") (field 'doc:kind "next") fields))
+    (cons* (field 'scaffold:kind "doc") (field 'doc:kind "next") fields))
 
   (define (extern-doc subject . fields)
-    (apply
-      object
+    (cons*
       (field 'scaffold:kind "doc")
       (field 'doc:kind "extern")
       (field 'subject subject)
       fields))
 
   (define (moduledoc . fields)
-    (apply object (field 'scaffold:kind "doc") (field 'doc:kind "module") fields))
+    (cons* (field 'scaffold:kind "doc") (field 'doc:kind "module") fields))
 
   (define (typedoc subject . fields)
-    (apply
-      object
+    (cons*
       (field 'scaffold:kind "doc")
       (field 'doc:kind "type")
       (field 'subject subject)

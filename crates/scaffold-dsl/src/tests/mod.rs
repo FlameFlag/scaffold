@@ -108,6 +108,94 @@ fn config_helpers_support_object_transformations() {
     assert_eq!(value["phase"], "missing");
     assert_eq!(value["bins"], serde_json::json!(["demo", "democtl"]));
     assert_eq!(value["platforms"], serde_json::json!(["linux"]));
+    assert_eq!(value["merged_phase"], "overridden");
+    assert_eq!(value["merged_extra"], "kept");
+    assert_eq!(value["updated_name"], "demo-updated");
+    assert_eq!(value["missing_update"], "absent");
+    assert_eq!(value["mapped_bins"], serde_json::json!(["demo-mapped"]));
+    assert_eq!(value["has_name"], true);
+    assert_eq!(value["has_phase"], false);
+    assert_eq!(value["field_predicate"], true);
+    assert_eq!(
+        value["split_flags"],
+        serde_json::json!(["--locked", "--force"])
+    );
+    assert_eq!(value["split_field_name"], "bin");
+    assert_eq!(value["split_field_value"], "demo");
+    assert_eq!(
+        value["callback_flags"],
+        serde_json::json!(["--features", "--locked"])
+    );
+    assert_eq!(value["callback_field_name"], "mode");
+    assert_eq!(value["callback_field_value"], "callback");
+    assert_eq!(value["appended_vector"], serde_json::json!(["a", "b", "c"]));
+    assert_eq!(value["empty_vector"], serde_json::json!([]));
+}
+
+#[test]
+fn catalog_can_be_built_from_tool_lists() {
+    let value = single_value(
+        r#"
+        (import (rnrs) (scaffold catalog))
+        (catalog/from-lists
+          (list (tool "git" (required)))
+          (list (tool "rg" (required)) (tool "jq" (required)))
+          (list (tool "fd" (required))))
+        "#,
+    );
+
+    assert_eq!(value["tools"][0]["name"], "git");
+    assert_eq!(value["tools"][1]["name"], "rg");
+    assert_eq!(value["tools"][2]["name"], "jq");
+    assert_eq!(value["tools"][3]["name"], "fd");
+}
+
+#[test]
+fn catalog_from_lists_accepts_no_tool_lists() {
+    let value = single_value(
+        r#"
+        (import (rnrs) (scaffold catalog))
+        (catalog/from-lists)
+        "#,
+    );
+
+    assert_eq!(value["tools"], serde_json::json!([]));
+}
+
+#[test]
+fn tool_lists_can_be_combined_for_intermediate_modules() {
+    let value = single_value(
+        r#"
+        (import (rnrs) (scaffold catalog))
+        (define devtools
+          (tool-list/from-lists
+            (list (tool "helix" (required)))
+            (list (tool "zellij" (required)) (tool "yaml-language-server" (required)))
+            (list)))
+        (catalog/from-lists
+          (list (tool "ghostty" (required)))
+          devtools
+          (list (tool "fonts" (required))))
+        "#,
+    );
+
+    assert_eq!(value["tools"][0]["name"], "ghostty");
+    assert_eq!(value["tools"][1]["name"], "helix");
+    assert_eq!(value["tools"][2]["name"], "zellij");
+    assert_eq!(value["tools"][3]["name"], "yaml-language-server");
+    assert_eq!(value["tools"][4]["name"], "fonts");
+}
+
+#[test]
+fn tool_list_from_lists_accepts_no_tool_lists() {
+    let value = single_value(
+        r#"
+        (import (rnrs) (scaffold catalog))
+        (object (field 'tools (list->vector (tool-list/from-lists))))
+        "#,
+    );
+
+    assert_eq!(value["tools"], serde_json::json!([]));
 }
 
 #[test]
@@ -171,8 +259,16 @@ fn supports_scaffold_path_library() {
         .into_owned();
 
     assert_eq!(value["separator"], std::path::MAIN_SEPARATOR.to_string());
+    assert_eq!(value["single"], "vendor");
     assert_eq!(value["joined"], joined);
     assert_eq!(value["normalized"], joined);
+    assert_eq!(
+        value["leading_parent"],
+        PathBuf::from("..")
+            .join("rg")
+            .to_string_lossy()
+            .into_owned()
+    );
     assert_eq!(value["parent"], parent);
     assert_eq!(value["file_name"], "Cargo.toml");
     assert_eq!(value["extension"], "gz");
@@ -223,6 +319,13 @@ fn supports_scaffold_fs_library_for_absolute_workspace_paths() {
 }
 
 #[test]
+fn scaffold_fs_library_rejects_relative_paths_in_scheme() {
+    let error = values_from_str("(import (rnrs) (scaffold fs))\n\n(path/exists? \"relative\")")
+        .expect_err("relative path should fail");
+    assert!(error.to_string().contains("absolute path"));
+}
+
+#[test]
 fn evaluates_scaffold_catalog_helpers() {
     let _values = values_from_str(include_str!("../fixtures/extensions/composition.scm"))
         .expect("scheme test");
@@ -246,7 +349,20 @@ fn evaluates_catalog_domain_helpers() {
 
     assert_eq!(value["action"]["type"], "build");
     assert_eq!(value["action"]["path"], source_path);
+    assert_eq!(value["bins"][0]["name"], "helper-demo");
+    assert_eq!(
+        value["bins"][0]["version_argv"],
+        serde_json::json!(["helper-demo", "--version"])
+    );
+    assert_eq!(value["checks"][0]["when"], "linux");
+    assert_eq!(
+        value["checks"][0]["argv"],
+        serde_json::json!(["test", "-x", "{{ bin_dir }}/helper-demo"])
+    );
+    assert_eq!(value["paths"][0]["when"], "macos");
+    assert_eq!(value["paths"][0]["path"], "/Applications/Helper Demo.app");
     assert_eq!(value["platforms"], serde_json::json!(["linux", "macos"]));
+    assert_eq!(value["verify_after_install"], false);
     assert_eq!(
         value["uninstall"]["paths"][0]["path"],
         "{{ home }}/.helper-demo"

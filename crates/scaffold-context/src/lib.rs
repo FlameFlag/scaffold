@@ -19,7 +19,7 @@ pub struct Context {
 
 impl Context {
     pub fn new(catalog_path: PathBuf) -> Result<Self, ContextError> {
-        let home = home_dir().ok_or(ContextError::MissingHome)?;
+        let home = home::home_dir().ok_or(ContextError::MissingHome)?;
         let root_dir = catalog_path
             .parent()
             .map_or_else(|| PathBuf::from("."), Path::to_path_buf);
@@ -42,17 +42,11 @@ impl Context {
             return Vec::new();
         }
 
-        let mut paths = Vec::new();
-        let mut seen_files = HashSet::new();
-        push_unique_path(&self.catalog_path, &mut paths, &mut seen_files);
-        collect_scheme_paths(
+        sorted_scheme_paths(
             &self.root_dir,
-            &mut paths,
             SchemePathFilter::All,
-            &mut seen_files,
-        );
-        paths.sort();
-        paths
+            Some(&self.catalog_path),
+        )
     }
 
     #[must_use]
@@ -61,21 +55,22 @@ impl Context {
             return Vec::new();
         }
 
-        let mut seen_files = HashSet::new();
-        let mut paths = Vec::new();
-        collect_scheme_paths(
-            &self.root_dir,
-            &mut paths,
-            SchemePathFilter::NamedTest,
-            &mut seen_files,
-        );
-        paths.sort();
-        paths
+        sorted_scheme_paths(&self.root_dir, SchemePathFilter::NamedTest, None)
     }
 
     #[must_use]
     pub fn extension_dirs(&self) -> Vec<PathBuf> {
         extension_dirs_for_catalog_path(&self.catalog_path)
+    }
+
+    #[must_use]
+    pub fn resolve_workspace_path(&self, path: &str) -> PathBuf {
+        let path = PathBuf::from(path);
+        if path.is_absolute() {
+            path
+        } else {
+            self.root_dir.join(path)
+        }
     }
 }
 
@@ -111,17 +106,18 @@ pub fn workspace_scheme_paths(root: &Path) -> Vec<PathBuf> {
 
 #[must_use]
 pub fn scheme_paths(root: &Path) -> Vec<PathBuf> {
-    let mut paths = Vec::new();
-    let mut seen_files = HashSet::new();
-    collect_scheme_paths(root, &mut paths, SchemePathFilter::All, &mut seen_files);
-    paths.sort();
-    paths
+    sorted_scheme_paths(root, SchemePathFilter::All, None)
 }
 
-fn home_dir() -> Option<PathBuf> {
-    std::env::var_os("HOME")
-        .map(PathBuf::from)
-        .or_else(|| std::env::var_os("USERPROFILE").map(PathBuf::from))
+fn sorted_scheme_paths(root: &Path, filter: SchemePathFilter, seed: Option<&Path>) -> Vec<PathBuf> {
+    let mut paths = Vec::new();
+    let mut seen_files = HashSet::new();
+    if let Some(path) = seed {
+        push_unique_path(path, &mut paths, &mut seen_files);
+    }
+    collect_scheme_paths(root, &mut paths, filter, &mut seen_files);
+    paths.sort();
+    paths
 }
 
 #[derive(Clone, Copy)]

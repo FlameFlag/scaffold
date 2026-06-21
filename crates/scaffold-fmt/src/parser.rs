@@ -18,6 +18,18 @@ impl<'a> Parser<'a> {
         Ok(forms)
     }
 
+    pub(super) fn parse_next_form_end(text: &'a str, offset: usize) -> Result<Option<usize>> {
+        let mut parser = Self {
+            text,
+            pos: offset.min(text.len()),
+        };
+        if !parser.skip_ws_and_comments() {
+            return Ok(Some(parser.pos));
+        }
+        let _form = parser.parse_form()?;
+        Ok(Some(parser.pos))
+    }
+
     fn parse_form(&mut self) -> Result<Form> {
         let Some(ch) = self.peek() else {
             return Ok(Form::Atom(String::new()));
@@ -136,6 +148,19 @@ impl<'a> Parser<'a> {
             self.pos += ch.len_utf8();
         }
         false
+    }
+
+    fn skip_ws_and_comments(&mut self) -> bool {
+        loop {
+            if !self.skip_ws() {
+                return false;
+            }
+            if self.peek() == Some(';') {
+                let _comment = self.parse_comment();
+                continue;
+            }
+            return true;
+        }
     }
 
     fn peek(&self) -> Option<char> {

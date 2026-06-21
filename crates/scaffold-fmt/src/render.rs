@@ -35,8 +35,7 @@ pub(super) fn render_form(form: &Form, indent: usize, width: usize, out: &mut St
             out.push(*open);
             render_form(&items[0], indent + 1, width, out);
             for item in &items[1..] {
-                out.push('\n');
-                out.push_str(&" ".repeat(indent + 2));
+                push_indented_line(out, indent + 2);
                 render_form(item, indent + 2, width, out);
             }
             out.push(*close);
@@ -55,7 +54,7 @@ fn render_special_list(
     let Some(head) = list_head_from_items(items) else {
         return false;
     };
-    let head_items = match head.as_str() {
+    let head_items = match head {
         "define" | "define-syntax" | "doc" | "typedoc" | "extern-doc" | "if" | "lambda" | "let"
         | "let*" | "letrec" => 2,
         "moduledoc" | "doc-next" => 1,
@@ -80,8 +79,7 @@ fn render_head_aligned_list(
     for (index, item) in items[..head_items].iter().enumerate() {
         let flat = flat_form(item);
         if index > 0 && line_len + 1 + flat.len() > width {
-            out.push('\n');
-            out.push_str(&" ".repeat(indent + 2));
+            push_indented_line(out, indent + 2);
             render_form(item, indent + 2, width, out);
             line_len = indent + 2 + flat.len();
         } else {
@@ -94,8 +92,7 @@ fn render_head_aligned_list(
         }
     }
     for item in &items[head_items..] {
-        out.push('\n');
-        out.push_str(&" ".repeat(indent + 2));
+        push_indented_line(out, indent + 2);
         render_form(item, indent + 2, width, out);
     }
     out.push(close);
@@ -117,10 +114,15 @@ fn render_library_list(
         if index > 0 && needs_library_blank_line(ordered[index], item) {
             out.push('\n');
         }
-        out.push_str(&" ".repeat(indent + 2));
+        out.extend(std::iter::repeat_n(' ', indent + 2));
         render_form(item, indent + 2, width, out);
     }
     out.push(close);
+}
+
+fn push_indented_line(out: &mut String, indent: usize) {
+    out.push('\n');
+    out.extend(std::iter::repeat_n(' ', indent));
 }
 
 fn ordered_library_items(items: &[Form]) -> Vec<&Form> {
@@ -134,9 +136,7 @@ fn ordered_library_items(items: &[Form]) -> Vec<&Form> {
         }
         if let Some(name) = definition_name(item) {
             for (doc_index, candidate) in items.iter().enumerate().skip(1) {
-                if !consumed_docs[doc_index]
-                    && doc_subject(candidate).as_deref() == Some(name.as_str())
-                {
+                if !consumed_docs[doc_index] && doc_subject(candidate) == Some(name) {
                     ordered.push(candidate);
                     consumed_docs[doc_index] = true;
                 }
@@ -164,7 +164,7 @@ fn needs_library_blank_line(previous: &Form, current: &Form) -> bool {
 
 fn is_library_body_block(form: &Form) -> bool {
     matches!(
-        list_head(form).as_deref(),
+        list_head(form),
         Some(
             "define"
                 | "define-syntax"
@@ -177,7 +177,7 @@ fn is_library_body_block(form: &Form) -> bool {
     )
 }
 
-fn doc_subject(form: &Form) -> Option<String> {
+fn doc_subject(form: &Form) -> Option<&str> {
     let Form::List { items, .. } = form else {
         return None;
     };
@@ -188,9 +188,9 @@ fn doc_subject(form: &Form) -> Option<String> {
     subject_text(items.get(1)?)
 }
 
-fn subject_text(form: &Form) -> Option<String> {
+fn subject_text(form: &Form) -> Option<&str> {
     match form {
-        Form::Atom(text) | Form::String(text) => Some(unquote_string(text).to_owned()),
+        Form::Atom(text) | Form::String(text) => Some(unquote_string(text)),
         Form::Quote('\'', form) => subject_text(form),
         Form::List { items, .. } => match items.as_slice() {
             [Form::Atom(head), subject] if head == "quote" => subject_text(subject),
@@ -200,13 +200,13 @@ fn subject_text(form: &Form) -> Option<String> {
     }
 }
 
-fn definition_name(form: &Form) -> Option<String> {
+fn definition_name(form: &Form) -> Option<&str> {
     let Form::List { items, .. } = form else {
         return None;
     };
     match items.as_slice() {
         [Form::Atom(head), Form::Atom(name), ..] if head == "define" || head == "define-syntax" => {
-            Some(name.clone())
+            Some(name)
         }
         [
             Form::Atom(head),
@@ -215,23 +215,23 @@ fn definition_name(form: &Form) -> Option<String> {
             },
             ..,
         ] if head == "define" => match signature.first()? {
-            Form::Atom(name) => Some(name.clone()),
+            Form::Atom(name) => Some(name),
             _ => None,
         },
         _ => None,
     }
 }
 
-fn list_head(form: &Form) -> Option<String> {
+fn list_head(form: &Form) -> Option<&str> {
     let Form::List { items, .. } = form else {
         return None;
     };
     list_head_from_items(items)
 }
 
-fn list_head_from_items(items: &[Form]) -> Option<String> {
+fn list_head_from_items(items: &[Form]) -> Option<&str> {
     match items.first()? {
-        Form::Atom(text) => Some(text.clone()),
+        Form::Atom(text) => Some(text),
         _ => None,
     }
 }
@@ -243,21 +243,20 @@ fn unquote_string(text: &str) -> &str {
 }
 
 fn flat_list(open: char, close: char, items: &[Form]) -> String {
-    let docs = items.iter().map(flat_doc).collect::<Vec<_>>();
-    let body = RcDoc::intersperse(docs, RcDoc::space());
+    let body = RcDoc::intersperse(items.iter().map(flat_doc), RcDoc::space());
     let doc = RcDoc::text(open.to_string())
         .append(body)
         .append(RcDoc::text(close.to_string()));
-    let mut bytes = Vec::new();
-    doc.render(usize::MAX, &mut bytes).expect("render to vec");
-    String::from_utf8(bytes).expect("formatter emits utf8")
+    render_flat_doc(doc)
 }
 
 fn flat_form(form: &Form) -> String {
+    render_flat_doc(flat_doc(form))
+}
+
+fn render_flat_doc(doc: RcDoc<'_, ()>) -> String {
     let mut bytes = Vec::new();
-    flat_doc(form)
-        .render(usize::MAX, &mut bytes)
-        .expect("render to vec");
+    doc.render(usize::MAX, &mut bytes).expect("render to vec");
     String::from_utf8(bytes).expect("formatter emits utf8")
 }
 

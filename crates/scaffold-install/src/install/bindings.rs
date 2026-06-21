@@ -72,18 +72,18 @@ impl ToolBindings {
             ("bin_dir", self.bin_dir.as_str()),
             ("state_dir", self.state_dir.as_str()),
         ]);
-        if let Some(prefix) = &self.prefix {
-            let _previous = bindings.insert("prefix", prefix.as_str());
-        }
-        if let Some(source_dir) = &self.source_dir {
-            let _previous = bindings.insert("source_dir", source_dir.as_str());
-        }
-        if let Some(tool) = &self.tool {
-            let _previous = bindings.insert("tool", tool.as_str());
-        }
-        if let Some(package) = &self.package {
-            let _previous = bindings.insert("package", package.as_str());
-        }
+        bindings.extend(
+            [
+                self.prefix.as_deref().map(|value| ("prefix", value)),
+                self.source_dir
+                    .as_deref()
+                    .map(|value| ("source_dir", value)),
+                self.tool.as_deref().map(|value| ("tool", value)),
+                self.package.as_deref().map(|value| ("package", value)),
+            ]
+            .into_iter()
+            .flatten(),
+        );
         bindings
     }
 }

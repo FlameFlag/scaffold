@@ -1,0 +1,30 @@
+# Generated dependency/build output. Tokei also honors .gitignore, but keeping
+# these here makes the line-counting rules self-contained.
+/target/
+/node_modules/
+/site/dist/
+/site/.svelte-kit/
+/editors/vscode/out/
+/.vscode-test/
+/.vscode-test-web/
+/coverage/
+
+# Data/configuration files and generated reference exports.
+*.json
+*.lock
+
+# Generated TypeScript declaration files.
+*.d.ts
+
+# wasm-bindgen output checked into the VS Code extension.
+editors/vscode/wasm/
+*.wasm
+
+# Generated site/reference artifacts.
+site/.generated/
+site/public/reference.static.json
+
+# Minified generated assets.
+*.min.*
+*.map
+*.tsbuildinfo

@@ -57,6 +57,7 @@ function wasmBuildEnv(env = process.env) {
 
 function normalizedRustFlags(env) {
   const flags = new Set((env.RUSTFLAGS ?? "").split(/\s+/).filter(Boolean));
+  flags.add('--cfg=getrandom_backend="wasm_js"');
   for (const flag of remapPathFlags(env)) {
     flags.add(flag);
   }

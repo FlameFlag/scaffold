@@ -109,6 +109,8 @@ pub fn executable_name(bin: &str) -> OsString {
 fn command_name(path: &Path) -> Option<String> {
     #[cfg(windows)]
     {
+        use std::env;
+
         let extension = path.extension()?.to_string_lossy();
         let executable_extensions =
             env::var("PATHEXT").unwrap_or_else(|_| ".EXE;.BAT;.CMD".to_owned());

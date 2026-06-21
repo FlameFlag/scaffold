@@ -93,10 +93,10 @@
   "catalog_schema": {
     "enums": {
       "action_type": [
-        "archive",
-        "build",
+        "required",
         "package",
-        "required"
+        "build",
+        "archive"
       ],
       "host_arch": [
         "aarch64",
@@ -510,9 +510,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/app/flatpak.scm",
-      "source_location": "src/extensions/app/flatpak.scm:63",
+      "source_location": "src/extensions/app/flatpak.scm:65",
       "range": {
-        "line": 62,
+        "line": 64,
         "start": 11,
         "length": 24
       },
@@ -551,42 +551,6 @@
       "hidden": false
     },
     {
-      "name": "winget/install-argv",
-      "kind": "function",
-      "signature": "(winget/install-argv package-id flag ...)",
-      "summary": "Build argv for a noninteractive `winget install --id` command.",
-      "markdown": null,
-      "raw_markdown": null,
-      "rendered_markdown": "```scheme\n(winget/install-argv package-id flag ...)\n```\n\nBuild argv for a noninteractive `winget install --id` command.\n\n| Field | Value        |\n| ----- | ------------ |\n| Group | Applications |\n\n**Parameters**\n\n| Parameter    | Description                                                         |\n| ------------ | ------------------------------------------------------------------- |\n| `package-id` | WinGet package identifier.                                          |\n| `flag`       | Additional flags appended after the default silent/agreement flags. |\n",
-      "example": null,
-      "params": [
-        {
-          "name": "package-id",
-          "summary": "WinGet package identifier."
-        },
-        {
-          "name": "flag",
-          "summary": "Additional flags appended after the default silent/agreement flags."
-        }
-      ],
-      "returns": null,
-      "group": "Applications",
-      "see": [],
-      "effect": null,
-      "requires_capability": [],
-      "stability": null,
-      "since": null,
-      "deprecated": null,
-      "source": "src/extensions/app/winget.scm",
-      "source_location": "src/extensions/app/winget.scm:28",
-      "range": {
-        "line": 27,
-        "start": 11,
-        "length": 19
-      },
-      "hidden": false
-    },
-    {
       "name": "winget/list-argv",
       "kind": "function",
       "signature": "(winget/list-argv package-id)",
@@ -605,9 +569,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/app/winget.scm",
-      "source_location": "src/extensions/app/winget.scm:56",
+      "source_location": "src/extensions/app/winget.scm:63",
       "range": {
-        "line": 55,
+        "line": 62,
         "start": 11,
         "length": 16
       },
@@ -649,9 +613,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/app/winget.scm",
-      "source_location": "src/extensions/app/winget.scm:66",
+      "source_location": "src/extensions/app/winget.scm:73",
       "range": {
-        "line": 65,
+        "line": 72,
         "start": 11,
         "length": 14
       },
@@ -685,9 +649,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/app/winget.scm",
-      "source_location": "src/extensions/app/winget.scm:93",
+      "source_location": "src/extensions/app/winget.scm:102",
       "range": {
-        "line": 92,
+        "line": 101,
         "start": 11,
         "length": 23
       },
@@ -712,9 +676,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/app/winget.scm",
-      "source_location": "src/extensions/app/winget.scm:48",
+      "source_location": "src/extensions/app/winget.scm:55",
       "range": {
-        "line": 47,
+        "line": 54,
         "start": 11,
         "length": 21
       },
@@ -739,9 +703,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/app/winget.scm",
-      "source_location": "src/extensions/app/winget.scm:38",
+      "source_location": "src/extensions/app/winget.scm:45",
       "range": {
-        "line": 37,
+        "line": 44,
         "start": 11,
         "length": 19
       },
@@ -815,9 +779,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/catalog/archive.scm",
-      "source_location": "src/dsl/std/catalog/archive.scm:24",
+      "source_location": "src/dsl/std/catalog/archive.scm:25",
       "range": {
-        "line": 23,
+        "line": 24,
         "start": 11,
         "length": 24
       },
@@ -851,9 +815,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/catalog/archive.scm",
-      "source_location": "src/dsl/std/catalog/archive.scm:35",
+      "source_location": "src/dsl/std/catalog/archive.scm:40",
       "range": {
-        "line": 34,
+        "line": 39,
         "start": 11,
         "length": 3
       },
@@ -999,9 +963,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/build/cmake.scm",
-      "source_location": "src/extensions/build/cmake.scm:54",
+      "source_location": "src/extensions/build/cmake.scm:56",
       "range": {
-        "line": 53,
+        "line": 55,
         "start": 11,
         "length": 18
       },
@@ -1080,9 +1044,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/build/gcc.scm",
-      "source_location": "src/extensions/build/gcc.scm:38",
+      "source_location": "src/extensions/build/gcc.scm:40",
       "range": {
-        "line": 37,
+        "line": 39,
         "start": 11,
         "length": 10
       },
@@ -1258,7 +1222,7 @@
       "source_location": "src/extensions/build/make.scm:22",
       "range": {
         "line": 21,
-        "start": 11,
+        "start": 10,
         "length": 24
       },
       "hidden": false
@@ -1295,9 +1259,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/build/make.scm",
-      "source_location": "src/extensions/build/make.scm:42",
+      "source_location": "src/extensions/build/make.scm:45",
       "range": {
-        "line": 41,
+        "line": 44,
         "start": 11,
         "length": 17
       },
@@ -1322,47 +1286,11 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/build/make.scm",
-      "source_location": "src/extensions/build/make.scm:31",
+      "source_location": "src/extensions/build/make.scm:32",
       "range": {
-        "line": 30,
+        "line": 31,
         "start": 11,
         "length": 9
-      },
-      "hidden": false
-    },
-    {
-      "name": "bun/global-install-argv",
-      "kind": "function",
-      "signature": "(bun/global-install-argv package-name flag ...)",
-      "summary": "Build argv for globally installing a package with Bun.",
-      "markdown": null,
-      "raw_markdown": null,
-      "rendered_markdown": "```scheme\n(bun/global-install-argv package-name flag ...)\n```\n\nBuild argv for globally installing a package with Bun.\n\n| Field | Value |\n| ----- | ----- |\n| Group | Bun   |\n\n**Parameters**\n\n| Parameter      | Description                                              |\n| -------------- | -------------------------------------------------------- |\n| `package-name` | Package name passed to `bun add -g`.                     |\n| `flag`         | Additional Bun add flags placed before the package name. |\n\n**Returns:** Vector argv for `bun add -g`.",
-      "example": null,
-      "params": [
-        {
-          "name": "package-name",
-          "summary": "Package name passed to `bun add -g`."
-        },
-        {
-          "name": "flag",
-          "summary": "Additional Bun add flags placed before the package name."
-        }
-      ],
-      "returns": "Vector argv for `bun add -g`.",
-      "group": "Bun",
-      "see": [],
-      "effect": null,
-      "requires_capability": [],
-      "stability": null,
-      "since": null,
-      "deprecated": null,
-      "source": "src/extensions/ecosystem/bun.scm",
-      "source_location": "src/extensions/ecosystem/bun.scm:18",
-      "range": {
-        "line": 17,
-        "start": 11,
-        "length": 23
       },
       "hidden": false
     },
@@ -1398,9 +1326,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/ecosystem/bun.scm",
-      "source_location": "src/extensions/ecosystem/bun.scm:67",
+      "source_location": "src/extensions/ecosystem/bun.scm:77",
       "range": {
-        "line": 66,
+        "line": 76,
         "start": 11,
         "length": 27
       },
@@ -1442,9 +1370,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/ecosystem/bun.scm",
-      "source_location": "src/extensions/ecosystem/bun.scm:39",
+      "source_location": "src/extensions/ecosystem/bun.scm:46",
       "range": {
-        "line": 38,
+        "line": 45,
         "start": 11,
         "length": 15
       },
@@ -1474,9 +1402,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/ecosystem/bun.scm",
-      "source_location": "src/extensions/ecosystem/bun.scm:26",
+      "source_location": "src/extensions/ecosystem/bun.scm:33",
       "range": {
-        "line": 25,
+        "line": 32,
         "start": 11,
         "length": 25
       },
@@ -1510,9 +1438,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/ecosystem/bun.scm",
-      "source_location": "src/extensions/ecosystem/bun.scm:85",
+      "source_location": "src/extensions/ecosystem/bun.scm:95",
       "range": {
-        "line": 84,
+        "line": 94,
         "start": 11,
         "length": 9
       },
@@ -1900,9 +1828,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/catalog/root.scm",
-      "source_location": "src/dsl/std/catalog/root.scm:59",
+      "source_location": "src/dsl/std/catalog/root.scm:60",
       "range": {
-        "line": 58,
+        "line": 59,
         "start": 17,
         "length": 12
       },
@@ -2022,9 +1950,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/catalog/helper.scm",
-      "source_location": "src/dsl/std/catalog/helper.scm:85",
+      "source_location": "src/dsl/std/catalog/helper.scm:87",
       "range": {
-        "line": 84,
+        "line": 86,
         "start": 11,
         "length": 21
       },
@@ -2062,9 +1990,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/catalog/helper.scm",
-      "source_location": "src/dsl/std/catalog/helper.scm:96",
+      "source_location": "src/dsl/std/catalog/helper.scm:100",
       "range": {
-        "line": 95,
+        "line": 99,
         "start": 11,
         "length": 27
       },
@@ -2146,7 +2074,7 @@
       "source_location": "src/dsl/std/catalog/tool.scm:23",
       "range": {
         "line": 22,
-        "start": 11,
+        "start": 10,
         "length": 7
       },
       "hidden": false
@@ -2449,9 +2377,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/catalog/root.scm",
-      "source_location": "src/dsl/std/catalog/root.scm:77",
+      "source_location": "src/dsl/std/catalog/root.scm:78",
       "range": {
-        "line": 76,
+        "line": 77,
         "start": 17,
         "length": 13
       },
@@ -2580,9 +2508,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/catalog/root.scm",
-      "source_location": "src/dsl/std/catalog/root.scm:44",
+      "source_location": "src/dsl/std/catalog/root.scm:45",
       "range": {
-        "line": 43,
+        "line": 44,
         "start": 11,
         "length": 20
       },
@@ -2639,9 +2567,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/catalog/helper.scm",
-      "source_location": "src/dsl/std/catalog/helper.scm:50",
+      "source_location": "src/dsl/std/catalog/helper.scm:52",
       "range": {
-        "line": 49,
+        "line": 51,
         "start": 11,
         "length": 9
       },
@@ -2671,9 +2599,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/catalog/helper.scm",
-      "source_location": "src/dsl/std/catalog/helper.scm:57",
+      "source_location": "src/dsl/std/catalog/helper.scm:59",
       "range": {
-        "line": 56,
+        "line": 58,
         "start": 11,
         "length": 11
       },
@@ -2700,9 +2628,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/catalog/base.scm",
-      "source_location": "src/dsl/std/catalog/base.scm:126",
+      "source_location": "src/dsl/std/catalog/base.scm:127",
       "range": {
-        "line": 125,
+        "line": 126,
         "start": 14,
         "length": 12
       },
@@ -2738,9 +2666,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/catalog/base.scm",
-      "source_location": "src/dsl/std/catalog/base.scm:132",
+      "source_location": "src/dsl/std/catalog/base.scm:133",
       "range": {
-        "line": 131,
+        "line": 132,
         "start": 14,
         "length": 13
       },
@@ -2770,9 +2698,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/catalog/helper.scm",
-      "source_location": "src/dsl/std/catalog/helper.scm:64",
+      "source_location": "src/dsl/std/catalog/helper.scm:66",
       "range": {
-        "line": 63,
+        "line": 65,
         "start": 11,
         "length": 10
       },
@@ -2802,9 +2730,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/catalog/helper.scm",
-      "source_location": "src/dsl/std/catalog/helper.scm:71",
+      "source_location": "src/dsl/std/catalog/helper.scm:73",
       "range": {
-        "line": 70,
+        "line": 72,
         "start": 11,
         "length": 14
       },
@@ -2865,9 +2793,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/catalog/helper.scm",
-      "source_location": "src/dsl/std/catalog/helper.scm:77",
+      "source_location": "src/dsl/std/catalog/helper.scm:79",
       "range": {
-        "line": 76,
+        "line": 78,
         "start": 11,
         "length": 30
       },
@@ -2900,7 +2828,7 @@
       "source_location": "src/dsl/std/catalog/uninstall.scm:18",
       "range": {
         "line": 17,
-        "start": 11,
+        "start": 10,
         "length": 9
       },
       "hidden": false
@@ -2993,9 +2921,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/catalog/helper.scm",
-      "source_location": "src/dsl/std/catalog/helper.scm:104",
+      "source_location": "src/dsl/std/catalog/helper.scm:110",
       "range": {
-        "line": 103,
+        "line": 109,
         "start": 11,
         "length": 15
       },
@@ -3029,9 +2957,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/catalog/helper.scm",
-      "source_location": "src/dsl/std/catalog/helper.scm:42",
+      "source_location": "src/dsl/std/catalog/helper.scm:44",
       "range": {
-        "line": 41,
+        "line": 43,
         "start": 11,
         "length": 15
       },
@@ -3251,9 +3179,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/distro/apt.scm",
-      "source_location": "src/extensions/distro/apt.scm:86",
+      "source_location": "src/extensions/distro/apt.scm:88",
       "range": {
-        "line": 85,
+        "line": 87,
         "start": 11,
         "length": 20
       },
@@ -3295,9 +3223,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/distro/apt.scm",
-      "source_location": "src/extensions/distro/apt.scm:62",
+      "source_location": "src/extensions/distro/apt.scm:63",
       "range": {
-        "line": 61,
+        "line": 62,
         "start": 11,
         "length": 16
       },
@@ -3363,9 +3291,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/distro/dnf.scm",
-      "source_location": "src/extensions/distro/dnf.scm:35",
+      "source_location": "src/extensions/distro/dnf.scm:36",
       "range": {
-        "line": 34,
+        "line": 35,
         "start": 11,
         "length": 11
       },
@@ -3399,9 +3327,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/distro/dnf.scm",
-      "source_location": "src/extensions/distro/dnf.scm:85",
+      "source_location": "src/extensions/distro/dnf.scm:86",
       "range": {
-        "line": 84,
+        "line": 85,
         "start": 11,
         "length": 20
       },
@@ -3443,9 +3371,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/distro/dnf.scm",
-      "source_location": "src/extensions/distro/dnf.scm:61",
+      "source_location": "src/extensions/distro/dnf.scm:62",
       "range": {
-        "line": 60,
+        "line": 61,
         "start": 11,
         "length": 16
       },
@@ -3579,9 +3507,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/distro/pacman.scm",
-      "source_location": "src/extensions/distro/pacman.scm:87",
+      "source_location": "src/extensions/distro/pacman.scm:89",
       "range": {
-        "line": 86,
+        "line": 88,
         "start": 11,
         "length": 23
       },
@@ -3623,9 +3551,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/distro/pacman.scm",
-      "source_location": "src/extensions/distro/pacman.scm:63",
+      "source_location": "src/extensions/distro/pacman.scm:64",
       "range": {
-        "line": 62,
+        "line": 63,
         "start": 11,
         "length": 19
       },
@@ -3664,38 +3592,6 @@
       "hidden": false
     },
     {
-      "name": "rpm-ostree/install-argv",
-      "kind": "function",
-      "signature": "(rpm-ostree/install-argv package ...)",
-      "summary": "Build argv for installing packages with `sudo rpm-ostree install --idempotent -y`.",
-      "markdown": null,
-      "raw_markdown": null,
-      "rendered_markdown": "```scheme\n(rpm-ostree/install-argv package ...)\n```\n\nBuild argv for installing packages with `sudo rpm-ostree install --idempotent -y`.\n\n| Field | Value           |\n| ----- | --------------- |\n| Group | Distro packages |\n\n**Parameters**\n\n| Parameter | Description        |\n| --------- | ------------------ |\n| `package` | RPM package names. |\n\n**Returns:** Vector argv suitable for a package action `install-argv`.",
-      "example": null,
-      "params": [
-        {
-          "name": "package",
-          "summary": "RPM package names."
-        }
-      ],
-      "returns": "Vector argv suitable for a package action `install-argv`.",
-      "group": "Distro packages",
-      "see": [],
-      "effect": null,
-      "requires_capability": [],
-      "stability": null,
-      "since": null,
-      "deprecated": null,
-      "source": "src/extensions/distro/rpm.scm",
-      "source_location": "src/extensions/distro/rpm.scm:19",
-      "range": {
-        "line": 18,
-        "start": 11,
-        "length": 23
-      },
-      "hidden": false
-    },
-    {
       "name": "rpm-ostree/package",
       "kind": "function",
       "signature": "(rpm-ostree/package name field ...)",
@@ -3723,9 +3619,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/distro/rpm.scm",
-      "source_location": "src/extensions/distro/rpm.scm:39",
+      "source_location": "src/extensions/distro/rpm.scm:48",
       "range": {
-        "line": 38,
+        "line": 47,
         "start": 11,
         "length": 18
       },
@@ -3759,9 +3655,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/distro/rpm.scm",
-      "source_location": "src/extensions/distro/rpm.scm:95",
+      "source_location": "src/extensions/distro/rpm.scm:104",
       "range": {
-        "line": 94,
+        "line": 103,
         "start": 11,
         "length": 27
       },
@@ -3803,9 +3699,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/distro/rpm.scm",
-      "source_location": "src/extensions/distro/rpm.scm:68",
+      "source_location": "src/extensions/distro/rpm.scm:77",
       "range": {
-        "line": 67,
+        "line": 76,
         "start": 11,
         "length": 23
       },
@@ -3839,9 +3735,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/distro/rpm.scm",
-      "source_location": "src/extensions/distro/rpm.scm:110",
+      "source_location": "src/extensions/distro/rpm.scm:119",
       "range": {
-        "line": 109,
+        "line": 118,
         "start": 11,
         "length": 28
       },
@@ -3871,9 +3767,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/distro/rpm.scm",
-      "source_location": "src/extensions/distro/rpm.scm:29",
+      "source_location": "src/extensions/distro/rpm.scm:38",
       "range": {
-        "line": 28,
+        "line": 37,
         "start": 11,
         "length": 25
       },
@@ -4487,9 +4383,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/support/download.scm",
-      "source_location": "src/extensions/support/download.scm:99",
+      "source_location": "src/extensions/support/download.scm:101",
       "range": {
-        "line": 98,
+        "line": 100,
         "start": 11,
         "length": 21
       },
@@ -4554,9 +4450,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/support/download.scm",
-      "source_location": "src/extensions/support/download.scm:56",
+      "source_location": "src/extensions/support/download.scm:58",
       "range": {
-        "line": 55,
+        "line": 57,
         "start": 11,
         "length": 24
       },
@@ -4606,9 +4502,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/support/download.scm",
-      "source_location": "src/extensions/support/download.scm:73",
+      "source_location": "src/extensions/support/download.scm:75",
       "range": {
-        "line": 72,
+        "line": 74,
         "start": 5,
         "length": 30
       },
@@ -4633,9 +4529,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/support/download.scm",
-      "source_location": "src/extensions/support/download.scm:48",
+      "source_location": "src/extensions/support/download.scm:50",
       "range": {
-        "line": 47,
+        "line": 49,
         "start": 11,
         "length": 6
       },
@@ -4660,9 +4556,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/support/download.scm",
-      "source_location": "src/extensions/support/download.scm:33",
+      "source_location": "src/extensions/support/download.scm:40",
       "range": {
-        "line": 32,
+        "line": 39,
         "start": 11,
         "length": 8
       },
@@ -4721,10 +4617,10 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/fs.scm",
-      "source_location": "src/dsl/std/fs.scm:28",
+      "source_location": "src/dsl/std/fs.scm:40",
       "range": {
-        "line": 27,
-        "start": 10,
+        "line": 39,
+        "start": 11,
         "length": 17
       },
       "hidden": false
@@ -4755,10 +4651,10 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/fs.scm",
-      "source_location": "src/dsl/std/fs.scm:20",
+      "source_location": "src/dsl/std/fs.scm:32",
       "range": {
-        "line": 19,
-        "start": 10,
+        "line": 31,
+        "start": 11,
         "length": 12
       },
       "hidden": false
@@ -4789,43 +4685,11 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/fs.scm",
-      "source_location": "src/dsl/std/fs.scm:12",
+      "source_location": "src/dsl/std/fs.scm:24",
       "range": {
-        "line": 11,
-        "start": 10,
-        "length": 12
-      },
-      "hidden": false
-    },
-    {
-      "name": "go/install-argv",
-      "kind": "function",
-      "signature": "(go/install-argv package ...)",
-      "summary": "Build argv for `go install` into the Scaffold bin directory.",
-      "markdown": null,
-      "raw_markdown": null,
-      "rendered_markdown": "```scheme\n(go/install-argv package ...)\n```\n\nBuild argv for `go install` into the Scaffold bin directory.\n\n| Field | Value |\n| ----- | ----- |\n| Group | Go    |\n\n**Parameters**\n\n| Parameter | Description                                                     |\n| --------- | --------------------------------------------------------------- |\n| `package` | Go package specs or local command paths passed to `go install`. |\n\n**Returns:** Vector argv using `CGO_ENABLED=0` and `GOBIN={{ bin_dir }}`.",
-      "example": null,
-      "params": [
-        {
-          "name": "package",
-          "summary": "Go package specs or local command paths passed to `go install`."
-        }
-      ],
-      "returns": "Vector argv using `CGO_ENABLED=0` and `GOBIN={{ bin_dir }}`.",
-      "group": "Go",
-      "see": [],
-      "effect": null,
-      "requires_capability": [],
-      "stability": null,
-      "since": null,
-      "deprecated": null,
-      "source": "src/extensions/ecosystem/go.scm",
-      "source_location": "src/extensions/ecosystem/go.scm:12",
-      "range": {
-        "line": 11,
+        "line": 23,
         "start": 11,
-        "length": 15
+        "length": 12
       },
       "hidden": false
     },
@@ -4861,9 +4725,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/ecosystem/go.scm",
-      "source_location": "src/extensions/ecosystem/go.scm:24",
+      "source_location": "src/extensions/ecosystem/go.scm:33",
       "range": {
-        "line": 23,
+        "line": 32,
         "start": 11,
         "length": 19
       },
@@ -4905,9 +4769,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/ecosystem/go.scm",
-      "source_location": "src/extensions/ecosystem/go.scm:44",
+      "source_location": "src/extensions/ecosystem/go.scm:53",
       "range": {
-        "line": 43,
+        "line": 52,
         "start": 11,
         "length": 7
       },
@@ -4939,10 +4803,10 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/host.scm",
-      "source_location": "src/dsl/std/host.scm:50",
+      "source_location": "src/dsl/std/host.scm:57",
       "range": {
-        "line": 49,
-        "start": 10,
+        "line": 56,
+        "start": 11,
         "length": 18
       },
       "hidden": false
@@ -4973,9 +4837,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/host.scm",
-      "source_location": "src/dsl/std/host.scm:58",
+      "source_location": "src/dsl/std/host.scm:66",
       "range": {
-        "line": 57,
+        "line": 65,
         "start": 10,
         "length": 12
       },
@@ -5007,9 +4871,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/host.scm",
-      "source_location": "src/dsl/std/host.scm:65",
+      "source_location": "src/dsl/std/host.scm:73",
       "range": {
-        "line": 64,
+        "line": 72,
         "start": 11,
         "length": 13
       },
@@ -5041,9 +4905,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/host.scm",
-      "source_location": "src/dsl/std/host.scm:89",
+      "source_location": "src/dsl/std/host.scm:97",
       "range": {
-        "line": 88,
+        "line": 96,
         "start": 10,
         "length": 7
       },
@@ -5075,9 +4939,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/host.scm",
-      "source_location": "src/dsl/std/host.scm:97",
+      "source_location": "src/dsl/std/host.scm:105",
       "range": {
-        "line": 96,
+        "line": 104,
         "start": 11,
         "length": 8
       },
@@ -5138,9 +5002,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/host.scm",
-      "source_location": "src/dsl/std/host.scm:72",
+      "source_location": "src/dsl/std/host.scm:80",
       "range": {
-        "line": 71,
+        "line": 79,
         "start": 11,
         "length": 13
       },
@@ -5666,7 +5530,7 @@
       "source_location": "src/extensions/distro/nix/profile.scm:16",
       "range": {
         "line": 15,
-        "start": 11,
+        "start": 10,
         "length": 20
       },
       "hidden": false
@@ -5698,7 +5562,7 @@
       "source_location": "src/extensions/distro/nix/profile.scm:26",
       "range": {
         "line": 25,
-        "start": 11,
+        "start": 10,
         "length": 24
       },
       "hidden": false
@@ -5735,9 +5599,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/distro/nix/profile.scm",
-      "source_location": "src/extensions/distro/nix/profile.scm:44",
+      "source_location": "src/extensions/distro/nix/profile.scm:43",
       "range": {
-        "line": 43,
+        "line": 42,
         "start": 11,
         "length": 19
       },
@@ -5775,9 +5639,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/distro/nix/profile.scm",
-      "source_location": "src/extensions/distro/nix/profile.scm:62",
+      "source_location": "src/extensions/distro/nix/profile.scm:61",
       "range": {
-        "line": 61,
+        "line": 60,
         "start": 11,
         "length": 20
       },
@@ -5802,9 +5666,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/distro/nix/profile.scm",
-      "source_location": "src/extensions/distro/nix/profile.scm:33",
+      "source_location": "src/extensions/distro/nix/profile.scm:32",
       "range": {
-        "line": 32,
+        "line": 31,
         "start": 11,
         "length": 23
       },
@@ -6534,7 +6398,7 @@
       "source_location": "src/dsl/std/path.scm:21",
       "range": {
         "line": 20,
-        "start": 10,
+        "start": 11,
         "length": 9
       },
       "hidden": false
@@ -6636,7 +6500,7 @@
       "source_location": "src/dsl/std/path.scm:67",
       "range": {
         "line": 66,
-        "start": 10,
+        "start": 11,
         "length": 14
       },
       "hidden": false
@@ -6733,9 +6597,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/catalog/platform.scm",
-      "source_location": "src/dsl/std/catalog/platform.scm:46",
+      "source_location": "src/dsl/std/catalog/platform.scm:45",
       "range": {
-        "line": 45,
+        "line": 44,
         "start": 11,
         "length": 22
       },
@@ -7392,9 +7256,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/config/vector.scm",
-      "source_location": "src/dsl/std/config/vector.scm:26",
+      "source_location": "src/dsl/std/config/vector.scm:30",
       "range": {
-        "line": 25,
+        "line": 29,
         "start": 14,
         "length": 15
       },
@@ -7419,11 +7283,38 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/config/vector.scm",
-      "source_location": "src/dsl/std/config/vector.scm:30",
+      "source_location": "src/dsl/std/config/vector.scm:34",
       "range": {
-        "line": 29,
+        "line": 33,
         "start": 14,
         "length": 16
+      },
+      "hidden": false
+    },
+    {
+      "name": "list->arr",
+      "kind": "function",
+      "signature": "(list->arr values)",
+      "summary": "Convert a Scheme list into a Scaffold vector value.",
+      "markdown": null,
+      "raw_markdown": null,
+      "rendered_markdown": "```scheme\n(list->arr values)\n```\n\nConvert a Scheme list into a Scaffold vector value.\n\n| Field | Value   |\n| ----- | ------- |\n| Group | Vectors |\n",
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Vectors",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/config/vector.scm",
+      "source_location": "src/dsl/std/config/vector.scm:18",
+      "range": {
+        "line": 17,
+        "start": 14,
+        "length": 9
       },
       "hidden": false
     },
@@ -7446,9 +7337,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/config/vector.scm",
-      "source_location": "src/dsl/std/config/vector.scm:22",
+      "source_location": "src/dsl/std/config/vector.scm:26",
       "range": {
-        "line": 21,
+        "line": 25,
         "start": 14,
         "length": 13
       },
@@ -7473,9 +7364,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/config/vector.scm",
-      "source_location": "src/dsl/std/config/vector.scm:18",
+      "source_location": "src/dsl/std/config/vector.scm:22",
       "range": {
-        "line": 17,
+        "line": 21,
         "start": 14,
         "length": 10
       },
@@ -7535,7 +7426,7 @@
       "source_location": "src/extensions/platform/windows/shell.scm:31",
       "range": {
         "line": 30,
-        "start": 11,
+        "start": 10,
         "length": 8
       },
       "hidden": false
@@ -7594,7 +7485,7 @@
       "source_location": "src/extensions/platform/windows/shell.scm:18",
       "range": {
         "line": 17,
-        "start": 11,
+        "start": 10,
         "length": 15
       },
       "hidden": false
@@ -7653,7 +7544,7 @@
       "source_location": "src/extensions/platform/windows/shell.scm:25",
       "range": {
         "line": 24,
-        "start": 11,
+        "start": 10,
         "length": 9
       },
       "hidden": false
@@ -7760,7 +7651,7 @@
       "source_location": "src/extensions/platform/windows/registry.scm:10",
       "range": {
         "line": 9,
-        "start": 11,
+        "start": 10,
         "length": 8
       },
       "hidden": false
@@ -7819,7 +7710,7 @@
       "source_location": "src/extensions/platform/windows/shell.scm:37",
       "range": {
         "line": 36,
-        "start": 11,
+        "start": 10,
         "length": 10
       },
       "hidden": false
@@ -7881,9 +7772,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/workspace.scm",
-      "source_location": "src/dsl/std/workspace.scm:25",
+      "source_location": "src/dsl/std/workspace.scm:30",
       "range": {
-        "line": 24,
+        "line": 29,
         "start": 10,
         "length": 10
       },
@@ -7910,9 +7801,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/workspace.scm",
-      "source_location": "src/dsl/std/workspace.scm:18",
+      "source_location": "src/dsl/std/workspace.scm:22",
       "range": {
-        "line": 17,
+        "line": 21,
         "start": 10,
         "length": 11
       },
@@ -7944,9 +7835,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/workspace.scm",
-      "source_location": "src/dsl/std/workspace.scm:32",
+      "source_location": "src/dsl/std/workspace.scm:43",
       "range": {
-        "line": 31,
+        "line": 42,
         "start": 11,
         "length": 14
       },
@@ -7973,9 +7864,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/workspace.scm",
-      "source_location": "src/dsl/std/workspace.scm:11",
+      "source_location": "src/dsl/std/workspace.scm:14",
       "range": {
-        "line": 10,
+        "line": 13,
         "start": 10,
         "length": 14
       },
@@ -8101,42 +7992,6 @@
       "hidden": false
     },
     {
-      "name": "npm/global-install-argv",
-      "kind": "function",
-      "signature": "(npm/global-install-argv package-name flag ...)",
-      "summary": "Build argv for globally installing an npm package.",
-      "markdown": null,
-      "raw_markdown": null,
-      "rendered_markdown": "```scheme\n(npm/global-install-argv package-name flag ...)\n```\n\nBuild argv for globally installing an npm package.\n\n| Field | Value |\n| ----- | ----- |\n| Group | npm   |\n\n**Parameters**\n\n| Parameter      | Description                                                  |\n| -------------- | ------------------------------------------------------------ |\n| `package-name` | npm package name.                                            |\n| `flag`         | Additional npm install flags placed before the package name. |\n\n**Returns:** Vector argv for `npm install --global`.",
-      "example": null,
-      "params": [
-        {
-          "name": "package-name",
-          "summary": "npm package name."
-        },
-        {
-          "name": "flag",
-          "summary": "Additional npm install flags placed before the package name."
-        }
-      ],
-      "returns": "Vector argv for `npm install --global`.",
-      "group": "npm",
-      "see": [],
-      "effect": null,
-      "requires_capability": [],
-      "stability": null,
-      "since": null,
-      "deprecated": null,
-      "source": "src/extensions/ecosystem/npm.scm",
-      "source_location": "src/extensions/ecosystem/npm.scm:18",
-      "range": {
-        "line": 17,
-        "start": 11,
-        "length": 23
-      },
-      "hidden": false
-    },
-    {
       "name": "npm/global-package-platform",
       "kind": "function",
       "signature": "(npm/global-package-platform predicate package-name option ...)",
@@ -8168,9 +8023,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/ecosystem/npm.scm",
-      "source_location": "src/extensions/ecosystem/npm.scm:69",
+      "source_location": "src/extensions/ecosystem/npm.scm:79",
       "range": {
-        "line": 68,
+        "line": 78,
         "start": 11,
         "length": 27
       },
@@ -8212,9 +8067,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/ecosystem/npm.scm",
-      "source_location": "src/extensions/ecosystem/npm.scm:41",
+      "source_location": "src/extensions/ecosystem/npm.scm:48",
       "range": {
-        "line": 40,
+        "line": 47,
         "start": 11,
         "length": 15
       },
@@ -8244,9 +8099,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/ecosystem/npm.scm",
-      "source_location": "src/extensions/ecosystem/npm.scm:28",
+      "source_location": "src/extensions/ecosystem/npm.scm:35",
       "range": {
-        "line": 27,
+        "line": 34,
         "start": 11,
         "length": 25
       },
@@ -8280,9 +8135,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/ecosystem/npm.scm",
-      "source_location": "src/extensions/ecosystem/npm.scm:87",
+      "source_location": "src/extensions/ecosystem/npm.scm:97",
       "range": {
-        "line": 86,
+        "line": 96,
         "start": 11,
         "length": 8
       },
@@ -8316,47 +8171,11 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/ecosystem/uv.scm",
-      "source_location": "src/extensions/ecosystem/uv.scm:33",
+      "source_location": "src/extensions/ecosystem/uv.scm:40",
       "range": {
-        "line": 32,
+        "line": 39,
         "start": 11,
         "length": 7
-      },
-      "hidden": false
-    },
-    {
-      "name": "uv/tool-install-argv",
-      "kind": "function",
-      "signature": "(uv/tool-install-argv package-name flag ...)",
-      "summary": "Build argv for installing or upgrading a Python tool with uv.",
-      "markdown": null,
-      "raw_markdown": null,
-      "rendered_markdown": "```scheme\n(uv/tool-install-argv package-name flag ...)\n```\n\nBuild argv for installing or upgrading a Python tool with uv.\n\n| Field | Value |\n| ----- | ----- |\n| Group | uv    |\n\n**Parameters**\n\n| Parameter      | Description                                                        |\n| -------------- | ------------------------------------------------------------------ |\n| `package-name` | Package name passed to `uv tool install`.                          |\n| `flag`         | Additional `uv tool install` flags placed before the package name. |\n\n**Returns:** Vector argv using `uv tool install --upgrade --force`.",
-      "example": null,
-      "params": [
-        {
-          "name": "package-name",
-          "summary": "Package name passed to `uv tool install`."
-        },
-        {
-          "name": "flag",
-          "summary": "Additional `uv tool install` flags placed before the package name."
-        }
-      ],
-      "returns": "Vector argv using `uv tool install --upgrade --force`.",
-      "group": "uv",
-      "see": [],
-      "effect": null,
-      "requires_capability": [],
-      "stability": null,
-      "since": null,
-      "deprecated": null,
-      "source": "src/extensions/ecosystem/uv.scm",
-      "source_location": "src/extensions/ecosystem/uv.scm:13",
-      "range": {
-        "line": 12,
-        "start": 11,
-        "length": 20
       },
       "hidden": false
     },
@@ -8392,9 +8211,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/ecosystem/uv.scm",
-      "source_location": "src/extensions/ecosystem/uv.scm:61",
+      "source_location": "src/extensions/ecosystem/uv.scm:68",
       "range": {
-        "line": 60,
+        "line": 67,
         "start": 11,
         "length": 16
       },
@@ -8424,9 +8243,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/ecosystem/uv.scm",
-      "source_location": "src/extensions/ecosystem/uv.scm:23",
+      "source_location": "src/extensions/ecosystem/uv.scm:30",
       "range": {
-        "line": 22,
+        "line": 29,
         "start": 11,
         "length": 22
       },
@@ -8460,9 +8279,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/ecosystem/uv.scm",
-      "source_location": "src/extensions/ecosystem/uv.scm:79",
+      "source_location": "src/extensions/ecosystem/uv.scm:86",
       "range": {
-        "line": 78,
+        "line": 85,
         "start": 11,
         "length": 8
       },

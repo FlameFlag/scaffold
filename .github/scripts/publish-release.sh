@@ -106,13 +106,11 @@ publish_rolling_release() {
     gh release edit "$release_tag" \
       --title "$release_title" \
       --notes-file "$notes_file" \
-      --prerelease \
       --latest=false
   else
     gh release create "$release_tag" \
       --title "$release_title" \
       --notes-file "$notes_file" \
-      --prerelease \
       --latest=false \
       --verify-tag
   fi

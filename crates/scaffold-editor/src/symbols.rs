@@ -1,3 +1,5 @@
+use crate::text::{SourceSpanKind, byte_offset_at_utf16_position, source_spans_line};
+
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
 pub struct SymbolRange {
     pub line: u32,
@@ -5,7 +7,7 @@ pub struct SymbolRange {
     pub length: u32,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, serde::Deserialize, serde::Serialize)]
 pub struct SymbolLocation {
     pub uri: String,
     pub line: u32,
@@ -43,7 +45,7 @@ pub fn reference_locations<'a>(
     documents: impl IntoIterator<Item = (&'a str, &'a str)>,
     symbol: &str,
 ) -> Vec<SymbolLocation> {
-    let mut locations = documents
+    documents
         .into_iter()
         .flat_map(|(uri, text)| {
             symbol_ranges(text, symbol)
@@ -55,16 +57,9 @@ pub fn reference_locations<'a>(
                     length: range.length,
                 })
         })
-        .collect::<Vec<_>>();
-    locations.sort_by(|left, right| {
-        left.uri
-            .cmp(&right.uri)
-            .then_with(|| left.line.cmp(&right.line))
-            .then_with(|| left.start.cmp(&right.start))
-            .then_with(|| left.length.cmp(&right.length))
-    });
-    locations.dedup();
-    locations
+        .collect::<std::collections::BTreeSet<_>>()
+        .into_iter()
+        .collect()
 }
 
 #[must_use]
@@ -78,7 +73,7 @@ pub fn symbol_at_position(text: &str, line: u32, character: u32) -> Option<Strin
 
 #[must_use]
 pub fn form_context_at_position(text: &str, line: u32, character: u32) -> Option<FormContext> {
-    form_context_at_offset(text, byte_offset_at_position(text, line, character)?)
+    form_context_at_offset(text, byte_offset_at_utf16_position(text, line, character)?)
 }
 
 #[must_use]
@@ -106,53 +101,14 @@ pub struct SymbolSpan<'a> {
 
 #[must_use]
 pub fn symbol_spans_line(line: &str) -> Vec<SymbolSpan<'_>> {
-    let mut spans = Vec::new();
-    let mut char_indices = line.char_indices().peekable();
-    while let Some((byte_index, ch)) = char_indices.next() {
-        if ch == ';' {
-            return spans;
-        }
-        if ch == '"' {
-            let end = skip_string(line, byte_index);
-            while char_indices.peek().is_some_and(|(index, _)| *index < end) {
-                let _advanced = char_indices.next();
-            }
-            continue;
-        }
-        if !is_symbol_start(ch) {
-            continue;
-        }
-
-        let start = byte_index;
-        let mut end = byte_index + ch.len_utf8();
-        while let Some((next_index, next)) = char_indices.peek().copied() {
-            if !is_symbol_continue(next) {
-                break;
-            }
-            let _advanced = char_indices.next();
-            end = next_index + next.len_utf8();
-        }
-
-        let symbol = &line[start..end];
-        spans.push(SymbolSpan {
-            text: symbol,
-            start: utf16_len(&line[..start]),
-            length: utf16_len(symbol),
-        });
-    }
-    spans
-}
-
-const fn is_symbol_start(ch: char) -> bool {
-    !ch.is_whitespace() && !matches!(ch, '(' | ')' | '[' | ']' | '"' | '\'' | '`' | ',' | ';')
-}
-
-const fn is_symbol_continue(ch: char) -> bool {
-    is_symbol_start(ch)
-}
-
-fn utf16_len(text: &str) -> u32 {
-    text.encode_utf16().count() as u32
+    source_spans_line(line)
+        .filter(|span| span.kind == SourceSpanKind::Symbol)
+        .map(|span| SymbolSpan {
+            text: span.text,
+            start: span.start_utf16(line),
+            length: span.len_utf16(),
+        })
+        .collect()
 }
 
 fn read_form_context(text: &str, open_offset: usize, cursor: usize) -> Option<FormContext> {
@@ -261,43 +217,8 @@ fn skipped_code_offset(text: &str, offset: usize, cursor: usize) -> Option<usize
     }
 }
 
-fn skip_string(text: &str, mut offset: usize) -> usize {
-    offset += 1;
-    let mut escaped = false;
-    while offset < text.len() {
-        let Some(ch) = text[offset..].chars().next() else {
-            return offset;
-        };
-        offset += ch.len_utf8();
-        if escaped {
-            escaped = false;
-        } else if ch == '\\' {
-            escaped = true;
-        } else if ch == '"' {
-            return offset;
-        }
-    }
-    text.len()
-}
-
 fn skip_string_to_cursor(text: &str, offset: usize, cursor: usize) -> usize {
-    let limit = cursor.min(text.len());
-    let mut index = offset + 1;
-    let mut escaped = false;
-    while index < limit {
-        let Some(ch) = char_at(text, index) else {
-            return previous_char_offset(text, limit).unwrap_or(offset);
-        };
-        if escaped {
-            escaped = false;
-        } else if ch == '\\' {
-            escaped = true;
-        } else if ch == '"' {
-            return index;
-        }
-        index += ch.len_utf8();
-    }
-    previous_char_offset(text, limit).unwrap_or(offset)
+    previous_char_offset(text, crate::text::skip_string(text, offset).min(cursor)).unwrap_or(offset)
 }
 
 fn skip_line_comment(text: &str, mut offset: usize, cursor: usize) -> usize {
@@ -357,38 +278,6 @@ fn previous_char_offset(text: &str, offset: usize) -> Option<usize> {
         .char_indices()
         .last()
         .map(|(index, _)| index)
-}
-
-fn byte_offset_at_position(text: &str, line: u32, character: u32) -> Option<usize> {
-    let mut line_start = 0;
-    for current_line in 0..=line {
-        if current_line == line {
-            let line_end = text[line_start..]
-                .find('\n')
-                .map_or(text.len(), |index| line_start + index);
-            return Some(
-                line_start + byte_offset_for_utf16(&text[line_start..line_end], character),
-            );
-        }
-        let next_newline = text[line_start..].find('\n')?;
-        line_start += next_newline + 1;
-    }
-    None
-}
-
-fn byte_offset_for_utf16(text: &str, character: u32) -> usize {
-    let target = character as usize;
-    let mut utf16 = 0;
-    for (byte_index, ch) in text.char_indices() {
-        if utf16 >= target {
-            return byte_index;
-        }
-        utf16 += ch.len_utf16();
-        if utf16 > target {
-            return byte_index;
-        }
-    }
-    text.len()
 }
 
 #[cfg(test)]

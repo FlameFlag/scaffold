@@ -51,12 +51,7 @@ impl ScaffoldMcp {
 
     pub(super) fn resolve_path(&self, path: &str) -> Result<PathBuf, McpError> {
         let ctx = self.context()?;
-        let path = PathBuf::from(path);
-        Ok(if path.is_absolute() {
-            path
-        } else {
-            ctx.root_dir.join(path)
-        })
+        Ok(ctx.resolve_workspace_path(path))
     }
 
     pub(super) fn catalog_path(&self) -> &Path {
@@ -151,12 +146,8 @@ mod tests {
 
     #[test]
     fn project_paths_include_existence_status() {
-        let root = std::env::temp_dir().join(format!(
-            "scaffold-mcp-paths-{}-missing-catalog",
-            std::process::id()
-        ));
-        std::fs::create_dir_all(&root).expect("root");
-        let catalog_path = root.join("scaffold.scm");
+        let root = tempfile::tempdir().expect("root");
+        let catalog_path = root.path().join("scaffold.scm");
         let server = ScaffoldMcp::new(catalog_path);
 
         let paths = server.project_paths_json().expect("paths");

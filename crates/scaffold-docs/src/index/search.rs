@@ -4,7 +4,10 @@ use nucleo_matcher::{
 };
 use scaffold_editor::reference::{ReferenceItem, same_markdown_paragraph};
 
-use super::model::{DocEntry, DocIndex};
+use super::{
+    join_text,
+    model::{DocEntry, DocIndex},
+};
 
 #[must_use]
 pub fn search_doc_entries<'a>(docs: &'a DocIndex, query: &str, limit: usize) -> Vec<&'a DocEntry> {
@@ -33,6 +36,7 @@ where
         })
         .collect::<Vec<_>>();
     let mut matcher = Matcher::new(FuzzyConfig::DEFAULT);
+    let mut buf = Vec::new();
     let mut matches = entries
         .into_iter()
         .filter(|entry| !entry.hidden())
@@ -45,7 +49,7 @@ where
             query_patterns
                 .iter()
                 .filter_map(|(query, pattern)| {
-                    reference_entry_search_score(entry, query, pattern, &mut matcher)
+                    reference_entry_search_score(entry, query, pattern, &mut matcher, &mut buf)
                 })
                 .max()
                 .map(|score| (entry, score))
@@ -64,27 +68,53 @@ where
 }
 
 fn search_query_variants(query: &str) -> Vec<String> {
-    let mut variants = vec![query.to_owned()];
-    if let Some(stripped) = source_location_query_without_column(query)
-        && stripped != query
-    {
-        variants.push(stripped.to_owned());
-    }
-    variants
+    std::iter::once(query.to_owned())
+        .chain(
+            source_location_query_without_column(query)
+                .filter(|stripped| *stripped != query)
+                .map(str::to_owned),
+        )
+        .collect()
+}
+
+#[must_use]
+pub fn source_path_from_location_query(query: &str) -> Option<&str> {
+    parse_source_location_query(query).map(|query| query.source)
 }
 
 fn source_location_query_without_column(query: &str) -> Option<&str> {
-    let (source_and_line, column) = query.rsplit_once(':')?;
-    if column.is_empty() || !column.chars().all(|ch| ch.is_ascii_digit()) {
+    parse_source_location_query(query)?.source_with_line
+}
+
+struct SourceLocationQuery<'a> {
+    source: &'a str,
+    source_with_line: Option<&'a str>,
+}
+
+fn parse_source_location_query(query: &str) -> Option<SourceLocationQuery<'_>> {
+    let (source_or_source_with_line, line_or_column) = query.rsplit_once(':')?;
+    if source_or_source_with_line.is_empty() || !is_ascii_digits(line_or_column) {
         return None;
     }
 
-    let (source, line) = source_and_line.rsplit_once(':')?;
-    if source.is_empty() || line.is_empty() || !line.chars().all(|ch| ch.is_ascii_digit()) {
-        return None;
+    if let Some((source, line)) = source_or_source_with_line.rsplit_once(':')
+        && !source.is_empty()
+        && is_ascii_digits(line)
+    {
+        return Some(SourceLocationQuery {
+            source,
+            source_with_line: Some(source_or_source_with_line),
+        });
     }
 
-    Some(source_and_line)
+    Some(SourceLocationQuery {
+        source: source_or_source_with_line,
+        source_with_line: None,
+    })
+}
+
+fn is_ascii_digits(value: &str) -> bool {
+    !value.is_empty() && value.chars().all(|ch| ch.is_ascii_digit())
 }
 
 #[must_use]
@@ -96,13 +126,13 @@ pub fn suggest_reference_entries<'a, E>(
 where
     E: ReferenceItem + 'a,
 {
-    let query = normalize_search_token(query);
+    let query = normalize_reference_query_token(query);
     let max_distance = suggestion_distance_threshold(&query);
     if max_distance == 0 {
         return Vec::new();
     }
 
-    let mut suggestions = entries
+    let mut matches = entries
         .into_iter()
         .filter(|entry| !entry.hidden())
         .filter_map(|entry| {
@@ -110,12 +140,12 @@ where
                 .map(|score| (entry, score))
         })
         .collect::<Vec<_>>();
-    suggestions.sort_by(|(left_entry, left_score), (right_entry, right_score)| {
+    matches.sort_by(|(left_entry, left_score), (right_entry, right_score)| {
         left_score
             .cmp(right_score)
             .then_with(|| left_entry.name().cmp(right_entry.name()))
     });
-    suggestions
+    matches
         .into_iter()
         .take(limit)
         .map(|(entry, _score)| entry)
@@ -127,22 +157,22 @@ fn reference_entry_search_score(
     query: &str,
     pattern: &Pattern,
     matcher: &mut Matcher,
+    buf: &mut Vec<char>,
 ) -> Option<u32> {
-    let mut buf = Vec::new();
     let searchable = reference_entry_search_text(entry);
-    let mut score = pattern.score(Utf32Str::new(&searchable, &mut buf), matcher)?;
+    let mut score = pattern.score(Utf32Str::new(&searchable, buf), matcher)?;
 
-    if let Some(name_score) = pattern.score(Utf32Str::new(entry.name(), &mut buf), matcher) {
+    if let Some(name_score) = pattern.score(Utf32Str::new(entry.name(), buf), matcher) {
         score += name_score * 8;
     }
     score += reference_entry_name_match_bonus(entry.name(), query);
     if let Some(signature) = entry.signature()
-        && let Some(signature_score) = pattern.score(Utf32Str::new(signature, &mut buf), matcher)
+        && let Some(signature_score) = pattern.score(Utf32Str::new(signature, buf), matcher)
     {
         score += signature_score * 4;
     }
     if let Some(summary) = entry.summary()
-        && let Some(summary_score) = pattern.score(Utf32Str::new(summary, &mut buf), matcher)
+        && let Some(summary_score) = pattern.score(Utf32Str::new(summary, buf), matcher)
     {
         score += summary_score * 2;
     }
@@ -156,24 +186,19 @@ fn reference_entry_suggestion_score(
     max_distance: usize,
 ) -> Option<usize> {
     reference_entry_suggestion_candidates(entry)
-        .into_iter()
         .filter(|(candidate, _)| !candidate.is_empty())
         .filter_map(|(candidate, priority)| {
-            let distance = edit_distance(query, &candidate, max_distance);
+            let distance = typo_distance(query, &candidate, max_distance);
             (distance <= max_distance).then_some(distance * 10 + priority)
         })
         .min()
 }
 
-fn reference_entry_suggestion_candidates(entry: &impl ReferenceItem) -> Vec<(String, usize)> {
-    let mut candidates = Vec::new();
-    candidates.push((normalize_search_token(entry.name()), 0));
-    candidates.extend(
-        search_field_tokens(entry.name())
-            .into_iter()
-            .map(|token| (token, 1)),
-    );
-    candidates
+fn reference_entry_suggestion_candidates(
+    entry: &impl ReferenceItem,
+) -> impl Iterator<Item = (String, usize)> + '_ {
+    std::iter::once((normalize_reference_query_token(entry.name()), 0))
+        .chain(search_field_tokens(entry.name()).map(|token| (token, 1)))
 }
 
 fn suggestion_distance_threshold(query: &str) -> usize {
@@ -186,12 +211,12 @@ fn suggestion_distance_threshold(query: &str) -> usize {
 }
 
 fn reference_entry_name_match_bonus(name: &str, query: &str) -> u32 {
-    let query = normalize_search_token(query);
+    let query = normalize_reference_query_token(query);
     if query.is_empty() {
         return 0;
     }
 
-    let name = normalize_search_token(name);
+    let name = normalize_reference_query_token(name);
     if name == query {
         return 1_000_000 + query.len() as u32;
     }
@@ -203,31 +228,26 @@ fn reference_entry_name_match_bonus(name: &str, query: &str) -> u32 {
 }
 
 fn reference_entry_is_plausible_fuzzy_match(entry: &impl ReferenceItem, query: &str) -> bool {
-    let tokens = query
+    let mut tokens = query
         .split_whitespace()
-        .map(normalize_search_token)
+        .map(normalize_reference_query_token)
         .filter(|token| !token.is_empty())
-        .collect::<Vec<_>>();
-    if tokens.is_empty() {
+        .peekable();
+    if tokens.peek().is_none() {
         return false;
     }
 
-    let symbolic_fields = reference_entry_symbolic_search_fields(entry);
-    let prose_fields = reference_entry_prose_search_fields(entry)
-        .iter()
-        .map(|field| normalize_search_token(field))
-        .collect::<Vec<_>>();
-
-    tokens.iter().all(|token| {
-        symbolic_fields
-            .iter()
-            .any(|field| symbolic_field_matches_token(field, token))
-            || prose_fields.iter().any(|field| field.contains(token))
+    tokens.all(|token| {
+        reference_entry_symbolic_search_fields(entry)
+            .any(|field| symbolic_field_matches_token(&field, &token))
+            || reference_entry_prose_search_fields(entry)
+                .map(|field| normalize_reference_query_token(&field))
+                .any(|field| field.contains(&token))
     })
 }
 
 fn symbolic_field_matches_token(field: &str, token: &str) -> bool {
-    let normalized_field = normalize_search_token(field);
+    let normalized_field = normalize_reference_query_token(field);
     if normalized_field == token
         || normalized_field.starts_with(token)
         || normalized_field.contains(token)
@@ -235,7 +255,7 @@ fn symbolic_field_matches_token(field: &str, token: &str) -> bool {
         return true;
     }
 
-    search_field_tokens(field).into_iter().any(|field_token| {
+    search_field_tokens(field).any(|field_token| {
         field_token == token
             || field_token.starts_with(token)
             || field_token.contains(token)
@@ -244,13 +264,17 @@ fn symbolic_field_matches_token(field: &str, token: &str) -> bool {
 }
 
 fn reference_entry_search_text(entry: &impl ReferenceItem) -> String {
-    let mut fields = reference_entry_symbolic_search_fields(entry);
-    fields.extend(reference_entry_prose_search_fields(entry));
-    fields.join(" ")
+    join_text(
+        reference_entry_symbolic_search_fields(entry)
+            .chain(reference_entry_prose_search_fields(entry)),
+        " ",
+    )
 }
 
-fn reference_entry_symbolic_search_fields(entry: &impl ReferenceItem) -> Vec<String> {
-    let mut parts = vec![
+fn reference_entry_symbolic_search_fields(
+    entry: &impl ReferenceItem,
+) -> impl Iterator<Item = String> + '_ {
+    [
         entry.name().to_owned(),
         entry.group().unwrap_or("Language").to_owned(),
         entry.signature().unwrap_or_default().to_owned(),
@@ -259,30 +283,30 @@ fn reference_entry_symbolic_search_fields(entry: &impl ReferenceItem) -> Vec<Str
         entry.effect().unwrap_or_default().to_owned(),
         entry.since().unwrap_or_default().to_owned(),
         entry.stability().unwrap_or_default().to_owned(),
-    ];
-    parts.extend(entry.params().iter().map(|param| param.name.to_owned()));
-    parts.extend(entry.see().into_iter().map(str::to_owned));
-    parts.extend(entry.requires_capability().into_iter().map(str::to_owned));
-    parts
+    ]
+    .into_iter()
+    .chain(entry.params().map(|param| param.name.to_owned()))
+    .chain(entry.see().map(str::to_owned))
+    .chain(entry.requires_capability().map(str::to_owned))
 }
 
-pub(super) fn reference_entry_prose_search_fields(entry: &impl ReferenceItem) -> Vec<String> {
+pub(super) fn reference_entry_prose_search_fields(
+    entry: &impl ReferenceItem,
+) -> impl Iterator<Item = String> + '_ {
     let summary = entry.summary().unwrap_or_default();
     let markdown = entry.markdown().unwrap_or_default();
-    let mut parts = vec![summary.to_owned()];
-    if !same_markdown_paragraph(summary, markdown) {
-        parts.push(markdown.to_owned());
-    }
-    parts.extend([
-        entry.example().unwrap_or_default().to_owned(),
-        entry.returns().unwrap_or_default().to_owned(),
-        entry.deprecated().unwrap_or_default().to_owned(),
-    ]);
-    parts.extend(entry.params().iter().map(|param| param.summary.to_owned()));
-    parts
+    std::iter::once(summary.to_owned())
+        .chain((!same_markdown_paragraph(summary, markdown)).then_some(markdown.to_owned()))
+        .chain([
+            entry.example().unwrap_or_default().to_owned(),
+            entry.returns().unwrap_or_default().to_owned(),
+            entry.deprecated().unwrap_or_default().to_owned(),
+        ])
+        .chain(entry.params().map(|param| param.summary.to_owned()))
 }
 
-fn normalize_search_token(value: &str) -> String {
+#[must_use]
+pub fn normalize_reference_query_token(value: &str) -> String {
     value
         .chars()
         .filter(|ch| ch.is_alphanumeric())
@@ -290,12 +314,11 @@ fn normalize_search_token(value: &str) -> String {
         .collect()
 }
 
-fn search_field_tokens(value: &str) -> Vec<String> {
+fn search_field_tokens(value: &str) -> impl Iterator<Item = String> + '_ {
     value
         .split(|ch: char| !ch.is_alphanumeric())
-        .map(normalize_search_token)
+        .map(normalize_reference_query_token)
         .filter(|token| !token.is_empty())
-        .collect()
 }
 
 fn is_subsequence(needle: &str, haystack: &str) -> bool {
@@ -305,46 +328,10 @@ fn is_subsequence(needle: &str, haystack: &str) -> bool {
         .all(|needle_ch| chars.any(|ch| ch == needle_ch))
 }
 
-fn edit_distance(left: &str, right: &str, max_distance: usize) -> usize {
-    let left = left.chars().collect::<Vec<_>>();
-    let right = right.chars().collect::<Vec<_>>();
-    if left.len().abs_diff(right.len()) > max_distance {
+fn typo_distance(left: &str, right: &str, max_distance: usize) -> usize {
+    if left.chars().count().abs_diff(right.chars().count()) > max_distance {
         return max_distance + 1;
     }
 
-    let mut distances = vec![vec![0; right.len() + 1]; left.len() + 1];
-    for (index, row) in distances.iter_mut().enumerate() {
-        row[0] = index;
-    }
-    for (index, cell) in distances[0].iter_mut().enumerate() {
-        *cell = index;
-    }
-
-    for left_index in 1..=left.len() {
-        let mut row_min = distances[left_index][0];
-        for right_index in 1..=right.len() {
-            let cost = usize::from(left[left_index - 1] != right[right_index - 1]);
-            let insert = distances[left_index][right_index - 1] + 1;
-            let delete = distances[left_index - 1][right_index] + 1;
-            let replace = distances[left_index - 1][right_index - 1] + cost;
-            let mut distance = insert.min(delete).min(replace);
-
-            if left_index > 1
-                && right_index > 1
-                && left[left_index - 1] == right[right_index - 2]
-                && left[left_index - 2] == right[right_index - 1]
-            {
-                distance = distance.min(distances[left_index - 2][right_index - 2] + 1);
-            }
-
-            distances[left_index][right_index] = distance;
-            row_min = row_min.min(distance);
-        }
-
-        if row_min > max_distance {
-            return max_distance + 1;
-        }
-    }
-
-    distances[left.len()][right.len()]
+    strsim::osa_distance(left, right)
 }

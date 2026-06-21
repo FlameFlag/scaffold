@@ -1,5 +1,7 @@
 use std::collections::HashSet;
 
+use crate::text::{SourceSpanKind, source_spans_line};
+
 pub const TOKEN_FUNCTION: &str = "function";
 pub const TOKEN_KEYWORD: &str = "keyword";
 pub const TOKEN_STRING: &str = "string";
@@ -85,58 +87,43 @@ fn scan_semantic_line<I>(
 ) where
     I: SemanticReferenceIndex,
 {
-    let mut char_indices = line.char_indices().peekable();
-    while let Some((byte_index, ch)) = char_indices.next() {
-        if ch == ';' {
-            output.push(SemanticToken {
-                text: line[byte_index..].to_owned(),
-                line: line_index,
-                start: utf16_len(&line[..byte_index]),
-                length: utf16_len(&line[byte_index..]),
-                token_type: TOKEN_COMMENT,
-                modifiers: Vec::new(),
-            });
-            return;
-        }
-        if ch == '"' {
-            let start = byte_index;
-            let end = skip_string(line, byte_index);
-            output.push(SemanticToken {
-                text: line[start..end].to_owned(),
-                line: line_index,
-                start: utf16_len(&line[..start]),
-                length: utf16_len(&line[start..end]),
-                token_type: TOKEN_STRING,
-                modifiers: Vec::new(),
-            });
-            while char_indices.peek().is_some_and(|(index, _)| *index < end) {
-                let _advanced = char_indices.next();
+    for span in source_spans_line(line) {
+        match span.kind {
+            SourceSpanKind::Comment => {
+                output.push(SemanticToken {
+                    text: span.text.to_owned(),
+                    line: line_index,
+                    start: span.start_utf16(line),
+                    length: span.len_utf16(),
+                    token_type: TOKEN_COMMENT,
+                    modifiers: Vec::new(),
+                });
+                return;
             }
-            continue;
-        }
-        if !is_symbol_start(ch) {
-            continue;
-        }
-
-        let start = byte_index;
-        let mut end = byte_index + ch.len_utf8();
-        while let Some((next_index, next)) = char_indices.peek().copied() {
-            if !is_symbol_continue(next) {
-                break;
+            SourceSpanKind::String => {
+                output.push(SemanticToken {
+                    text: span.text.to_owned(),
+                    line: line_index,
+                    start: span.start_utf16(line),
+                    length: span.len_utf16(),
+                    token_type: TOKEN_STRING,
+                    modifiers: Vec::new(),
+                });
             }
-            let _advanced = char_indices.next();
-            end = next_index + next.len_utf8();
-        }
-        let symbol = &line[start..end];
-        if let Some((token_type, modifiers)) = classify_symbol(index, symbol, user_symbols) {
-            output.push(SemanticToken {
-                text: symbol.to_owned(),
-                line: line_index,
-                start: utf16_len(&line[..start]),
-                length: utf16_len(symbol),
-                token_type,
-                modifiers,
-            });
+            SourceSpanKind::Symbol => {
+                if let Some((token_type, modifiers)) =
+                    classify_symbol(index, span.text, user_symbols)
+                {
+                    output.push(SemanticToken {
+                        text: span.text.to_owned(),
+                        line: line_index,
+                        start: span.start_utf16(line),
+                        length: span.len_utf16(),
+                        token_type,
+                        modifiers,
+                    });
+                }
+            }
         }
     }
 }
@@ -186,37 +173,6 @@ fn entry_is_default_library(entry: &ReferenceInfo) -> bool {
             || source.starts_with("src/dsl/std/")
             || source.starts_with("src/extensions/")
     })
-}
-
-const fn is_symbol_start(ch: char) -> bool {
-    !ch.is_whitespace() && !matches!(ch, '(' | ')' | '[' | ']' | '"' | '\'' | '`' | ',' | ';')
-}
-
-const fn is_symbol_continue(ch: char) -> bool {
-    is_symbol_start(ch)
-}
-
-fn utf16_len(text: &str) -> u32 {
-    text.encode_utf16().count() as u32
-}
-
-fn skip_string(text: &str, mut offset: usize) -> usize {
-    offset += 1;
-    let mut escaped = false;
-    while offset < text.len() {
-        let Some(ch) = text[offset..].chars().next() else {
-            return offset;
-        };
-        offset += ch.len_utf8();
-        if escaped {
-            escaped = false;
-        } else if ch == '\\' {
-            escaped = true;
-        } else if ch == '"' {
-            return offset;
-        }
-    }
-    text.len()
 }
 
 #[cfg(test)]

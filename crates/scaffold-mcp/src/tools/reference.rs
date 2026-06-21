@@ -38,9 +38,7 @@ impl ScaffoldMcp {
             }),
             ReferenceFormat::Json => json!({
                 "format": "json",
-                "content": serde_json::from_str::<serde_json::Value>(
-                    &docs::scaffold_reference_json().map_err(internal_error)?
-                ).map_err(internal_error)?,
+                "content": docs::scaffold_reference_value().map_err(internal_error)?,
             }),
         };
         Ok(structured(value))
@@ -79,8 +77,8 @@ fn reference_format(format: Option<&str>) -> Result<ReferenceFormat, McpError> {
     match format.to_ascii_lowercase().as_str() {
         "markdown" | "md" => Ok(ReferenceFormat::Markdown),
         "json" => Ok(ReferenceFormat::Json),
-        other => Err(McpError::invalid_params(
-            format!("unsupported reference format `{other}`"),
+        _ => Err(McpError::invalid_params(
+            format!("unsupported reference format `{format}`"),
             None,
         )),
     }
@@ -117,17 +115,11 @@ fn reference_search_response(query: &str, limit: usize) -> Value {
     let index = DocIndex::scaffold();
     let matches = search_doc_entries(&index, query, limit);
     let suggestions = if matches.is_empty() {
-        suggest_doc_entries(&index, query, 5)
-            .into_iter()
-            .map(reference_entry_json)
-            .collect::<Vec<_>>()
+        reference_entries_json(suggest_doc_entries(&index, query, 5))
     } else {
         Vec::new()
     };
-    let entries = matches
-        .into_iter()
-        .map(reference_entry_json)
-        .collect::<Vec<_>>();
+    let entries = reference_entries_json(matches);
     let mut response = json!({
         "mode": "search",
         "query": query,
@@ -139,6 +131,10 @@ fn reference_search_response(query: &str, limit: usize) -> Value {
         response["suggestions"] = json!(suggestions);
     }
     response
+}
+
+fn reference_entries_json<'a>(entries: impl IntoIterator<Item = &'a DocEntry>) -> Vec<Value> {
+    entries.into_iter().map(reference_entry_json).collect()
 }
 
 fn reference_entry_json(entry: &DocEntry) -> Value {

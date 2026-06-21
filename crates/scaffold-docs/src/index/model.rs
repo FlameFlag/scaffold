@@ -31,6 +31,17 @@ pub struct SourceRange {
     pub end: SourcePosition,
 }
 
+impl SourceRange {
+    #[must_use]
+    pub const fn symbol_range(self) -> scaffold_editor::symbols::SymbolRange {
+        scaffold_editor::symbols::SymbolRange {
+            line: self.start.line,
+            start: self.start.character,
+            length: self.end.character.saturating_sub(self.start.character),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DocEntry {
     pub name: String,
@@ -117,21 +128,15 @@ impl ReferenceEntry for DocEntry {
         self.effect.as_deref()
     }
 
-    fn requires_capability(&self) -> Vec<&str> {
-        self.requires_capability
-            .iter()
-            .map(String::as_str)
-            .collect()
+    fn requires_capability(&self) -> impl Iterator<Item = &str> {
+        self.requires_capability.iter().map(String::as_str)
     }
 
-    fn params(&self) -> Vec<EditorReferenceParam<'_>> {
-        self.params
-            .iter()
-            .map(|param| EditorReferenceParam {
-                name: &param.name,
-                summary: &param.summary,
-            })
-            .collect()
+    fn params(&self) -> impl Iterator<Item = EditorReferenceParam<'_>> {
+        self.params.iter().map(|param| EditorReferenceParam {
+            name: &param.name,
+            summary: &param.summary,
+        })
     }
 
     fn returns(&self) -> Option<&str> {
@@ -150,8 +155,8 @@ impl ReferenceEntry for DocEntry {
         self.deprecated.as_deref()
     }
 
-    fn see(&self) -> Vec<&str> {
-        self.see.iter().map(String::as_str).collect()
+    fn see(&self) -> impl Iterator<Item = &str> {
+        self.see.iter().map(String::as_str)
     }
 }
 
@@ -180,12 +185,7 @@ impl ReferenceItem for DocEntry {
     }
 
     fn range(&self) -> Option<scaffold_editor::symbols::SymbolRange> {
-        let range = self.range?;
-        Some(scaffold_editor::symbols::SymbolRange {
-            line: range.start.line,
-            start: range.start.character,
-            length: range.end.character.saturating_sub(range.start.character),
-        })
+        self.range.map(SourceRange::symbol_range)
     }
 }
 
@@ -234,18 +234,19 @@ impl DocIndex {
 
     #[must_use]
     pub fn with_language_keywords() -> Self {
-        let mut index = Self {
-            entries: BTreeMap::new(),
-        };
-        for (name, signature, summary, snippet_source) in LANGUAGE_KEYWORDS {
-            let mut entry = DocEntry::new(*name, DocKind::Keyword);
-            entry.signature = Some((*signature).to_owned());
-            entry.summary = Some((*summary).to_owned());
-            entry.markdown = Some((*summary).to_owned());
-            entry.source = Some((*snippet_source).to_owned());
-            index.insert(entry);
+        Self {
+            entries: LANGUAGE_KEYWORDS
+                .iter()
+                .map(|(name, signature, summary, snippet_source)| {
+                    let mut entry = DocEntry::new(*name, DocKind::Keyword);
+                    entry.signature = Some((*signature).to_owned());
+                    entry.summary = Some((*summary).to_owned());
+                    entry.markdown = Some((*summary).to_owned());
+                    entry.source = Some((*snippet_source).to_owned());
+                    ((*name).to_owned(), entry)
+                })
+                .collect(),
         }
-        index
     }
 
     pub fn extend_source(&mut self, source_name: &str, source: &str) {
@@ -288,10 +289,13 @@ impl DocIndex {
         self.entries.values().filter(|entry| !entry.hidden)
     }
 
-    pub fn entries_in_source<'a>(
-        &'a self,
-        source_name: &'a str,
-    ) -> impl Iterator<Item = &'a DocEntry> + 'a {
+    pub fn entries_in_source<'index, 'source>(
+        &'index self,
+        source_name: &'source str,
+    ) -> impl Iterator<Item = &'index DocEntry> + 'source
+    where
+        'index: 'source,
+    {
         self.entries
             .values()
             .filter(move |entry| entry.source.as_deref() == Some(source_name))

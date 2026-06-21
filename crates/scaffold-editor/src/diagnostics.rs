@@ -70,7 +70,7 @@ pub fn missing_doc_diagnostics(text: &str) -> Vec<Diagnostic> {
         .map(|definition| Diagnostic {
             message: missing_doc_message(&definition.name),
             offset: definition.offset,
-            length: definition.name.encode_utf16().count(),
+            length: crate::utf16_len(&definition.name) as usize,
             severity: DiagnosticSeverity::Warning,
             code: MISSING_DOC_CODE,
             data: Some(DiagnosticData {

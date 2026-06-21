@@ -605,9 +605,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/app/winget.scm",
-      "source_location": "src/extensions/app/winget.scm:59",
+      "source_location": "src/extensions/app/winget.scm:56",
       "range": {
-        "line": 58,
+        "line": 55,
         "start": 11,
         "length": 16
       },
@@ -649,9 +649,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/app/winget.scm",
-      "source_location": "src/extensions/app/winget.scm:81",
+      "source_location": "src/extensions/app/winget.scm:66",
       "range": {
-        "line": 80,
+        "line": 65,
         "start": 11,
         "length": 14
       },
@@ -685,9 +685,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/app/winget.scm",
-      "source_location": "src/extensions/app/winget.scm:108",
+      "source_location": "src/extensions/app/winget.scm:93",
       "range": {
-        "line": 107,
+        "line": 92,
         "start": 11,
         "length": 23
       },
@@ -712,9 +712,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/app/winget.scm",
-      "source_location": "src/extensions/app/winget.scm:50",
+      "source_location": "src/extensions/app/winget.scm:48",
       "range": {
-        "line": 49,
+        "line": 47,
         "start": 11,
         "length": 21
       },
@@ -739,9 +739,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/app/winget.scm",
-      "source_location": "src/extensions/app/winget.scm:39",
+      "source_location": "src/extensions/app/winget.scm:38",
       "range": {
-        "line": 38,
+        "line": 37,
         "start": 11,
         "length": 19
       },
@@ -999,9 +999,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/build/cmake.scm",
-      "source_location": "src/extensions/build/cmake.scm:56",
+      "source_location": "src/extensions/build/cmake.scm:54",
       "range": {
-        "line": 55,
+        "line": 53,
         "start": 11,
         "length": 18
       },
@@ -1026,9 +1026,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/build/cmake.scm",
-      "source_location": "src/extensions/build/cmake.scm:45",
+      "source_location": "src/extensions/build/cmake.scm:43",
       "range": {
-        "line": 44,
+        "line": 42,
         "start": 11,
         "length": 10
       },
@@ -1398,9 +1398,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/ecosystem/bun.scm",
-      "source_location": "src/extensions/ecosystem/bun.scm:78",
+      "source_location": "src/extensions/ecosystem/bun.scm:67",
       "range": {
-        "line": 77,
+        "line": 66,
         "start": 11,
         "length": 27
       },
@@ -1442,9 +1442,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/ecosystem/bun.scm",
-      "source_location": "src/extensions/ecosystem/bun.scm:51",
+      "source_location": "src/extensions/ecosystem/bun.scm:39",
       "range": {
-        "line": 50,
+        "line": 38,
         "start": 11,
         "length": 15
       },
@@ -1510,9 +1510,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/ecosystem/bun.scm",
-      "source_location": "src/extensions/ecosystem/bun.scm:95",
+      "source_location": "src/extensions/ecosystem/bun.scm:85",
       "range": {
-        "line": 94,
+        "line": 84,
         "start": 11,
         "length": 9
       },
@@ -1586,9 +1586,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/ecosystem/cargo.scm",
-      "source_location": "src/extensions/ecosystem/cargo.scm:131",
+      "source_location": "src/extensions/ecosystem/cargo.scm:118",
       "range": {
-        "line": 130,
+        "line": 117,
         "start": 11,
         "length": 20
       },
@@ -1630,9 +1630,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/ecosystem/cargo.scm",
-      "source_location": "src/extensions/ecosystem/cargo.scm:99",
+      "source_location": "src/extensions/ecosystem/cargo.scm:87",
       "range": {
-        "line": 98,
+        "line": 86,
         "start": 11,
         "length": 16
       },
@@ -1833,6 +1833,40 @@
       "hidden": false
     },
     {
+      "name": "catalog/from-lists",
+      "kind": "function",
+      "signature": "(catalog/from-lists tool-list ...)",
+      "summary": "Build a catalog by appending multiple Scheme lists of tool objects.",
+      "markdown": "Use this when catalogs are organized into modules that each return a list of tools. It avoids the usual `(apply catalog (append ...))` boilerplate while preserving list order.",
+      "raw_markdown": "Use this when catalogs are organized into modules that each return a list of tools. It avoids the usual `(apply catalog (append ...))` boilerplate while preserving list order.",
+      "rendered_markdown": "```scheme\n(catalog/from-lists tool-list ...)\n```\n\nBuild a catalog by appending multiple Scheme lists of tool objects.\n\n| Field | Value   |\n| ----- | ------- |\n| Group | Catalog |\n\n**Parameters**\n\n| Parameter   | Description                                                                      |\n| ----------- | -------------------------------------------------------------------------------- |\n| `tool-list` | A Scheme list of tool objects, such as the result of a grouped `*/tools` helper. |\n\n**Returns:** An object with a `tools` vector containing every tool in order.\n\nUse this when catalogs are organized into modules that each return a list of tools. It avoids the usual `(apply catalog (append ...))` boilerplate while preserving list order.\n\n**Example**\n\n```scheme\n(catalog/from-lists\n  (prerequisites/tools)\n  (ecosystem/tools)\n  (apps/tools))\n```\n\n**See also:** `catalog`",
+      "example": "(catalog/from-lists\n  (prerequisites/tools)\n  (ecosystem/tools)\n  (apps/tools))",
+      "params": [
+        {
+          "name": "tool-list",
+          "summary": "A Scheme list of tool objects, such as the result of a grouped `*/tools` helper."
+        }
+      ],
+      "returns": "An object with a `tools` vector containing every tool in order.",
+      "group": "Catalog",
+      "see": [
+        "catalog"
+      ],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/root.scm",
+      "source_location": "src/dsl/std/catalog/root.scm:29",
+      "range": {
+        "line": 28,
+        "start": 11,
+        "length": 18
+      },
+      "hidden": false
+    },
+    {
       "name": "catalog/tool",
       "kind": "keyword",
       "signature": "(catalog/tool name action field ...)",
@@ -1866,9 +1900,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/catalog/root.scm",
-      "source_location": "src/dsl/std/catalog/root.scm:29",
+      "source_location": "src/dsl/std/catalog/root.scm:59",
       "range": {
-        "line": 28,
+        "line": 58,
         "start": 17,
         "length": 12
       },
@@ -1988,9 +2022,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/catalog/helper.scm",
-      "source_location": "src/dsl/std/catalog/helper.scm:54",
+      "source_location": "src/dsl/std/catalog/helper.scm:85",
       "range": {
-        "line": 53,
+        "line": 84,
         "start": 11,
         "length": 21
       },
@@ -2028,9 +2062,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/catalog/helper.scm",
-      "source_location": "src/dsl/std/catalog/helper.scm:65",
+      "source_location": "src/dsl/std/catalog/helper.scm:96",
       "range": {
-        "line": 64,
+        "line": 95,
         "start": 11,
         "length": 27
       },
@@ -2415,9 +2449,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/catalog/root.scm",
-      "source_location": "src/dsl/std/catalog/root.scm:47",
+      "source_location": "src/dsl/std/catalog/root.scm:77",
       "range": {
-        "line": 46,
+        "line": 76,
         "start": 17,
         "length": 13
       },
@@ -2521,6 +2555,40 @@
       "hidden": false
     },
     {
+      "name": "tool-list/from-lists",
+      "kind": "function",
+      "signature": "(tool-list/from-lists tool-list ...)",
+      "summary": "Append grouped Scheme lists of tool objects into one tool list.",
+      "markdown": "Use this inside catalog library modules that return lists of tools. It is the list-returning companion to `catalog/from-lists`.",
+      "raw_markdown": "Use this inside catalog library modules that return lists of tools. It is the list-returning companion to `catalog/from-lists`.",
+      "rendered_markdown": "```scheme\n(tool-list/from-lists tool-list ...)\n```\n\nAppend grouped Scheme lists of tool objects into one tool list.\n\n| Field | Value   |\n| ----- | ------- |\n| Group | Catalog |\n\n**Parameters**\n\n| Parameter   | Description                                                                      |\n| ----------- | -------------------------------------------------------------------------------- |\n| `tool-list` | A Scheme list of tool objects, such as the result of a grouped `*/tools` helper. |\n\n**Returns:** A Scheme list containing every tool in order.\n\nUse this inside catalog library modules that return lists of tools. It is the list-returning companion to `catalog/from-lists`.\n\n**Example**\n\n```scheme\n(define (desktop/tools)\n  (tool-list/from-lists\n    (terminal/tools)\n    (editor/tools)))\n```\n\n**See also:** `catalog/from-lists`",
+      "example": "(define (desktop/tools)\n  (tool-list/from-lists\n    (terminal/tools)\n    (editor/tools)))",
+      "params": [
+        {
+          "name": "tool-list",
+          "summary": "A Scheme list of tool objects, such as the result of a grouped `*/tools` helper."
+        }
+      ],
+      "returns": "A Scheme list containing every tool in order.",
+      "group": "Catalog",
+      "see": [
+        "catalog/from-lists"
+      ],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/root.scm",
+      "source_location": "src/dsl/std/catalog/root.scm:44",
+      "range": {
+        "line": 43,
+        "start": 11,
+        "length": 20
+      },
+      "hidden": false
+    },
+    {
       "name": "tool/append-bins",
       "kind": "function",
       "signature": "(tool/append-bins obj bin ...)",
@@ -2548,6 +2616,70 @@
       "hidden": false
     },
     {
+      "name": "tool/bins",
+      "kind": "function",
+      "signature": "(tool/bins bin ...)",
+      "summary": "Create a `bins` field for a tool.",
+      "markdown": null,
+      "raw_markdown": null,
+      "rendered_markdown": "```scheme\n(tool/bins bin ...)\n```\n\nCreate a `bins` field for a tool.\n\n| Field | Value   |\n| ----- | ------- |\n| Group | Catalog |\n\n**Parameters**\n\n| Parameter | Description                                                                     |\n| --------- | ------------------------------------------------------------------------------- |\n| `bin`     | Binary descriptor such as `(bin \"name\")` or `(bin/version \"name\" \"--version\")`. |\n",
+      "example": null,
+      "params": [
+        {
+          "name": "bin",
+          "summary": "Binary descriptor such as `(bin \"name\")` or `(bin/version \"name\" \"--version\")`."
+        }
+      ],
+      "returns": null,
+      "group": "Catalog",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/helper.scm",
+      "source_location": "src/dsl/std/catalog/helper.scm:50",
+      "range": {
+        "line": 49,
+        "start": 11,
+        "length": 9
+      },
+      "hidden": false
+    },
+    {
+      "name": "tool/checks",
+      "kind": "function",
+      "signature": "(tool/checks check ...)",
+      "summary": "Create a `checks` field for a tool.",
+      "markdown": null,
+      "raw_markdown": null,
+      "rendered_markdown": "```scheme\n(tool/checks check ...)\n```\n\nCreate a `checks` field for a tool.\n\n| Field | Value   |\n| ----- | ------- |\n| Group | Catalog |\n\n**Parameters**\n\n| Parameter | Description                                            |\n| --------- | ------------------------------------------------------ |\n| `check`   | Check descriptor created with `check` or `host/check`. |\n",
+      "example": null,
+      "params": [
+        {
+          "name": "check",
+          "summary": "Check descriptor created with `check` or `host/check`."
+        }
+      ],
+      "returns": null,
+      "group": "Catalog",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/helper.scm",
+      "source_location": "src/dsl/std/catalog/helper.scm:57",
+      "range": {
+        "line": 56,
+        "start": 11,
+        "length": 11
+      },
+      "hidden": false
+    },
+    {
       "name": "tool/inherit",
       "kind": "function",
       "signature": "(tool/inherit base field ...)",
@@ -2568,9 +2700,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/catalog/base.scm",
-      "source_location": "src/dsl/std/catalog/base.scm:115",
+      "source_location": "src/dsl/std/catalog/base.scm:126",
       "range": {
-        "line": 114,
+        "line": 125,
         "start": 14,
         "length": 12
       },
@@ -2606,11 +2738,43 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/catalog/base.scm",
-      "source_location": "src/dsl/std/catalog/base.scm:121",
+      "source_location": "src/dsl/std/catalog/base.scm:132",
       "range": {
-        "line": 120,
+        "line": 131,
         "start": 14,
         "length": 13
+      },
+      "hidden": false
+    },
+    {
+      "name": "tool/paths",
+      "kind": "function",
+      "signature": "(tool/paths path ...)",
+      "summary": "Create a `paths` field for a tool.",
+      "markdown": null,
+      "raw_markdown": null,
+      "rendered_markdown": "```scheme\n(tool/paths path ...)\n```\n\nCreate a `paths` field for a tool.\n\n| Field | Value   |\n| ----- | ------- |\n| Group | Catalog |\n\n**Parameters**\n\n| Parameter | Description                               |\n| --------- | ----------------------------------------- |\n| `path`    | Path descriptor created with `tool/path`. |\n",
+      "example": null,
+      "params": [
+        {
+          "name": "path",
+          "summary": "Path descriptor created with `tool/path`."
+        }
+      ],
+      "returns": null,
+      "group": "Catalog",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/helper.scm",
+      "source_location": "src/dsl/std/catalog/helper.scm:64",
+      "range": {
+        "line": 63,
+        "start": 11,
+        "length": 10
       },
       "hidden": false
     },
@@ -2638,9 +2802,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/catalog/helper.scm",
-      "source_location": "src/dsl/std/catalog/helper.scm:46",
+      "source_location": "src/dsl/std/catalog/helper.scm:71",
       "range": {
-        "line": 45,
+        "line": 70,
         "start": 11,
         "length": 14
       },
@@ -2674,11 +2838,38 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/catalog/helper.scm",
-      "source_location": "src/dsl/std/catalog/helper.scm:28",
+      "source_location": "src/dsl/std/catalog/helper.scm:32",
       "range": {
-        "line": 27,
+        "line": 31,
         "start": 11,
         "length": 19
+      },
+      "hidden": false
+    },
+    {
+      "name": "tool/skip-verify-after-install",
+      "kind": "function",
+      "signature": "(tool/skip-verify-after-install)",
+      "summary": "Disable automatic post-install binary verification for a tool.",
+      "markdown": null,
+      "raw_markdown": null,
+      "rendered_markdown": "```scheme\n(tool/skip-verify-after-install)\n```\n\nDisable automatic post-install binary verification for a tool.\n\n| Field | Value   |\n| ----- | ------- |\n| Group | Catalog |\n",
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Catalog",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/helper.scm",
+      "source_location": "src/dsl/std/catalog/helper.scm:77",
+      "range": {
+        "line": 76,
+        "start": 11,
+        "length": 30
       },
       "hidden": false
     },
@@ -2802,9 +2993,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/catalog/helper.scm",
-      "source_location": "src/dsl/std/catalog/helper.scm:73",
+      "source_location": "src/dsl/std/catalog/helper.scm:104",
       "range": {
-        "line": 72,
+        "line": 103,
         "start": 11,
         "length": 15
       },
@@ -2838,9 +3029,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/catalog/helper.scm",
-      "source_location": "src/dsl/std/catalog/helper.scm:38",
+      "source_location": "src/dsl/std/catalog/helper.scm:42",
       "range": {
-        "line": 37,
+        "line": 41,
         "start": 11,
         "length": 15
       },
@@ -3496,9 +3687,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/distro/rpm.scm",
-      "source_location": "src/extensions/distro/rpm.scm:18",
+      "source_location": "src/extensions/distro/rpm.scm:19",
       "range": {
-        "line": 17,
+        "line": 18,
         "start": 11,
         "length": 23
       },
@@ -3532,9 +3723,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/distro/rpm.scm",
-      "source_location": "src/extensions/distro/rpm.scm:38",
+      "source_location": "src/extensions/distro/rpm.scm:39",
       "range": {
-        "line": 37,
+        "line": 38,
         "start": 11,
         "length": 18
       },
@@ -3568,9 +3759,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/distro/rpm.scm",
-      "source_location": "src/extensions/distro/rpm.scm:94",
+      "source_location": "src/extensions/distro/rpm.scm:95",
       "range": {
-        "line": 93,
+        "line": 94,
         "start": 11,
         "length": 27
       },
@@ -3612,11 +3803,47 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/distro/rpm.scm",
-      "source_location": "src/extensions/distro/rpm.scm:67",
+      "source_location": "src/extensions/distro/rpm.scm:68",
       "range": {
-        "line": 66,
+        "line": 67,
         "start": 11,
         "length": 23
+      },
+      "hidden": false
+    },
+    {
+      "name": "rpm-ostree/packages-platform",
+      "kind": "function",
+      "signature": "(rpm-ostree/packages-platform name package-or-field ...)",
+      "summary": "Create a named Linux package/platform override for one or more rpm-ostree packages.",
+      "markdown": null,
+      "raw_markdown": null,
+      "rendered_markdown": "```scheme\n(rpm-ostree/packages-platform name package-or-field ...)\n```\n\nCreate a named Linux package/platform override for one or more rpm-ostree packages.\n\n| Field | Value           |\n| ----- | --------------- |\n| Group | Distro packages |\n\n**Parameters**\n\n| Parameter          | Description                                             |\n| ------------------ | ------------------------------------------------------- |\n| `name`             | Platform rule name.                                     |\n| `package-or-field` | RPM package names followed by optional platform fields. |\n",
+      "example": null,
+      "params": [
+        {
+          "name": "name",
+          "summary": "Platform rule name."
+        },
+        {
+          "name": "package-or-field",
+          "summary": "RPM package names followed by optional platform fields."
+        }
+      ],
+      "returns": null,
+      "group": "Distro packages",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/distro/rpm.scm",
+      "source_location": "src/extensions/distro/rpm.scm:110",
+      "range": {
+        "line": 109,
+        "start": 11,
+        "length": 28
       },
       "hidden": false
     },
@@ -3644,9 +3871,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/distro/rpm.scm",
-      "source_location": "src/extensions/distro/rpm.scm:28",
+      "source_location": "src/extensions/distro/rpm.scm:29",
       "range": {
-        "line": 27,
+        "line": 28,
         "start": 11,
         "length": 25
       },
@@ -4260,9 +4487,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/support/download.scm",
-      "source_location": "src/extensions/support/download.scm:105",
+      "source_location": "src/extensions/support/download.scm:99",
       "range": {
-        "line": 104,
+        "line": 98,
         "start": 11,
         "length": 21
       },
@@ -4567,6 +4794,122 @@
         "line": 11,
         "start": 10,
         "length": 12
+      },
+      "hidden": false
+    },
+    {
+      "name": "go/install-argv",
+      "kind": "function",
+      "signature": "(go/install-argv package ...)",
+      "summary": "Build argv for `go install` into the Scaffold bin directory.",
+      "markdown": null,
+      "raw_markdown": null,
+      "rendered_markdown": "```scheme\n(go/install-argv package ...)\n```\n\nBuild argv for `go install` into the Scaffold bin directory.\n\n| Field | Value |\n| ----- | ----- |\n| Group | Go    |\n\n**Parameters**\n\n| Parameter | Description                                                     |\n| --------- | --------------------------------------------------------------- |\n| `package` | Go package specs or local command paths passed to `go install`. |\n\n**Returns:** Vector argv using `CGO_ENABLED=0` and `GOBIN={{ bin_dir }}`.",
+      "example": null,
+      "params": [
+        {
+          "name": "package",
+          "summary": "Go package specs or local command paths passed to `go install`."
+        }
+      ],
+      "returns": "Vector argv using `CGO_ENABLED=0` and `GOBIN={{ bin_dir }}`.",
+      "group": "Go",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/ecosystem/go.scm",
+      "source_location": "src/extensions/ecosystem/go.scm:12",
+      "range": {
+        "line": 11,
+        "start": 11,
+        "length": 15
+      },
+      "hidden": false
+    },
+    {
+      "name": "go/install-platform",
+      "kind": "function",
+      "signature": "(go/install-platform predicate name package-or-field ...)",
+      "summary": "Create a package/platform override that installs one or more Go packages.",
+      "markdown": null,
+      "raw_markdown": null,
+      "rendered_markdown": "```scheme\n(go/install-platform predicate name package-or-field ...)\n```\n\nCreate a package/platform override that installs one or more Go packages.\n\n| Field | Value |\n| ----- | ----- |\n| Group | Go    |\n\n**Parameters**\n\n| Parameter          | Description                                                                   |\n| ------------------ | ----------------------------------------------------------------------------- |\n| `predicate`        | Host predicate for this package rule.                                         |\n| `name`             | Platform rule name.                                                           |\n| `package-or-field` | Go package specs or local command paths followed by optional platform fields. |\n",
+      "example": null,
+      "params": [
+        {
+          "name": "predicate",
+          "summary": "Host predicate for this package rule."
+        },
+        {
+          "name": "name",
+          "summary": "Platform rule name."
+        },
+        {
+          "name": "package-or-field",
+          "summary": "Go package specs or local command paths followed by optional platform fields."
+        }
+      ],
+      "returns": null,
+      "group": "Go",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/ecosystem/go.scm",
+      "source_location": "src/extensions/ecosystem/go.scm:24",
+      "range": {
+        "line": 23,
+        "start": 11,
+        "length": 19
+      },
+      "hidden": false
+    },
+    {
+      "name": "go/tool",
+      "kind": "function",
+      "signature": "(go/tool name package bin-name field ...)",
+      "summary": "Create a catalog tool installed by `go install`.",
+      "markdown": null,
+      "raw_markdown": null,
+      "rendered_markdown": "```scheme\n(go/tool name package bin-name field ...)\n```\n\nCreate a catalog tool installed by `go install`.\n\n| Field | Value |\n| ----- | ----- |\n| Group | Go    |\n\n**Parameters**\n\n| Parameter  | Description                                    |\n| ---------- | ---------------------------------------------- |\n| `name`     | Catalog tool name.                             |\n| `package`  | Go package spec passed to `go install`.        |\n| `bin-name` | Executable produced by the package.            |\n| `field`    | Additional tool fields that override defaults. |\n",
+      "example": null,
+      "params": [
+        {
+          "name": "name",
+          "summary": "Catalog tool name."
+        },
+        {
+          "name": "package",
+          "summary": "Go package spec passed to `go install`."
+        },
+        {
+          "name": "bin-name",
+          "summary": "Executable produced by the package."
+        },
+        {
+          "name": "field",
+          "summary": "Additional tool fields that override defaults."
+        }
+      ],
+      "returns": null,
+      "group": "Go",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/extensions/ecosystem/go.scm",
+      "source_location": "src/extensions/ecosystem/go.scm:44",
+      "range": {
+        "line": 43,
+        "start": 11,
+        "length": 7
       },
       "hidden": false
     },
@@ -5468,6 +5811,42 @@
       "hidden": false
     },
     {
+      "name": "call-with-split-fields",
+      "kind": "function",
+      "signature": "(call-with-split-fields values proc)",
+      "summary": "Call a procedure with non-field values and object fields split apart.",
+      "markdown": null,
+      "raw_markdown": null,
+      "rendered_markdown": "```scheme\n(call-with-split-fields values proc)\n```\n\nCall a procedure with non-field values and object fields split apart.\n\n| Field | Value   |\n| ----- | ------- |\n| Group | Objects |\n\n**Parameters**\n\n| Parameter | Description                                                                     |\n| --------- | ------------------------------------------------------------------------------- |\n| `values`  | A Scheme list containing ordinary option values and `(field name value)` pairs. |\n| `proc`    | Procedure called as `(proc ordinary-values fields)`.                            |\n",
+      "example": null,
+      "params": [
+        {
+          "name": "values",
+          "summary": "A Scheme list containing ordinary option values and `(field name value)` pairs."
+        },
+        {
+          "name": "proc",
+          "summary": "Procedure called as `(proc ordinary-values fields)`."
+        }
+      ],
+      "returns": null,
+      "group": "Objects",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/config/object.scm",
+      "source_location": "src/dsl/std/config/object.scm:137",
+      "range": {
+        "line": 136,
+        "start": 14,
+        "length": 22
+      },
+      "hidden": false
+    },
+    {
       "name": "field",
       "kind": "function",
       "signature": "(field name value)",
@@ -5495,9 +5874,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/config/object.scm",
-      "source_location": "src/dsl/std/config/object.scm:38",
+      "source_location": "src/dsl/std/config/object.scm:43",
       "range": {
-        "line": 37,
+        "line": 42,
         "start": 14,
         "length": 5
       },
@@ -5522,9 +5901,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/config/object.scm",
-      "source_location": "src/dsl/std/config/object.scm:45",
+      "source_location": "src/dsl/std/config/object.scm:54",
       "range": {
-        "line": 44,
+        "line": 53,
         "start": 14,
         "length": 10
       },
@@ -5549,11 +5928,38 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/config/object.scm",
-      "source_location": "src/dsl/std/config/object.scm:49",
+      "source_location": "src/dsl/std/config/object.scm:58",
       "range": {
-        "line": 48,
+        "line": 57,
         "start": 14,
         "length": 11
+      },
+      "hidden": false
+    },
+    {
+      "name": "field?",
+      "kind": "function",
+      "signature": "(field? value)",
+      "summary": "Return whether a value has Scaffold field-pair shape.",
+      "markdown": null,
+      "raw_markdown": null,
+      "rendered_markdown": "```scheme\n(field? value)\n```\n\nReturn whether a value has Scaffold field-pair shape.\n\n| Field | Value   |\n| ----- | ------- |\n| Group | Objects |\n",
+      "example": null,
+      "params": [],
+      "returns": null,
+      "group": "Objects",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/config/object.scm",
+      "source_location": "src/dsl/std/config/object.scm:50",
+      "range": {
+        "line": 49,
+        "start": 14,
+        "length": 6
       },
       "hidden": false
     },
@@ -5581,9 +5987,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/config/object.scm",
-      "source_location": "src/dsl/std/config/object.scm:53",
+      "source_location": "src/dsl/std/config/object.scm:62",
       "range": {
-        "line": 52,
+        "line": 61,
         "start": 14,
         "length": 6
       },
@@ -5608,9 +6014,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/config/object.scm",
-      "source_location": "src/dsl/std/config/object.scm:100",
+      "source_location": "src/dsl/std/config/object.scm:123",
       "range": {
-        "line": 99,
+        "line": 122,
         "start": 14,
         "length": 26
       },
@@ -5635,9 +6041,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/config/object.scm",
-      "source_location": "src/dsl/std/config/object.scm:104",
+      "source_location": "src/dsl/std/config/object.scm:127",
       "range": {
-        "line": 103,
+        "line": 126,
         "start": 14,
         "length": 20
       },
@@ -5662,9 +6068,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/config/object.scm",
-      "source_location": "src/dsl/std/config/object.scm:59",
+      "source_location": "src/dsl/std/config/object.scm:68",
       "range": {
-        "line": 58,
+        "line": 67,
         "start": 14,
         "length": 17
       },
@@ -5689,11 +6095,51 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/config/object.scm",
-      "source_location": "src/dsl/std/config/object.scm:84",
+      "source_location": "src/dsl/std/config/object.scm:93",
       "range": {
-        "line": 83,
+        "line": 92,
         "start": 14,
         "length": 14
+      },
+      "hidden": false
+    },
+    {
+      "name": "object/map-vector-field",
+      "kind": "function",
+      "signature": "(object/map-vector-field obj name proc)",
+      "summary": "Map a procedure over an existing vector field, leaving the object unchanged when the field is absent.",
+      "markdown": null,
+      "raw_markdown": null,
+      "rendered_markdown": "```scheme\n(object/map-vector-field obj name proc)\n```\n\nMap a procedure over an existing vector field, leaving the object unchanged when the field is absent.\n\n| Field | Value   |\n| ----- | ------- |\n| Group | Objects |\n\n**Parameters**\n\n| Parameter | Description                                       |\n| --------- | ------------------------------------------------- |\n| `obj`     | Object created with `object` or a catalog helper. |\n| `name`    | Vector field name to transform.                   |\n| `proc`    | Procedure mapped over each vector item.           |\n",
+      "example": null,
+      "params": [
+        {
+          "name": "obj",
+          "summary": "Object created with `object` or a catalog helper."
+        },
+        {
+          "name": "name",
+          "summary": "Vector field name to transform."
+        },
+        {
+          "name": "proc",
+          "summary": "Procedure mapped over each vector item."
+        }
+      ],
+      "returns": null,
+      "group": "Objects",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/config/object.scm",
+      "source_location": "src/dsl/std/config/object.scm:116",
+      "range": {
+        "line": 115,
+        "start": 14,
+        "length": 23
       },
       "hidden": false
     },
@@ -5716,9 +6162,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/config/object.scm",
-      "source_location": "src/dsl/std/config/object.scm:80",
+      "source_location": "src/dsl/std/config/object.scm:89",
       "range": {
-        "line": 79,
+        "line": 88,
         "start": 14,
         "length": 12
       },
@@ -5752,9 +6198,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/config/object.scm",
-      "source_location": "src/dsl/std/config/object.scm:88",
+      "source_location": "src/dsl/std/config/object.scm:97",
       "range": {
-        "line": 87,
+        "line": 96,
         "start": 14,
         "length": 15
       },
@@ -5792,9 +6238,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/config/object.scm",
-      "source_location": "src/dsl/std/config/object.scm:63",
+      "source_location": "src/dsl/std/config/object.scm:72",
       "range": {
-        "line": 62,
+        "line": 71,
         "start": 14,
         "length": 10
       },
@@ -5819,9 +6265,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/config/object.scm",
-      "source_location": "src/dsl/std/config/object.scm:72",
+      "source_location": "src/dsl/std/config/object.scm:81",
       "range": {
-        "line": 71,
+        "line": 80,
         "start": 14,
         "length": 20
       },
@@ -5846,9 +6292,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/config/object.scm",
-      "source_location": "src/dsl/std/config/object.scm:96",
+      "source_location": "src/dsl/std/config/object.scm:105",
       "range": {
-        "line": 95,
+        "line": 104,
         "start": 14,
         "length": 20
       },
@@ -5873,11 +6319,83 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/config/object.scm",
-      "source_location": "src/dsl/std/config/object.scm:76",
+      "source_location": "src/dsl/std/config/object.scm:85",
       "range": {
-        "line": 75,
+        "line": 84,
         "start": 14,
         "length": 21
+      },
+      "hidden": false
+    },
+    {
+      "name": "object/update-field",
+      "kind": "function",
+      "signature": "(object/update-field obj name proc)",
+      "summary": "Transform an existing object field, leaving the object unchanged when the field is absent.",
+      "markdown": null,
+      "raw_markdown": null,
+      "rendered_markdown": "```scheme\n(object/update-field obj name proc)\n```\n\nTransform an existing object field, leaving the object unchanged when the field is absent.\n\n| Field | Value   |\n| ----- | ------- |\n| Group | Objects |\n\n**Parameters**\n\n| Parameter | Description                                       |\n| --------- | ------------------------------------------------- |\n| `obj`     | Object created with `object` or a catalog helper. |\n| `name`    | Field name to transform.                          |\n| `proc`    | Procedure called with the current field value.    |\n",
+      "example": null,
+      "params": [
+        {
+          "name": "obj",
+          "summary": "Object created with `object` or a catalog helper."
+        },
+        {
+          "name": "name",
+          "summary": "Field name to transform."
+        },
+        {
+          "name": "proc",
+          "summary": "Procedure called with the current field value."
+        }
+      ],
+      "returns": null,
+      "group": "Objects",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/config/object.scm",
+      "source_location": "src/dsl/std/config/object.scm:109",
+      "range": {
+        "line": 108,
+        "start": 14,
+        "length": 19
+      },
+      "hidden": false
+    },
+    {
+      "name": "split-fields",
+      "kind": "function",
+      "signature": "(split-fields values)",
+      "summary": "Split mixed option values into non-field values and object fields.",
+      "markdown": null,
+      "raw_markdown": null,
+      "rendered_markdown": "```scheme\n(split-fields values)\n```\n\nSplit mixed option values into non-field values and object fields.\n\n| Field | Value   |\n| ----- | ------- |\n| Group | Objects |\n\n**Parameters**\n\n| Parameter | Description                                                                     |\n| --------- | ------------------------------------------------------------------------------- |\n| `values`  | A Scheme list containing ordinary option values and `(field name value)` pairs. |\n\n**Returns:** A pair whose car is non-field values and whose cdr is field values, preserving order.",
+      "example": null,
+      "params": [
+        {
+          "name": "values",
+          "summary": "A Scheme list containing ordinary option values and `(field name value)` pairs."
+        }
+      ],
+      "returns": "A pair whose car is non-field values and whose cdr is field values, preserving order.",
+      "group": "Objects",
+      "see": [],
+      "effect": null,
+      "requires_capability": [],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/config/object.scm",
+      "source_location": "src/dsl/std/config/object.scm:131",
+      "range": {
+        "line": 130,
+        "start": 14,
+        "length": 12
       },
       "hidden": false
     },
@@ -6635,9 +7153,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/catalog/transform.scm",
-      "source_location": "src/dsl/std/catalog/transform.scm:131",
+      "source_location": "src/dsl/std/catalog/transform.scm:91",
       "range": {
-        "line": 130,
+        "line": 90,
         "start": 11,
         "length": 11
       },
@@ -6662,9 +7180,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/catalog/transform.scm",
-      "source_location": "src/dsl/std/catalog/transform.scm:123",
+      "source_location": "src/dsl/std/catalog/transform.scm:83",
       "range": {
-        "line": 122,
+        "line": 82,
         "start": 11,
         "length": 20
       },
@@ -6698,9 +7216,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/catalog/transform.scm",
-      "source_location": "src/dsl/std/catalog/transform.scm:40",
+      "source_location": "src/dsl/std/catalog/transform.scm:30",
       "range": {
-        "line": 39,
+        "line": 29,
         "start": 11,
         "length": 25
       },
@@ -6725,9 +7243,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/catalog/transform.scm",
-      "source_location": "src/dsl/std/catalog/transform.scm:76",
+      "source_location": "src/dsl/std/catalog/transform.scm:52",
       "range": {
-        "line": 75,
+        "line": 51,
         "start": 11,
         "length": 20
       },
@@ -6752,9 +7270,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/catalog/transform.scm",
-      "source_location": "src/dsl/std/catalog/transform.scm:68",
+      "source_location": "src/dsl/std/catalog/transform.scm:44",
       "range": {
-        "line": 67,
+        "line": 43,
         "start": 11,
         "length": 30
       },
@@ -6779,9 +7297,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/catalog/transform.scm",
-      "source_location": "src/dsl/std/catalog/transform.scm:111",
+      "source_location": "src/dsl/std/catalog/transform.scm:73",
       "range": {
-        "line": 110,
+        "line": 72,
         "start": 11,
         "length": 32
       },
@@ -6815,9 +7333,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/catalog/transform.scm",
-      "source_location": "src/dsl/std/catalog/transform.scm:95",
+      "source_location": "src/dsl/std/catalog/transform.scm:64",
       "range": {
-        "line": 94,
+        "line": 63,
         "start": 11,
         "length": 27
       },
@@ -7650,9 +8168,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/ecosystem/npm.scm",
-      "source_location": "src/extensions/ecosystem/npm.scm:81",
+      "source_location": "src/extensions/ecosystem/npm.scm:69",
       "range": {
-        "line": 80,
+        "line": 68,
         "start": 11,
         "length": 27
       },
@@ -7694,9 +8212,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/ecosystem/npm.scm",
-      "source_location": "src/extensions/ecosystem/npm.scm:54",
+      "source_location": "src/extensions/ecosystem/npm.scm:41",
       "range": {
-        "line": 53,
+        "line": 40,
         "start": 11,
         "length": 15
       },
@@ -7726,9 +8244,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/ecosystem/npm.scm",
-      "source_location": "src/extensions/ecosystem/npm.scm:29",
+      "source_location": "src/extensions/ecosystem/npm.scm:28",
       "range": {
-        "line": 28,
+        "line": 27,
         "start": 11,
         "length": 25
       },
@@ -7762,9 +8280,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/ecosystem/npm.scm",
-      "source_location": "src/extensions/ecosystem/npm.scm:98",
+      "source_location": "src/extensions/ecosystem/npm.scm:87",
       "range": {
-        "line": 97,
+        "line": 86,
         "start": 11,
         "length": 8
       },
@@ -7798,9 +8316,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/ecosystem/uv.scm",
-      "source_location": "src/extensions/ecosystem/uv.scm:46",
+      "source_location": "src/extensions/ecosystem/uv.scm:33",
       "range": {
-        "line": 45,
+        "line": 32,
         "start": 11,
         "length": 7
       },
@@ -7874,9 +8392,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/ecosystem/uv.scm",
-      "source_location": "src/extensions/ecosystem/uv.scm:73",
+      "source_location": "src/extensions/ecosystem/uv.scm:61",
       "range": {
-        "line": 72,
+        "line": 60,
         "start": 11,
         "length": 16
       },
@@ -7906,9 +8424,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/ecosystem/uv.scm",
-      "source_location": "src/extensions/ecosystem/uv.scm:24",
+      "source_location": "src/extensions/ecosystem/uv.scm:23",
       "range": {
-        "line": 23,
+        "line": 22,
         "start": 11,
         "length": 22
       },
@@ -7942,9 +8460,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/extensions/ecosystem/uv.scm",
-      "source_location": "src/extensions/ecosystem/uv.scm:90",
+      "source_location": "src/extensions/ecosystem/uv.scm:79",
       "range": {
-        "line": 89,
+        "line": 78,
         "start": 11,
         "length": 8
       },

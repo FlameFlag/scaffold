@@ -12,11 +12,26 @@ pub use render::{
     source_markdown_for_entry, titled_markdown_for_entry,
 };
 pub use search::{
-    search_doc_entries, search_reference_entries, suggest_doc_entries, suggest_reference_entries,
+    normalize_reference_query_token, search_doc_entries, search_reference_entries,
+    source_path_from_location_query, suggest_doc_entries, suggest_reference_entries,
 };
 pub use source::{source_docs, source_docs_with_definitions};
 
 pub use model::WorkspaceDocIndex;
+
+fn join_text(items: impl IntoIterator<Item = impl AsRef<str>>, separator: &str) -> String {
+    let mut output = String::new();
+    let mut first = true;
+    for item in items {
+        if first {
+            first = false;
+        } else {
+            output.push_str(separator);
+        }
+        output.push_str(item.as_ref());
+    }
+    output
+}
 
 #[cfg(test)]
 mod tests;

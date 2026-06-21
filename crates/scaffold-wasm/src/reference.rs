@@ -104,7 +104,7 @@ impl From<scaffold_docs::DocEntry> for ReferenceEntry {
             deprecated: entry.deprecated,
             source: entry.source,
             source_location,
-            range: entry.range.map(symbol_range),
+            range: entry.range.map(scaffold_docs::SourceRange::symbol_range),
             hidden: entry.hidden,
         }
     }
@@ -144,21 +144,15 @@ impl EditorReferenceEntry for ReferenceEntry {
         self.effect.as_deref()
     }
 
-    fn requires_capability(&self) -> Vec<&str> {
-        self.requires_capability
-            .iter()
-            .map(String::as_str)
-            .collect()
+    fn requires_capability(&self) -> impl Iterator<Item = &str> {
+        self.requires_capability.iter().map(String::as_str)
     }
 
-    fn params(&self) -> Vec<EditorReferenceParam<'_>> {
-        self.params
-            .iter()
-            .map(|param| EditorReferenceParam {
-                name: &param.name,
-                summary: &param.summary,
-            })
-            .collect()
+    fn params(&self) -> impl Iterator<Item = EditorReferenceParam<'_>> {
+        self.params.iter().map(|param| EditorReferenceParam {
+            name: &param.name,
+            summary: &param.summary,
+        })
     }
 
     fn returns(&self) -> Option<&str> {
@@ -177,8 +171,8 @@ impl EditorReferenceEntry for ReferenceEntry {
         self.deprecated.as_deref()
     }
 
-    fn see(&self) -> Vec<&str> {
-        self.see.iter().map(String::as_str).collect()
+    fn see(&self) -> impl Iterator<Item = &str> {
+        self.see.iter().map(String::as_str)
     }
 }
 
@@ -228,14 +222,16 @@ pub(crate) fn workspace_documents(workspace_json: &str) -> Vec<WorkspaceDocument
 pub(crate) fn workspace_doc_index(
     workspace: &[WorkspaceDocument],
 ) -> scaffold_docs::WorkspaceDocIndex {
-    let mut index = scaffold_docs::WorkspaceDocIndex::empty();
-    for document in workspace {
-        index.push_source(scaffold_docs::source_docs_with_definitions(
-            &document.uri,
-            &document.text,
-        ));
-    }
-    index
+    workspace.iter().fold(
+        scaffold_docs::WorkspaceDocIndex::empty(),
+        |mut index, document| {
+            index.push_source(scaffold_docs::source_docs_with_definitions(
+                &document.uri,
+                &document.text,
+            ));
+            index
+        },
+    )
 }
 
 pub(crate) fn reference_index_for_document(
@@ -408,14 +404,6 @@ impl ReferenceIndex {
 
 fn source_docs(source_name: &str, source: &str) -> scaffold_docs::SourceDocs {
     scaffold_docs::source_docs_with_definitions(source_name, source)
-}
-
-const fn symbol_range(range: scaffold_docs::SourceRange) -> crate::editor_symbols::SymbolRange {
-    crate::editor_symbols::SymbolRange {
-        line: range.start.line,
-        start: range.start.character,
-        length: range.end.character.saturating_sub(range.start.character),
-    }
 }
 
 fn is_language_keyword(entry: &ReferenceEntry) -> bool {

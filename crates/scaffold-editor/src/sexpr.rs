@@ -3,11 +3,9 @@ use lexpr::{
     parse::{KeywordSyntax, Options, Parser},
 };
 
-#[derive(Clone, Copy, Debug)]
-pub struct TextPosition {
-    pub line: u32,
-    pub character: u32,
-}
+pub use crate::TextPosition;
+
+use crate::utf16_len;
 
 #[must_use]
 pub fn parse_datums(text: &str) -> Vec<Datum> {
@@ -15,14 +13,7 @@ pub fn parse_datums(text: &str) -> Vec<Datum> {
         text,
         Options::new().with_keyword_syntax(KeywordSyntax::Octothorpe),
     );
-    let mut datums = Vec::new();
-    for datum in parser.datum_iter() {
-        match datum {
-            Ok(datum) => datums.push(datum),
-            Err(_) => break,
-        }
-    }
-    datums
+    parser.datum_iter().map_while(Result::ok).collect()
 }
 
 #[must_use]
@@ -88,10 +79,6 @@ fn line_start_offset(text: &str, one_based_line: usize) -> usize {
     text.len()
 }
 
-fn utf16_len(text: &str) -> u32 {
-    text.encode_utf16().count() as u32
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -117,6 +104,6 @@ mod tests {
         let position = span_start(text, items[1]);
 
         assert_eq!(position.line, 0);
-        assert_eq!(position.character, "(define ".encode_utf16().count() as u32);
+        assert_eq!(position.character, utf16_len("(define "));
     }
 }

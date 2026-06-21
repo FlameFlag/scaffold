@@ -1,11 +1,10 @@
-use crate::editor_diagnostics;
+use crate::{editor_diagnostics, json_string};
 
 pub(crate) fn diagnose_text(text: &str) -> String {
-    serde_json::to_string(&editor_diagnostics::document_diagnostics(
+    json_string(&editor_diagnostics::document_diagnostics(
         text,
         syntax_issue(text),
     ))
-    .expect("diagnostics serialize")
 }
 
 fn syntax_issue(text: &str) -> Option<editor_diagnostics::SyntaxIssue> {

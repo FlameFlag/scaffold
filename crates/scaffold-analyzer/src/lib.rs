@@ -1,5 +1,5 @@
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{HashMap, HashSet, hash_map::Entry},
     path::PathBuf,
 };
 
@@ -10,7 +10,7 @@ use scaffold_docs::DocIndex;
 use scaffold_editor::diagnostics::missing_doc_message;
 use scaffold_scheme::{
     identifier_text, is_identifier, parse_error_offset, parse_source, proper_list,
-    wrapped_string_text,
+    source_position_byte_offset, wrapped_string_text,
 };
 
 pub fn analyze_paths(paths: &[PathBuf]) -> std::io::Result<Vec<SourceDiagnostic>> {
@@ -26,11 +26,10 @@ pub fn analyze_paths(paths: &[PathBuf]) -> std::io::Result<Vec<SourceDiagnostic>
         docs.extend_source(source_name, source);
     }
 
-    let mut diagnostics = Vec::new();
-    for (source_name, source) in sources {
-        diagnostics.extend(analyze_source_with_docs(&source_name, &source, &docs));
-    }
-    Ok(diagnostics)
+    Ok(sources
+        .into_iter()
+        .flat_map(|(source_name, source)| analyze_source_with_docs(&source_name, &source, &docs))
+        .collect())
 }
 
 #[cfg(test)]
@@ -114,27 +113,21 @@ fn duplicate_definition_diagnostics(
     source: &str,
     definitions: &[Definition],
 ) -> Vec<SourceDiagnostic> {
-    let mut seen = HashMap::<&str, &Definition>::new();
-    let mut reported = HashSet::<&str>::new();
-    let mut diagnostics = Vec::new();
-    for definition in definitions {
-        if let Some(first) = seen.get(definition.name.as_str()) {
-            if reported.insert(definition.name.as_str()) {
-                diagnostics.push(SourceDiagnostic::duplicate_definition(
-                    source_name,
-                    source.to_owned(),
-                    &definition.name,
-                    first.offset,
-                    first.length,
-                    definition.offset,
-                    definition.length,
-                ));
-            }
-        } else {
-            let _previous = seen.insert(&definition.name, definition);
-        }
-    }
-    diagnostics
+    duplicate_name_diagnostics(
+        definitions,
+        |definition| definition.name.as_str(),
+        |name, first, duplicate| {
+            SourceDiagnostic::duplicate_definition(
+                source_name,
+                source.to_owned(),
+                name,
+                first.offset,
+                first.length,
+                duplicate.offset,
+                duplicate.length,
+            )
+        },
+    )
 }
 
 fn duplicate_doc_diagnostics(
@@ -142,24 +135,41 @@ fn duplicate_doc_diagnostics(
     source: &str,
     doc_entries: &[DocEntry],
 ) -> Vec<SourceDiagnostic> {
-    let mut seen = HashMap::<&str, &DocEntry>::new();
+    duplicate_name_diagnostics(
+        doc_entries,
+        |entry| entry.name.as_str(),
+        |name, first, duplicate| {
+            SourceDiagnostic::duplicate_doc(
+                source_name,
+                source.to_owned(),
+                name,
+                first.offset,
+                first.length,
+                duplicate.offset,
+                duplicate.length,
+            )
+        },
+    )
+}
+
+fn duplicate_name_diagnostics<'a, T>(
+    items: &'a [T],
+    mut name: impl FnMut(&'a T) -> &'a str,
+    mut diagnostic: impl FnMut(&'a str, &'a T, &'a T) -> SourceDiagnostic,
+) -> Vec<SourceDiagnostic> {
+    let mut seen = HashMap::<&str, &T>::new();
     let mut reported = HashSet::<&str>::new();
     let mut diagnostics = Vec::new();
-    for entry in doc_entries {
-        if let Some(first) = seen.get(entry.name.as_str()) {
-            if reported.insert(entry.name.as_str()) {
-                diagnostics.push(SourceDiagnostic::duplicate_doc(
-                    source_name,
-                    source.to_owned(),
-                    &entry.name,
-                    first.offset,
-                    first.length,
-                    entry.offset,
-                    entry.length,
-                ));
+    for item in items {
+        let item_name = name(item);
+        match seen.entry(item_name) {
+            Entry::Occupied(first) if reported.insert(item_name) => {
+                diagnostics.push(diagnostic(item_name, *first.get(), item));
             }
-        } else {
-            let _previous = seen.insert(&entry.name, entry);
+            Entry::Occupied(_) => {}
+            Entry::Vacant(entry) => {
+                let _inserted = entry.insert(item);
+            }
         }
     }
     diagnostics
@@ -229,7 +239,7 @@ fn doc_entry_from_form(source: &str, form: &Syntax) -> Option<DocEntry> {
     let subject_syntax = items.get(1)?;
     let name = subject_text(subject_syntax)?;
     let mut entry = DocEntry {
-        offset: byte_offset_for_span(
+        offset: source_position_byte_offset(
             source,
             subject_syntax.span().line,
             subject_syntax.span().column + quote_prefix_len(subject_syntax),
@@ -240,21 +250,7 @@ fn doc_entry_from_form(source: &str, form: &Syntax) -> Option<DocEntry> {
         hidden: false,
     };
 
-    for field in &items[2..] {
-        let Some(field_items) = proper_list(field) else {
-            continue;
-        };
-        let Some(field_name) = field_items.first().and_then(identifier_text) else {
-            continue;
-        };
-        match field_name.as_str() {
-            "summary" => {
-                entry.has_summary = field_items.get(1).and_then(wrapped_string_text).is_some();
-            }
-            "hidden" => entry.hidden = true,
-            _ => {}
-        }
-    }
+    apply_doc_fields(&mut entry, &items[2..]);
 
     Some(entry)
 }
@@ -279,7 +275,12 @@ fn doc_next_entry_from_items(source: &str, items: &[Syntax], index: usize) -> Op
         has_summary: false,
         hidden: false,
     };
-    for field in &doc_next_items[1..] {
+    apply_doc_fields(&mut entry, &doc_next_items[1..]);
+    Some(entry)
+}
+
+fn apply_doc_fields(entry: &mut DocEntry, fields: &[Syntax]) {
+    for field in fields {
         let Some(field_items) = proper_list(field) else {
             continue;
         };
@@ -294,7 +295,6 @@ fn doc_next_entry_from_items(source: &str, items: &[Syntax], index: usize) -> Op
             _ => {}
         }
     }
-    Some(entry)
 }
 
 fn definition_from_form(source: &str, form: &Syntax) -> Option<Definition> {
@@ -317,24 +317,10 @@ fn definition_from_form(source: &str, form: &Syntax) -> Option<Definition> {
 
 fn definition(source: &str, syntax: &Syntax, name: String) -> Definition {
     Definition {
-        offset: byte_offset_for_span(source, syntax.span().line, syntax.span().column),
+        offset: source_position_byte_offset(source, syntax.span().line, syntax.span().column),
         length: name.len(),
         name,
     }
-}
-
-fn byte_offset_for_span(source: &str, line: u32, column: usize) -> usize {
-    // scheme-rs spans are 1-indexed by line and 0-indexed by column.
-    let line_start = source
-        .split_inclusive('\n')
-        .take(line.saturating_sub(1) as usize)
-        .map(str::len)
-        .sum::<usize>();
-    line_start
-        + source[line_start..]
-            .char_indices()
-            .nth(column)
-            .map_or(0, |(offset, _)| offset)
 }
 
 fn subject_text(syntax: &Syntax) -> Option<String> {

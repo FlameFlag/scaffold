@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use miette::Report;
 use rmcp::{
@@ -48,16 +48,16 @@ impl ScaffoldMcp {
             })));
         }
 
-        let mut results = Vec::new();
-        for path in files {
-            match dsl::values_from_path_with_catalog_path(&path, &ctx.catalog_path) {
-                Ok(_) => results.push(json!({
-                    "path": path.display().to_string(),
-                    "ok": true,
-                })),
-                Err(err) => results.push(test_failure_json(path.display().to_string(), err)),
-            }
-        }
+        let results = files
+            .into_iter()
+            .map(|path| {
+                let path_text = display_path(&path);
+                match dsl::values_from_path_with_catalog_path(&path, &ctx.catalog_path) {
+                    Ok(_) => test_success_json(path_text),
+                    Err(err) => test_failure_json(path_text, err),
+                }
+            })
+            .collect::<Vec<_>>();
         let ok = results
             .iter()
             .all(|result| result["ok"].as_bool().unwrap_or(false));
@@ -95,7 +95,7 @@ impl ScaffoldMcp {
             .collect::<Vec<_>>();
         Ok(structured(json!({
             "ok": !has_errors,
-            "files": files.iter().map(|path| path.display().to_string()).collect::<Vec<_>>(),
+            "files": display_paths(&files),
             "diagnostics": diagnostics,
         })))
     }
@@ -129,16 +129,17 @@ impl ScaffoldMcp {
                 action: "check formatting",
             },
         )?;
-        let checked = files
+        let checked = display_paths(&files);
+        let changed = files
             .iter()
-            .map(|path| path.display().to_string())
-            .collect::<Vec<_>>();
-        let mut changed = Vec::new();
-        for path in files {
-            if fmt::format_path(&path, fmt::FormatMode::Check).map_err(internal_error)? {
-                changed.push(path.display().to_string());
-            }
-        }
+            .filter_map(
+                |path| match fmt::format_path(path, fmt::FormatMode::Check) {
+                    Ok(true) => Some(Ok(display_path(path))),
+                    Ok(false) => None,
+                    Err(err) => Some(Err(internal_error(err))),
+                },
+            )
+            .collect::<Result<Vec<_>, McpError>>()?;
         Ok(structured(json!({
             "ok": changed.is_empty(),
             "files": checked,
@@ -177,7 +178,7 @@ impl ScaffoldMcp {
         let files = match paths {
             Some(paths) if !paths.is_empty() => paths
                 .into_iter()
-                .map(|path| resolve_quality_path(&ctx, &path))
+                .map(|path| ctx.resolve_workspace_path(&path))
                 .collect(),
             _ => {
                 self.require_catalog(default.action())?;
@@ -188,48 +189,43 @@ impl ScaffoldMcp {
     }
 }
 
-fn resolve_quality_path(ctx: &Context, path: &str) -> PathBuf {
-    let path = PathBuf::from(path);
-    if path.is_absolute() {
-        path
-    } else {
-        ctx.root_dir.join(path)
-    }
+fn source_diagnostic_json(diagnostic: SourceDiagnostic) -> serde_json::Value {
+    json!({
+        "code": diagnostic.code_str(),
+        "severity": diagnostic.severity_label(),
+        "help": diagnostic.help_text(),
+        "error": diagnostic.is_error(),
+        "message": diagnostic.to_string(),
+        "report": format!("{:?}", Report::new(diagnostic)),
+    })
 }
 
-fn source_diagnostic_json(diagnostic: SourceDiagnostic) -> serde_json::Value {
-    let error = diagnostic.is_error();
-    let code = diagnostic.code_str();
-    let severity = diagnostic.severity_label();
-    let help = diagnostic.help_text().to_owned();
-    let message = diagnostic.to_string();
+fn display_paths(paths: &[PathBuf]) -> Vec<String> {
+    paths.iter().map(|path| display_path(path)).collect()
+}
+
+fn display_path(path: &Path) -> String {
+    path.display().to_string()
+}
+
+fn test_success_json(path: String) -> serde_json::Value {
     json!({
-        "error": error,
-        "code": code,
-        "severity": severity,
-        "message": message,
-        "help": help,
-        "report": format!("{:?}", Report::new(diagnostic)),
+        "path": path,
+        "ok": true,
     })
 }
 
 fn test_failure_json(path: String, err: dsl::DslError) -> serde_json::Value {
     match err {
-        dsl::DslError::Diagnostic(diagnostic) => {
-            let error = diagnostic.to_string();
-            let code = diagnostic.code_str();
-            let severity = diagnostic.severity_label();
-            let help = diagnostic.help_text().to_owned();
-            json!({
-                "path": path,
-                "ok": false,
-                "error": error,
-                "code": code,
-                "severity": severity,
-                "help": help,
-                "report": format!("{:?}", Report::new(dsl::DslError::Diagnostic(diagnostic))),
-            })
-        }
+        dsl::DslError::Diagnostic(diagnostic) => json!({
+            "code": diagnostic.code_str(),
+            "severity": diagnostic.severity_label(),
+            "help": diagnostic.help_text(),
+            "path": path,
+            "ok": false,
+            "error": diagnostic.to_string(),
+            "report": format!("{:?}", Report::new(dsl::DslError::Diagnostic(diagnostic))),
+        }),
         err => json!({
             "path": path,
             "ok": false,
@@ -280,11 +276,8 @@ mod tests {
 
     #[test]
     fn quality_paths_resolve_explicit_paths_without_catalog_requirement() {
-        let root = std::env::temp_dir().join(format!(
-            "scaffold-mcp-quality-explicit-{}",
-            std::process::id()
-        ));
-        std::fs::create_dir_all(&root).expect("root");
+        let root = tempfile::tempdir().expect("root");
+        let root = root.path();
         let server = ScaffoldMcp::new(root.join("missing-scaffold.scm"));
 
         let (_ctx, files) = server
@@ -322,12 +315,9 @@ mod tests {
 
     #[test]
     fn quality_paths_discover_test_files_from_catalog_root() {
-        let root =
-            std::env::temp_dir().join(format!("scaffold-mcp-quality-tests-{}", std::process::id()));
-        drop(std::fs::remove_dir_all(&root));
-        std::fs::create_dir_all(&root).expect("root");
-        let catalog = root.join("scaffold.scm");
-        let test = root.join("test.scm");
+        let root = tempfile::tempdir().expect("root");
+        let catalog = root.path().join("scaffold.scm");
+        let test = root.path().join("test.scm");
         std::fs::write(&catalog, "(import (rnrs))\n").expect("catalog");
         std::fs::write(&test, "(import (rnrs))\n").expect("test");
         let server = ScaffoldMcp::new(catalog);

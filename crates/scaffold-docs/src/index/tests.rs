@@ -113,6 +113,44 @@ fn scaffold_index_reads_std_docs() {
     assert!(index.get("nix/profile-package").is_some());
 }
 
+#[cfg(feature = "reference")]
+#[test]
+fn templated_scaffold_std_sources_remain_documentable() {
+    fn parse_error(source: &str) -> Option<String> {
+        let mut parser = lexpr::parse::Parser::from_str_custom(
+            source,
+            lexpr::parse::Options::new()
+                .with_keyword_syntax(lexpr::parse::KeywordSyntax::Octothorpe),
+        );
+        parser
+            .datum_iter()
+            .find_map(|datum| datum.err().map(|error| error.to_string()))
+    }
+
+    for source in scaffold_dsl::documentation_sources()
+        .into_iter()
+        .filter(|source| {
+            matches!(
+                source.path,
+                "src/dsl/std/host.scm" | "src/dsl/std/workspace.scm"
+            )
+        })
+    {
+        assert!(
+            scaffold_editor::sexpr::parses_completely(source.source),
+            "{} should parse as Scheme: {:?}",
+            source.path,
+            parse_error(source.source)
+        );
+        let docs = source_docs(source.path, source.source);
+        assert!(
+            !docs.entries.is_empty(),
+            "{} should parse as documentation source",
+            source.path
+        );
+    }
+}
+
 #[test]
 fn document_docs_do_not_override_language_keywords() {
     let index = DocIndex::with_language_keywords()
@@ -417,6 +455,23 @@ fn filters_entries_by_source() {
 }
 
 #[test]
+fn parses_source_location_queries() {
+    assert_eq!(
+        source_path_from_location_query("src/dsl/std/catalog/tool.scm:16"),
+        Some("src/dsl/std/catalog/tool.scm")
+    );
+    assert_eq!(
+        source_path_from_location_query("src/dsl/std/catalog/tool.scm:16:1"),
+        Some("src/dsl/std/catalog/tool.scm")
+    );
+    assert_eq!(source_path_from_location_query("tool"), None);
+    assert_eq!(
+        source_path_from_location_query("src/dsl/std/catalog/tool.scm:not-a-line"),
+        None
+    );
+}
+
+#[test]
 fn doc_entry_reports_group_fallback_and_source_location() {
     let mut entry = DocEntry::new("demo", DocKind::Function);
 
@@ -544,16 +599,21 @@ fn search_doc_entries_matches_lifecycle_metadata() {
 }
 
 #[test]
+fn reference_query_tokens_keep_alphanumeric_lowercase_text() {
+    assert_eq!(
+        search::normalize_reference_query_token("Catálogo/tool path"),
+        "catálogotoolpath"
+    );
+}
+
+#[test]
 fn search_prose_fields_deduplicate_keyword_summary_markdown() {
     let index = DocIndex::with_language_keywords();
     let entry = index.get("begin").expect("begin keyword");
-    let fields = search::reference_entry_prose_search_fields(entry);
 
     assert_eq!(
-        fields
-            .iter()
-            .filter(|field| field.as_str()
-                == "Evaluate expressions in order and return the final value.")
+        search::reference_entry_prose_search_fields(entry)
+            .filter(|field| field == "Evaluate expressions in order and return the final value.")
             .count(),
         1
     );

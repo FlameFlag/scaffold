@@ -4,37 +4,39 @@ use scaffold_docs::{self as docs, WorkspaceDocIndex};
 use tower_lsp::lsp_types::InitializeParams;
 
 pub(super) fn workspace_doc_index_from_roots(roots: &[PathBuf]) -> WorkspaceDocIndex {
-    let mut index = WorkspaceDocIndex::empty();
-    for root in roots {
-        for path in scaffold_context::workspace_scheme_paths(root) {
-            let Ok(source) = std::fs::read_to_string(&path) else {
-                continue;
-            };
-            index.push_source(docs::source_docs_with_definitions(
+    roots
+        .iter()
+        .flat_map(|root| scaffold_context::workspace_scheme_paths(root))
+        .filter_map(|path| {
+            let source = std::fs::read_to_string(&path).ok()?;
+            Some(docs::source_docs_with_definitions(
                 &path.display().to_string(),
                 &source,
-            ));
-        }
-    }
-    index
+            ))
+        })
+        .fold(WorkspaceDocIndex::empty(), |mut index, source_docs| {
+            index.push_source(source_docs);
+            index
+        })
 }
 
 pub(super) fn workspace_roots(params: &InitializeParams) -> Vec<PathBuf> {
-    let mut roots = Vec::new();
-    if let Some(workspace_folders) = &params.workspace_folders {
-        roots.extend(
-            workspace_folders
-                .iter()
-                .filter_map(|folder| folder.uri.to_file_path().ok()),
-        );
+    let roots = params
+        .workspace_folders
+        .as_ref()
+        .into_iter()
+        .flat_map(|folders| folders.iter())
+        .filter_map(|folder| folder.uri.to_file_path().ok())
+        .collect::<Vec<_>>();
+    if !roots.is_empty() {
+        return roots;
     }
-    if roots.is_empty()
-        && let Some(root_uri) = &params.root_uri
-        && let Ok(path) = root_uri.to_file_path()
-    {
-        roots.push(path);
-    }
-    roots
+    params
+        .root_uri
+        .as_ref()
+        .and_then(|uri| uri.to_file_path().ok())
+        .into_iter()
+        .collect()
 }
 
 #[cfg(test)]
@@ -81,6 +83,33 @@ mod tests {
         let index = workspace_doc_index(&params);
 
         assert!(index.all().get("acme-tool").is_some());
+    }
+
+    #[test]
+    fn workspace_roots_falls_back_to_root_uri() {
+        let root = PathBuf::from("/workspace/root");
+        let params = InitializeParams {
+            root_uri: Some(Url::from_file_path(&root).expect("file url")),
+            ..Default::default()
+        };
+
+        assert_eq!(workspace_roots(&params), vec![root]);
+    }
+
+    #[test]
+    fn workspace_roots_prefers_workspace_folders() {
+        let folder_root = PathBuf::from("/workspace/folder");
+        let root_uri = PathBuf::from("/workspace/root-uri");
+        let params = InitializeParams {
+            root_uri: Some(Url::from_file_path(root_uri).expect("file url")),
+            workspace_folders: Some(vec![WorkspaceFolder {
+                uri: Url::from_file_path(&folder_root).expect("file url"),
+                name: "folder".to_owned(),
+            }]),
+            ..Default::default()
+        };
+
+        assert_eq!(workspace_roots(&params), vec![folder_root]);
     }
 
     #[test]

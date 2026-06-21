@@ -1,9 +1,9 @@
 #[cfg(feature = "reference")]
-use markdown_table_formatter::format_tables;
-#[cfg(feature = "reference")]
 use serde::Serialize;
 #[cfg(feature = "reference")]
 use std::collections::BTreeMap;
+#[cfg(feature = "reference")]
+use std::fmt::Write as _;
 
 mod index;
 
@@ -11,13 +11,15 @@ pub use index::{
     DocEntry, DocIndex, DocKind, DocParam, EntryDetail, EntryDocumentation, SourceDocs,
     SourcePosition, SourceRange, WorkspaceDocIndex, detailed_markdown_for_entry, entry_count_label,
     entry_documentation, entry_summary_markdown_table, group_count_label, group_markdown_table,
-    markdown_for_entry, rendered_markdown_for_entry, search_doc_entries, search_reference_entries,
-    snippet_for_signature, source_docs, source_docs_with_definitions, source_markdown_for_entry,
+    markdown_for_entry, normalize_reference_query_token, rendered_markdown_for_entry,
+    search_doc_entries, search_reference_entries, snippet_for_signature, source_docs,
+    source_docs_with_definitions, source_markdown_for_entry, source_path_from_location_query,
     suggest_doc_entries, suggest_reference_entries, titled_markdown_for_entry,
 };
 #[cfg(feature = "reference")]
 pub use scaffold_editor::reference::{
-    markdown_code_span, markdown_table, markdown_text, same_markdown_paragraph,
+    CompletionItem, completion_items, format_markdown_tables, markdown_code_span, markdown_table,
+    markdown_text, same_markdown_paragraph,
 };
 
 #[cfg(feature = "reference")]
@@ -29,6 +31,11 @@ pub fn scaffold_reference_markdown() -> String {
 #[cfg(feature = "reference")]
 pub fn scaffold_reference_json() -> serde_json::Result<String> {
     serde_json::to_string_pretty(&ReferenceDocument::from_index(&DocIndex::scaffold()))
+}
+
+#[cfg(feature = "reference")]
+pub fn scaffold_reference_value() -> serde_json::Result<serde_json::Value> {
+    serde_json::to_value(ReferenceDocument::from_index(&DocIndex::scaffold()))
 }
 
 #[cfg(feature = "reference")]
@@ -46,30 +53,26 @@ pub fn render_reference_markdown(index: &DocIndex) -> String {
         "Generated reference for Scaffold Scheme symbols, catalog helpers, and standard extension libraries.\n",
     );
 
-    let mut groups = BTreeMap::<String, Vec<&DocEntry>>::new();
-    for entry in index.visible_entries() {
-        groups
-            .entry(entry.group_name().to_owned())
-            .or_default()
-            .push(entry);
-    }
-
-    for entries in groups.values_mut() {
-        entries.sort_by(|left, right| left.name.cmp(&right.name));
-    }
+    let groups = index.visible_entries().fold(
+        BTreeMap::<String, Vec<&DocEntry>>::new(),
+        |mut groups, entry| {
+            groups
+                .entry(entry.group_name().to_owned())
+                .or_default()
+                .push(entry);
+            groups
+        },
+    );
 
     output.push_str("\n## Contents\n\n");
     output.push_str(&markdown_table(
         &["Group", "Entries"],
-        groups
-            .iter()
-            .map(|(group, entries)| {
-                vec![
-                    format!("[{}](#{})", markdown_text(group), anchor(group)),
-                    entries.len().to_string(),
-                ]
-            })
-            .collect::<Vec<_>>(),
+        groups.iter().map(|(group, entries)| {
+            vec![
+                format!("[{}](#{})", markdown_text(group), anchor(group)),
+                entries.len().to_string(),
+            ]
+        }),
     ));
     output.push_str("\n## Capability Contracts\n\n");
     output.push_str("Rust-backed libraries expose different capability levels depending on where the DSL is running.\n\n");
@@ -86,8 +89,7 @@ pub fn render_reference_markdown(index: &DocIndex) -> String {
                     capability_mode(capability, "editor").to_owned(),
                     capability_mode(capability, "wasm").to_owned(),
                 ]
-            })
-            .collect::<Vec<_>>(),
+            }),
     ));
 
     output.push_str("\n## Catalog Schema\n\n");
@@ -96,13 +98,14 @@ pub fn render_reference_markdown(index: &DocIndex) -> String {
     );
 
     for (group, entries) in &groups {
-        output.push_str(&format!(
-            "\n## <a id=\"{}\"></a>{}\n\n",
+        let _ = writeln!(
+            &mut output,
+            "\n## <a id=\"{}\"></a>{}\n",
             anchor(group),
             markdown_text(group)
-        ));
+        );
         for entry in entries {
-            output.push_str(&format!("### {}\n\n", markdown_code_span(&entry.name)));
+            let _ = writeln!(&mut output, "### {}\n", markdown_code_span(&entry.name));
             let markdown = markdown_for_entry(entry);
             if markdown.trim().is_empty() {
                 output.push_str("No documentation provided.\n\n");
@@ -120,7 +123,7 @@ pub fn render_reference_markdown(index: &DocIndex) -> String {
         }
     }
 
-    format_tables(output)
+    format_markdown_tables(output)
 }
 
 #[cfg(feature = "reference")]
@@ -173,28 +176,30 @@ struct ReferenceCapability {
 impl ReferenceCapability {
     fn from_descriptor(descriptor: &scaffold_dsl::CapabilityDescriptor) -> Self {
         Self {
-            library_name: descriptor
-                .library_name
-                .iter()
-                .map(|component| (*component).to_owned())
-                .collect(),
+            library_name: owned_components(descriptor.library_name),
             library: descriptor.library.to_owned(),
-            bridge_library_name: descriptor
-                .bridge_library_name
-                .iter()
-                .map(|component| (*component).to_owned())
-                .collect(),
+            bridge_library_name: owned_components(descriptor.bridge_library_name),
             bridge_library: descriptor.bridge_library.to_owned(),
             effect: descriptor.effect.to_owned(),
-            modes: descriptor
-                .modes
-                .iter()
-                .map(|mode| (mode.name.to_owned(), mode.availability.to_owned()))
-                .collect(),
+            modes: capability_modes(descriptor),
             docs_source: descriptor.docs_source.to_owned(),
             notes: descriptor.notes.to_owned(),
         }
     }
+}
+
+#[cfg(feature = "reference")]
+fn owned_components(components: &[&str]) -> Vec<String> {
+    components.iter().copied().map(str::to_owned).collect()
+}
+
+#[cfg(feature = "reference")]
+fn capability_modes(descriptor: &scaffold_dsl::CapabilityDescriptor) -> BTreeMap<String, String> {
+    descriptor
+        .modes
+        .iter()
+        .map(|mode| (mode.name.to_owned(), mode.availability.to_owned()))
+        .collect()
 }
 
 #[cfg(feature = "reference")]
@@ -253,7 +258,7 @@ impl ReferenceEntry {
             deprecated: entry.deprecated.clone(),
             source: entry.source.clone(),
             source_location: entry.display_source_location(),
-            range: entry.range.map(ReferenceRange::from_source_range),
+            range: entry.range.map(SourceRange::symbol_range).map(Into::into),
             hidden: entry.hidden,
         }
     }
@@ -268,12 +273,12 @@ struct ReferenceRange {
 }
 
 #[cfg(feature = "reference")]
-impl ReferenceRange {
-    const fn from_source_range(range: SourceRange) -> Self {
+impl From<scaffold_editor::symbols::SymbolRange> for ReferenceRange {
+    fn from(range: scaffold_editor::symbols::SymbolRange) -> Self {
         Self {
-            line: range.start.line,
-            start: range.start.character,
-            length: range.end.character.saturating_sub(range.start.character),
+            line: range.line,
+            start: range.start,
+            length: range.length,
         }
     }
 }
@@ -329,7 +334,7 @@ mod tests {
         assert!(markdown.starts_with("# Scaffold Scheme Reference"));
         assert!(markdown.contains("## Contents"));
         assert!(markdown.contains("| Group                                   | Entries |"));
-        assert!(markdown.contains("| [Catalog](#catalog)                     | 35      |"));
+        assert!(markdown.contains("| [Catalog](#catalog)                     | 41      |"));
         assert!(markdown.contains("## Capability Contracts"));
         assert!(markdown.contains("## Catalog Schema"));
         assert!(

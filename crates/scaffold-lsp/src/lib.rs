@@ -7,7 +7,12 @@ mod workspace;
 pub use features::completion_items;
 pub use scaffold_docs as docs;
 
-use std::{collections::HashMap, error::Error, path::PathBuf, sync::Arc};
+use std::{
+    collections::{HashMap, HashSet},
+    error::Error,
+    path::PathBuf,
+    sync::Arc,
+};
 
 use document::Document;
 use scaffold_docs::{DocIndex, WorkspaceDocIndex};
@@ -250,11 +255,11 @@ impl LanguageServer for Backend {
             return Ok(None);
         };
 
-        let open_uris = documents.keys().cloned().collect::<Vec<_>>();
-        let mut reference_documents = Vec::new();
-        for (document_uri, document) in documents.iter() {
-            reference_documents.push((document_uri.to_string(), document.text().to_owned()));
-        }
+        let open_uris = documents.keys().cloned().collect::<HashSet<_>>();
+        let mut reference_documents = documents
+            .iter()
+            .map(|(document_uri, document)| (document_uri.to_string(), document.text().to_owned()))
+            .collect::<Vec<_>>();
         drop(documents);
 
         let roots = self.workspace_roots.lock().await.clone();

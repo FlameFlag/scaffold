@@ -32,14 +32,12 @@ pub(super) fn missing_doc_action(
         range: Range::new(Position::new(line, 0), Position::new(line, 0)),
         new_text,
     };
-    let mut changes = HashMap::new();
-    let _previous = changes.insert(uri.clone(), vec![edit]);
     Some(CodeAction {
         title: format!("Add doc stub for `{name}`"),
         kind: Some(CodeActionKind::QUICKFIX),
         diagnostics: Some(vec![diagnostic.clone()]),
         edit: Some(WorkspaceEdit {
-            changes: Some(changes),
+            changes: Some(HashMap::from([(uri.clone(), vec![edit])])),
             ..Default::default()
         }),
         ..Default::default()

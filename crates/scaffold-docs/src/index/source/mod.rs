@@ -1,8 +1,11 @@
 use lexpr::datum::{Datum, Ref};
 
-use scaffold_editor::sexpr;
+use scaffold_editor::{sexpr, utf16_len};
 
-use super::model::{DocEntry, DocKind, DocParam, SourceDocs, SourcePosition, SourceRange};
+use super::{
+    join_text,
+    model::{DocEntry, DocKind, DocParam, SourceDocs, SourcePosition, SourceRange},
+};
 
 mod libraries;
 
@@ -56,11 +59,13 @@ fn attach_definition_ranges(source_name: &str, source: &str, entries: &mut [DocE
 pub fn source_docs_with_definitions(source_name: &str, source: &str) -> SourceDocs {
     let mut source_docs = source_docs(source_name, source);
     if !source_docs.entries.is_empty() || sexpr::parses_completely(source) {
-        let mut entries = definition_entries(source_name, source);
-        for entry in source_docs.entries {
-            merge_or_push_doc_entry(&mut entries, entry);
-        }
-        source_docs.entries = entries;
+        source_docs.entries = source_docs.entries.into_iter().fold(
+            definition_entries(source_name, source),
+            |mut entries, entry| {
+                merge_or_push_doc_entry(&mut entries, entry);
+                entries
+            },
+        );
     }
     source_docs
 }
@@ -227,20 +232,12 @@ fn merge_or_push_doc_entry(output: &mut Vec<DocEntry>, doc_entry: DocEntry) {
         return;
     };
 
-    existing.signature = doc_entry.signature;
-    existing.summary = doc_entry.summary;
-    existing.markdown = doc_entry.markdown;
-    existing.example = doc_entry.example;
-    existing.params = doc_entry.params;
-    existing.returns = doc_entry.returns;
-    existing.group = doc_entry.group;
-    existing.see = doc_entry.see;
-    existing.effect = doc_entry.effect;
-    existing.requires_capability = doc_entry.requires_capability;
-    existing.stability = doc_entry.stability;
-    existing.since = doc_entry.since;
-    existing.deprecated = doc_entry.deprecated;
-    existing.hidden = doc_entry.hidden;
+    *existing = DocEntry {
+        source: existing.source.clone(),
+        range: existing.range,
+        kind: existing.kind,
+        ..doc_entry
+    };
 }
 
 #[derive(Debug)]
@@ -435,11 +432,7 @@ fn structured_signature(items: &[Ref<'_>]) -> Option<String> {
 fn render_signature_list(items: &[Ref<'_>]) -> String {
     format!(
         "({})",
-        items
-            .iter()
-            .map(|item| render_datum(*item))
-            .collect::<Vec<_>>()
-            .join(" ")
+        join_text(items.iter().map(|item| render_datum(*item)), " ")
     )
 }
 
@@ -448,7 +441,7 @@ fn render_datum(datum: Ref<'_>) -> String {
         return symbol.to_owned();
     }
     if let Some(string) = sexpr::string_text(datum) {
-        return format!("\"{}\"", string.replace('\\', "\\\\").replace('"', "\\\""));
+        return scaffold_scheme::string_literal(string);
     }
     if let Some(items) = sexpr::list_items(datum) {
         return render_signature_list(&items);
@@ -464,7 +457,7 @@ fn symbol_range(text: &str, datum: Ref<'_>, symbol: &str) -> SourceRange {
     };
     let end = SourcePosition {
         line: start.line,
-        character: start.character + symbol.encode_utf16().count() as u32,
+        character: start.character + utf16_len(symbol),
     };
     SourceRange { start, end }
 }

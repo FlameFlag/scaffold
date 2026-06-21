@@ -1,5 +1,9 @@
-use crate::sexpr::{self, TextPosition};
+use crate::{
+    TextPosition, sexpr,
+    text::{clean_signature_parameter, signature_parameter_names},
+};
 
+#[derive(Clone, Copy)]
 pub struct InlayParam<'a> {
     pub name: &'a str,
     pub summary: &'a str,
@@ -7,7 +11,7 @@ pub struct InlayParam<'a> {
 
 pub trait InlayEntry {
     fn signature(&self) -> Option<&str>;
-    fn params(&self) -> Vec<InlayParam<'_>>;
+    fn params(&self) -> impl Iterator<Item = InlayParam<'_>>;
 }
 
 impl<T: InlayEntry + ?Sized> InlayEntry for &T {
@@ -15,7 +19,7 @@ impl<T: InlayEntry + ?Sized> InlayEntry for &T {
         (**self).signature()
     }
 
-    fn params(&self) -> Vec<InlayParam<'_>> {
+    fn params(&self) -> impl Iterator<Item = InlayParam<'_>> {
         (**self).params()
     }
 }
@@ -54,17 +58,14 @@ pub fn inlay_hints(index: &impl InlayIndex, text: &str, range: TextRange) -> Vec
 }
 
 pub fn parameter_names(entry: &impl InlayEntry) -> Vec<String> {
-    let params = entry.params();
-    if !params.is_empty() {
-        return params
-            .iter()
-            .map(|param| param.name.to_owned())
-            .collect::<Vec<_>>();
+    let mut params = entry.params().peekable();
+    if params.peek().is_some() {
+        return params.map(|param| param.name.to_owned()).collect();
     }
     let Some(signature) = entry.signature() else {
         return Vec::new();
     };
-    signature_parameters(signature)
+    signature_parameter_names(signature)
         .skip(1)
         .filter(|part| *part != "...")
         .map(clean_signature_parameter)
@@ -76,13 +77,12 @@ pub fn parameter_names(entry: &impl InlayEntry) -> Vec<String> {
 pub fn is_variadic(entry: &impl InlayEntry) -> bool {
     entry
         .signature()
-        .is_some_and(|signature| signature_parameters(signature).any(|part| part == "..."))
+        .is_some_and(|signature| signature_parameter_names(signature).any(|part| part == "..."))
 }
 
 pub fn parameter_tooltip(entry: &impl InlayEntry, name: &str) -> Option<String> {
     entry
         .params()
-        .into_iter()
         .find(|param| param.name == name)
         .map(|param| param.summary.to_owned())
 }
@@ -99,7 +99,6 @@ fn collect_inlay_hints(
     };
     if let Some(head) = items.first().and_then(|item| sexpr::symbol_text(*item))
         && let Some(entry) = index.entry(head)
-        && !parameter_names(&entry).is_empty()
     {
         inlay_hints_for_form(text, &items[1..], entry, range, output);
     }
@@ -149,17 +148,6 @@ impl TextRange {
     }
 }
 
-fn clean_signature_parameter(name: &str) -> &str {
-    name.trim_matches(&['[', ']'][..])
-}
-
-fn signature_parameters(signature: &str) -> impl Iterator<Item = &str> {
-    signature
-        .trim_start_matches('(')
-        .trim_end_matches(')')
-        .split_whitespace()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -174,14 +162,11 @@ mod tests {
             self.signature
         }
 
-        fn params(&self) -> Vec<InlayParam<'_>> {
-            self.params
-                .iter()
-                .map(|param| InlayParam {
-                    name: param.name,
-                    summary: param.summary,
-                })
-                .collect()
+        fn params(&self) -> impl Iterator<Item = InlayParam<'_>> {
+            self.params.iter().map(|param| InlayParam {
+                name: param.name,
+                summary: param.summary,
+            })
         }
     }
 

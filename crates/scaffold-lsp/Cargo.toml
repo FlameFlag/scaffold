@@ -8,11 +8,10 @@ publish = false
 workspace = true
 
 [dependencies]
-ropey = "1.6.1"
 scaffold-context = { path = "../scaffold-context" }
 scaffold-docs = { path = "../scaffold-docs" }
 scaffold-editor = { path = "../scaffold-editor" }
 scaffold-fmt = { path = "../scaffold-fmt" }
 serde_json = "1.0.150"
-tokio = { version = "1.52.3", features = ["io-std", "io-util", "rt-multi-thread", "sync"] }
+tokio = { version = "1.52.3", default-features = false, features = ["io-std", "io-util", "rt-multi-thread", "sync"] }
 tower-lsp = "0.20.0"

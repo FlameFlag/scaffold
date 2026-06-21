@@ -91,12 +91,8 @@ mod tests {
 
     #[test]
     fn paths_resource_returns_pretty_json_with_mime_type() {
-        let root = std::env::temp_dir().join(format!(
-            "scaffold-mcp-resource-paths-{}",
-            std::process::id()
-        ));
-        std::fs::create_dir_all(&root).expect("root");
-        let server = ScaffoldMcp::new(root.join("scaffold.scm"));
+        let root = tempfile::tempdir().expect("root");
+        let server = ScaffoldMcp::new(root.path().join("scaffold.scm"));
 
         let contents = read(&server, PATHS_URI).expect("paths resource");
         let ResourceContents::TextResourceContents {

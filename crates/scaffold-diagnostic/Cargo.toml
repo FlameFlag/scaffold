@@ -8,5 +8,5 @@ publish = false
 workspace = true
 
 [dependencies]
-miette = { version = "7.6.0", default-features = false, features = ["fancy-no-backtrace", "derive"] }
+miette = { version = "7.6.0", default-features = false }
 thiserror = "2.0.18"

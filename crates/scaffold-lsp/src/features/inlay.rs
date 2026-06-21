@@ -13,15 +13,11 @@ impl InlayEntry for DocInlayEntry<'_> {
         self.0.signature.as_deref()
     }
 
-    fn params(&self) -> Vec<InlayParam<'_>> {
-        self.0
-            .params
-            .iter()
-            .map(|param| InlayParam {
-                name: &param.name,
-                summary: &param.summary,
-            })
-            .collect()
+    fn params(&self) -> impl Iterator<Item = InlayParam<'_>> {
+        self.0.params.iter().map(|param| InlayParam {
+            name: &param.name,
+            summary: &param.summary,
+        })
     }
 }
 

@@ -7,7 +7,7 @@ use rmcp::{
 use serde::Deserialize;
 use serde_json::{Value, json};
 
-use scaffold_catalog::{Catalog, Tool};
+use scaffold_catalog::Catalog;
 use scaffold_context::Context;
 use scaffold_install as install;
 use scaffold_platform::Host;
@@ -55,7 +55,7 @@ impl ScaffoldMcp {
         let host = Host::current();
         Ok(structured(json!({
             "catalog": ctx.catalog_path.display().to_string(),
-            "host": host_json(host),
+            "host": host,
             "tools": catalog_tool_list_json(&catalog, host),
         })))
     }
@@ -87,10 +87,6 @@ struct EvalCatalogRequest {
     path: Option<String>,
 }
 
-fn bin_names(tool: &Tool) -> Vec<&str> {
-    tool.bins.iter().map(|bin| bin.name.as_str()).collect()
-}
-
 fn catalog_tool_list_json(catalog: &Catalog, host: Host) -> Vec<Value> {
     catalog
         .tools
@@ -101,55 +97,35 @@ fn catalog_tool_list_json(catalog: &Catalog, host: Host) -> Vec<Value> {
                 "supports_host": tool.supports_host(host),
                 "action": tool.action.label(),
                 "phase": tool.phase().label(),
-                "bins": bin_names(tool),
-                "meta": {
-                    "home_page": &tool.meta.home_page,
-                    "description": &tool.meta.description,
-                    "license": &tool.meta.license,
-                    "maintainers": &tool.meta.maintainers,
-                    "tags": &tool.meta.tags,
-                    "main_program": &tool.meta.main_program,
-                    "source": &tool.meta.source,
-                },
+                "bins": tool.bin_names().collect::<Vec<_>>(),
+                "meta": &tool.meta,
             })
         })
         .collect()
 }
 
 fn catalog_check_json(ctx: &Context, catalog: &Catalog, host: Host) -> Value {
-    let mut missing = 0usize;
     let tools = catalog
         .tools
         .iter()
         .map(|tool| {
-            let status = install::tool_presence_status(ctx, tool, host);
-            if status == install::ToolPresenceStatus::Missing {
-                missing += 1;
-            }
-            let version = if status == install::ToolPresenceStatus::Present {
-                tool.version_summary()
-            } else {
-                String::new()
-            };
+            let presence = install::tool_presence_summary(ctx, tool, host);
             json!({
                 "name": tool.name,
-                "status": status.label(),
-                "version": version,
+                "status": presence.status.label(),
+                "version": presence.version,
             })
         })
         .collect::<Vec<_>>();
+    let missing = tools
+        .iter()
+        .filter(|tool| tool["status"] == install::ToolPresenceStatus::Missing.label())
+        .count();
     json!({
         "ok": missing == 0,
-        "host": host_json(host),
+        "host": host,
         "missing": missing,
         "tools": tools,
-    })
-}
-
-fn host_json(host: Host) -> Value {
-    json!({
-        "os": host.os.label(),
-        "arch": host.arch.label(),
     })
 }
 
@@ -159,10 +135,10 @@ mod tests {
     use scaffold_context::Context;
     use scaffold_platform::{Host, HostArch, HostOs};
 
-    use super::{bin_names, catalog_check_json, catalog_tool_list_json, host_json};
+    use super::{catalog_check_json, catalog_tool_list_json};
 
     #[test]
-    fn bin_names_preserve_catalog_bin_names() {
+    fn tool_bin_names_preserve_catalog_bin_names() {
         let catalog = Catalog::from_value(serde_json::json!({
             "tools": [{
                 "name": "demo",
@@ -172,7 +148,10 @@ mod tests {
         }))
         .expect("catalog");
 
-        assert_eq!(bin_names(&catalog.tools[0]), vec!["demo", "democtl"]);
+        assert_eq!(
+            catalog.tools[0].bin_names().collect::<Vec<_>>(),
+            vec!["demo", "democtl"]
+        );
     }
 
     #[test]
@@ -209,17 +188,6 @@ mod tests {
         );
         assert_eq!(tools[0]["meta"]["description"], "Demo tool.");
         assert!(tools[0].get("version").is_none());
-    }
-
-    #[test]
-    fn host_json_uses_stable_platform_labels() {
-        let value = host_json(Host {
-            os: HostOs::Macos,
-            arch: HostArch::Aarch64,
-        });
-
-        assert_eq!(value["os"], "macos");
-        assert_eq!(value["arch"], "aarch64");
     }
 
     #[test]

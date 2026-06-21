@@ -6,14 +6,11 @@ impl InlayEntry for ReferenceEntry {
         self.signature.as_deref()
     }
 
-    fn params(&self) -> Vec<InlayParam<'_>> {
-        self.params
-            .iter()
-            .map(|param| InlayParam {
-                name: &param.name,
-                summary: &param.summary,
-            })
-            .collect()
+    fn params(&self) -> impl Iterator<Item = InlayParam<'_>> {
+        self.params.iter().map(|param| InlayParam {
+            name: &param.name,
+            summary: &param.summary,
+        })
     }
 }
 

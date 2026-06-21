@@ -1,5 +1,7 @@
 use lexpr::datum::Ref;
 
+use crate::utf16_len;
+
 use super::sexpr;
 
 #[derive(Debug, serde::Serialize)]
@@ -150,7 +152,7 @@ fn definition_symbol(text: &str, datum: Ref<'_>) -> DefinitionSymbol {
     let name = sexpr::symbol_text(datum).unwrap_or_default().to_owned();
     let position = sexpr::span_start(text, datum);
     DefinitionSymbol {
-        length: name.encode_utf16().count() as u32,
+        length: utf16_len(&name),
         name,
         offset: sexpr::utf16_offset_at_span_start(text, datum),
         line: position.line,

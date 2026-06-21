@@ -1,6 +1,10 @@
+use std::fmt::Write as _;
+
 use crate::symbols::SymbolRange;
+use crate::text::{clean_signature_parameter, signature_parameter_names};
 use markdown_table_formatter::format_tables;
 
+#[derive(Clone, Copy)]
 pub struct ReferenceParam<'a> {
     pub name: &'a str,
     pub summary: &'a str,
@@ -77,15 +81,15 @@ pub trait ReferenceEntry {
     fn effect(&self) -> Option<&str> {
         None
     }
-    fn requires_capability(&self) -> Vec<&str> {
-        Vec::new()
+    fn requires_capability(&self) -> impl Iterator<Item = &str> {
+        std::iter::empty()
     }
-    fn params(&self) -> Vec<ReferenceParam<'_>>;
+    fn params(&self) -> impl Iterator<Item = ReferenceParam<'_>>;
     fn returns(&self) -> Option<&str>;
     fn markdown(&self) -> Option<&str>;
     fn example(&self) -> Option<&str>;
     fn deprecated(&self) -> Option<&str>;
-    fn see(&self) -> Vec<&str>;
+    fn see(&self) -> impl Iterator<Item = &str>;
 }
 
 pub trait ReferenceItem: ReferenceEntry {
@@ -252,44 +256,42 @@ pub fn markdown_for_entry(entry: &impl ReferenceEntry) -> String {
     if let Some(summary) = summary {
         output.push_str(summary);
     }
-    let mut metadata = Vec::new();
-    if let Some(group) = entry.group() {
-        metadata.push(vec!["Group".to_owned(), group.to_owned()]);
-    }
-    if let Some(since) = entry.since() {
-        metadata.push(vec!["Since".to_owned(), since.to_owned()]);
-    }
-    if let Some(stability) = entry.stability() {
-        metadata.push(vec!["Stability".to_owned(), stability.to_owned()]);
-    }
-    if let Some(effect) = entry.effect() {
-        metadata.push(vec!["Effect".to_owned(), effect.to_owned()]);
-    }
-    let capabilities = entry.requires_capability();
-    if !capabilities.is_empty() {
-        metadata.push(vec![
+    let mut capabilities = entry.requires_capability().peekable();
+    let capability_metadata = capabilities.peek().is_some().then(|| {
+        vec![
             "Requires capability".to_owned(),
-            capabilities
-                .into_iter()
-                .map(markdown_code_span)
-                .collect::<Vec<_>>()
-                .join(", "),
-        ]);
-    }
+            join_text(capabilities.map(markdown_code_span), ", "),
+        ]
+    });
+    let metadata = [
+        entry
+            .group()
+            .map(|group| vec!["Group".to_owned(), group.to_owned()]),
+        entry
+            .since()
+            .map(|since| vec!["Since".to_owned(), since.to_owned()]),
+        entry
+            .stability()
+            .map(|stability| vec!["Stability".to_owned(), stability.to_owned()]),
+        entry
+            .effect()
+            .map(|effect| vec!["Effect".to_owned(), effect.to_owned()]),
+        capability_metadata,
+    ]
+    .into_iter()
+    .flatten()
+    .collect::<Vec<_>>();
     if !metadata.is_empty() {
         push_section_break(&mut output);
         output.push_str(&markdown_table(&["Field", "Value"], metadata));
     }
-    let params = entry.params();
-    if !params.is_empty() {
+    let mut params = entry.params().peekable();
+    if params.peek().is_some() {
         push_section_break(&mut output);
         output.push_str("**Parameters**\n\n");
         output.push_str(&markdown_table(
             &["Parameter", "Description"],
-            params
-                .into_iter()
-                .map(|param| vec![markdown_code_span(param.name), param.summary.to_owned()])
-                .collect(),
+            params.map(|param| vec![markdown_code_span(param.name), param.summary.to_owned()]),
         ));
     }
     if let Some(returns) = entry.returns() {
@@ -315,16 +317,11 @@ pub fn markdown_for_entry(entry: &impl ReferenceEntry) -> String {
         output.push_str("**Deprecated:** ");
         output.push_str(deprecated);
     }
-    let see = entry.see();
-    if !see.is_empty() {
+    let mut see = entry.see().peekable();
+    if see.peek().is_some() {
         push_section_break(&mut output);
         output.push_str("**See also:** ");
-        output.push_str(
-            &see.iter()
-                .map(markdown_code_span)
-                .collect::<Vec<_>>()
-                .join(", "),
-        );
+        output.push_str(&join_text(see.map(markdown_code_span), ", "));
     }
     output
 }
@@ -358,7 +355,6 @@ pub fn entry_matches_query(entry: &impl ReferenceEntry, name: &str, query: &str)
             .is_some_and(|effect| entry_field_matches(effect, query))
         || entry
             .requires_capability()
-            .iter()
             .any(|capability| entry_field_matches(capability, query))
         || entry
             .signature()
@@ -366,7 +362,7 @@ pub fn entry_matches_query(entry: &impl ReferenceEntry, name: &str, query: &str)
         || entry
             .summary()
             .is_some_and(|summary| entry_field_matches(summary, query))
-        || entry.params().iter().any(|param| {
+        || entry.params().any(|param| {
             entry_field_matches(param.name, query) || entry_field_matches(param.summary, query)
         })
         || entry
@@ -381,10 +377,7 @@ pub fn entry_matches_query(entry: &impl ReferenceEntry, name: &str, query: &str)
         || entry
             .deprecated()
             .is_some_and(|deprecated| entry_field_matches(deprecated, query))
-        || entry
-            .see()
-            .iter()
-            .any(|name| entry_field_matches(name, query))
+        || entry.see().any(|name| entry_field_matches(name, query))
 }
 
 fn reference_item_matches_query(entry: &impl ReferenceItem, query: &str) -> bool {
@@ -398,7 +391,7 @@ pub fn signature_parameters(entry: &impl ReferenceEntry) -> Vec<SignatureParamet
     let Some(signature) = entry.signature() else {
         return Vec::new();
     };
-    let params = entry.params();
+    let params = entry.params().collect::<Vec<_>>();
     signature_parameter_names(signature)
         .skip(1)
         .map(|name| SignatureParameter {
@@ -424,10 +417,10 @@ pub fn snippet_for_signature(signature: &str) -> Option<String> {
             snippet.push_str(" ...");
         } else if part.starts_with('[') && part.ends_with(']') {
             let label = part.trim_matches(&['[', ']'][..]);
-            snippet.push_str(&format!(" ${{{index}:{label}}}"));
+            let _ = write!(&mut snippet, " ${{{index}:{label}}}");
             index += 1;
         } else {
-            snippet.push_str(&format!(" ${{{index}:{part}}}"));
+            let _ = write!(&mut snippet, " ${{{index}:{part}}}");
             index += 1;
         }
     }
@@ -437,17 +430,6 @@ pub fn snippet_for_signature(signature: &str) -> Option<String> {
 
 fn entry_field_matches(field: &str, query: &str) -> bool {
     field.to_lowercase().contains(query)
-}
-
-fn clean_signature_parameter(name: &str) -> &str {
-    name.trim_matches(&['[', ']'][..])
-}
-
-fn signature_parameter_names(signature: &str) -> impl Iterator<Item = &str> {
-    signature
-        .trim_start_matches('(')
-        .trim_end_matches(')')
-        .split_whitespace()
 }
 
 #[must_use]
@@ -462,17 +444,7 @@ pub fn markdown_code_span(value: impl AsRef<str>) -> String {
 }
 
 fn max_consecutive_backticks(value: &str) -> usize {
-    let mut max_run = 0;
-    let mut run = 0;
-    for ch in value.chars() {
-        if ch == '`' {
-            run += 1;
-            max_run = max_run.max(run);
-        } else {
-            run = 0;
-        }
-    }
-    max_run
+    value.split(|ch| ch != '`').map(str::len).max().unwrap_or(0)
 }
 
 #[must_use]
@@ -525,28 +497,18 @@ pub fn same_markdown_paragraph(left: &str, right: &str) -> bool {
 }
 
 fn normalize_markdown_paragraph(value: &str) -> String {
-    value.split_whitespace().collect::<Vec<_>>().join(" ")
+    join_text(value.split_whitespace(), " ")
 }
 
 #[must_use]
-pub fn markdown_table(headers: &[&str], rows: Vec<Vec<String>>) -> String {
+pub fn markdown_table(headers: &[&str], rows: impl IntoIterator<Item = Vec<String>>) -> String {
     assert!(
         !headers.is_empty(),
         "markdown tables must have at least one column"
     );
 
-    let mut output = String::new();
-    output.push('|');
-    for header in headers {
-        push_markdown_table_cell(&mut output, header);
-    }
-    output.push('\n');
-
-    output.push('|');
-    for _header in headers {
-        output.push_str(" --- |");
-    }
-    output.push('\n');
+    let mut output = markdown_table_row(headers.iter().copied());
+    output.push_str(&markdown_table_row((0..headers.len()).map(|_| "---")));
 
     for row in rows {
         assert_eq!(
@@ -554,19 +516,35 @@ pub fn markdown_table(headers: &[&str], rows: Vec<Vec<String>>) -> String {
             headers.len(),
             "markdown table row width must match header width"
         );
-        output.push('|');
-        for cell in row {
-            push_markdown_table_cell(&mut output, cell);
-        }
-        output.push('\n');
+        output.push_str(&markdown_table_row(row));
     }
     format_tables(output)
 }
 
-fn push_markdown_table_cell(output: &mut String, value: impl AsRef<str>) {
-    output.push(' ');
-    output.push_str(&markdown_table_cell(value));
-    output.push_str(" |");
+#[must_use]
+pub fn format_markdown_tables(markdown: String) -> String {
+    format_tables(markdown)
+}
+
+fn markdown_table_row(cells: impl IntoIterator<Item = impl AsRef<str>>) -> String {
+    format!(
+        "| {} |\n",
+        join_text(cells.into_iter().map(markdown_table_cell), " | ")
+    )
+}
+
+fn join_text(items: impl IntoIterator<Item = impl AsRef<str>>, separator: &str) -> String {
+    let mut output = String::new();
+    let mut first = true;
+    for item in items {
+        if first {
+            first = false;
+        } else {
+            output.push_str(separator);
+        }
+        output.push_str(item.as_ref());
+    }
+    output
 }
 
 fn markdown_table_cell(value: impl AsRef<str>) -> String {
@@ -615,18 +593,15 @@ mod tests {
             Some("pure")
         }
 
-        fn requires_capability(&self) -> Vec<&str> {
-            vec!["scaffold.demo"]
+        fn requires_capability(&self) -> impl Iterator<Item = &str> {
+            std::iter::once("scaffold.demo")
         }
 
-        fn params(&self) -> Vec<ReferenceParam<'_>> {
-            self.params
-                .iter()
-                .map(|param| ReferenceParam {
-                    name: param.name,
-                    summary: param.summary,
-                })
-                .collect()
+        fn params(&self) -> impl Iterator<Item = ReferenceParam<'_>> {
+            self.params.iter().map(|param| ReferenceParam {
+                name: param.name,
+                summary: param.summary,
+            })
         }
 
         fn returns(&self) -> Option<&str> {
@@ -645,8 +620,8 @@ mod tests {
             None
         }
 
-        fn see(&self) -> Vec<&str> {
-            vec!["tool"]
+        fn see(&self) -> impl Iterator<Item = &str> {
+            std::iter::once("tool")
         }
     }
 
@@ -683,11 +658,11 @@ mod tests {
             self.entry.effect()
         }
 
-        fn requires_capability(&self) -> Vec<&str> {
+        fn requires_capability(&self) -> impl Iterator<Item = &str> {
             self.entry.requires_capability()
         }
 
-        fn params(&self) -> Vec<ReferenceParam<'_>> {
+        fn params(&self) -> impl Iterator<Item = ReferenceParam<'_>> {
             self.entry.params()
         }
 
@@ -707,7 +682,7 @@ mod tests {
             self.entry.deprecated()
         }
 
-        fn see(&self) -> Vec<&str> {
+        fn see(&self) -> impl Iterator<Item = &str> {
             self.entry.see()
         }
     }

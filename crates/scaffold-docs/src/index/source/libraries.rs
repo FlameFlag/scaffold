@@ -13,27 +13,22 @@ pub(super) fn library_name(datums: &[Datum]) -> Option<Vec<String>> {
 }
 
 pub(super) fn imported_libraries(datums: &[Datum]) -> Vec<Vec<String>> {
-    let declarations = if let [datum] = datums {
-        if let Some(items) = sexpr::list_items(datum.as_ref())
-            && items
-                .first()
-                .and_then(|item| sexpr::symbol_text(*item))
-                .is_some_and(|head| head == "library")
-        {
-            items.into_iter().skip(2).collect::<Vec<_>>()
-        } else {
-            datums
-                .iter()
-                .map(|datum| datum.as_ref())
-                .collect::<Vec<_>>()
-        }
+    if let [datum] = datums
+        && let Some(items) = sexpr::list_items(datum.as_ref())
+        && items
+            .first()
+            .and_then(|item| sexpr::symbol_text(*item))
+            .is_some_and(|head| head == "library")
+    {
+        imported_libraries_from_declarations(items.into_iter().skip(2))
     } else {
-        datums
-            .iter()
-            .map(|datum| datum.as_ref())
-            .collect::<Vec<_>>()
-    };
+        imported_libraries_from_declarations(datums.iter().map(|datum| datum.as_ref()))
+    }
+}
 
+fn imported_libraries_from_declarations<'a>(
+    declarations: impl IntoIterator<Item = Ref<'a>>,
+) -> Vec<Vec<String>> {
     declarations
         .into_iter()
         .filter_map(sexpr::list_items)
@@ -48,7 +43,6 @@ pub(super) fn imported_libraries(datums: &[Datum]) -> Vec<Vec<String>> {
                 .into_iter()
                 .skip(1)
                 .filter_map(library_name_from_datum)
-                .collect::<Vec<_>>()
         })
         .collect()
 }

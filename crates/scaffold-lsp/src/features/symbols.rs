@@ -11,21 +11,19 @@ pub fn workspace_symbols(index: &DocIndex, query: &str) -> Vec<SymbolInformation
     editor_reference::workspace_symbols(index.visible_entries(), query)
         .into_iter()
         .filter_map(|symbol| {
-            #[allow(deprecated)]
-            let information = SymbolInformation {
-                name: symbol.name,
-                kind: super::reference_symbol_kind(symbol.kind),
-                tags: symbol.deprecated.then_some(vec![SymbolTag::DEPRECATED]),
-                deprecated: None,
-                location: super::location_from_parts(
-                    &symbol.uri,
-                    symbol.line,
-                    symbol.start,
-                    symbol.length,
-                )?,
-                container_name: symbol.group,
-            };
-            Some(information)
+            super::location_from_parts(&symbol.uri, symbol.line, symbol.start, symbol.length).map(
+                |location| {
+                    #[allow(deprecated)]
+                    SymbolInformation {
+                        name: symbol.name,
+                        kind: super::reference_symbol_kind(symbol.kind),
+                        tags: symbol.deprecated.then_some(vec![SymbolTag::DEPRECATED]),
+                        deprecated: None,
+                        location,
+                        container_name: symbol.group,
+                    }
+                },
+            )
         })
         .collect()
 }

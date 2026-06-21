@@ -5,20 +5,18 @@ pub(crate) use scaffold_editor::diagnostics::MISSING_DOC_CODE;
 
 #[cfg(test)]
 pub fn syntax_diagnostics(_source_name: &str, text: &str) -> Vec<Diagnostic> {
-    syntax_issue(text)
+    let diagnostics = syntax_issue(text)
         .map(editor_diagnostics::syntax_diagnostics)
-        .unwrap_or_default()
-        .into_iter()
-        .map(|diagnostic| lsp_diagnostic(text, diagnostic))
-        .collect()
+        .unwrap_or_default();
+    lsp_diagnostics(text, diagnostics)
 }
 
 pub fn document_diagnostics(source_name: &str, text: &str) -> Vec<Diagnostic> {
     let _ = source_name;
-    editor_diagnostics::document_diagnostics(text, syntax_issue(text))
-        .into_iter()
-        .map(|diagnostic| lsp_diagnostic(text, diagnostic))
-        .collect()
+    lsp_diagnostics(
+        text,
+        editor_diagnostics::document_diagnostics(text, syntax_issue(text)),
+    )
 }
 
 #[cfg(test)]
@@ -26,10 +24,7 @@ pub fn doc_diagnostics(_source_name: &str, text: &str) -> Vec<Diagnostic> {
     if syntax_issue(text).is_some() {
         return Vec::new();
     }
-    editor_diagnostics::missing_doc_diagnostics(text)
-        .into_iter()
-        .map(|diagnostic| lsp_diagnostic(text, diagnostic))
-        .collect()
+    lsp_diagnostics(text, editor_diagnostics::missing_doc_diagnostics(text))
 }
 
 fn syntax_issue(text: &str) -> Option<editor_diagnostics::SyntaxIssue> {
@@ -40,6 +35,16 @@ fn syntax_issue(text: &str) -> Option<editor_diagnostics::SyntaxIssue> {
             offset: error.primary_offset(),
             length: 1,
         })
+}
+
+fn lsp_diagnostics(
+    text: &str,
+    diagnostics: impl IntoIterator<Item = editor_diagnostics::Diagnostic>,
+) -> Vec<Diagnostic> {
+    diagnostics
+        .into_iter()
+        .map(|diagnostic| lsp_diagnostic(text, diagnostic))
+        .collect()
 }
 
 fn lsp_diagnostic(text: &str, diagnostic: editor_diagnostics::Diagnostic) -> Diagnostic {
@@ -67,11 +72,8 @@ fn offset_range(text: &str, offset: usize, len: usize) -> Range {
 }
 
 fn byte_offset_to_position(text: &str, offset: usize) -> Position {
-    let offset = offset.min(text.len());
-    let line_start = text[..offset].rfind('\n').map_or(0, |index| index + 1);
-    let line = text[..offset].bytes().filter(|byte| *byte == b'\n').count() as u32;
-    let character = text[line_start..offset].encode_utf16().count() as u32;
-    Position::new(line, character)
+    let position = scaffold_editor::utf16_position_at_byte_offset(text, offset);
+    Position::new(position.line, position.character)
 }
 
 #[cfg(test)]

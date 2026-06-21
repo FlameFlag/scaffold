@@ -3,10 +3,10 @@ use nucleo_matcher::{
     pattern::{AtomKind, CaseMatching, Normalization, Pattern},
 };
 use reedline::{Completer, Span, Suggestion};
-use tower_lsp::lsp_types::{CompletionItem, Documentation};
 
-use scaffold_docs::DocIndex;
-use scaffold_lsp::completion_items;
+use scaffold_docs::{CompletionItem, DocIndex, completion_items};
+
+use crate::cli::docs::doc_group_counts;
 
 use super::commands::{REPL_COMMAND_SPECS, split_repl_command};
 
@@ -15,7 +15,6 @@ struct ReplCompletion {
     value: String,
     display: Option<String>,
     description: Option<String>,
-    extra: Option<Vec<String>>,
 }
 
 impl AsRef<str> for ReplCompletion {
@@ -39,10 +38,9 @@ impl ReplCompleter {
                 value: command.name.to_owned(),
                 display: Some(command.usage.to_owned()),
                 description: Some(command.description.to_owned()),
-                extra: None,
             })
             .collect();
-        let doc_symbols = completion_items(docs)
+        let doc_symbols = completion_items(docs.visible_entries())
             .into_iter()
             .map(repl_completion_from_lsp_item)
             .collect::<Vec<_>>();
@@ -52,7 +50,6 @@ impl ReplCompleter {
                 value: group,
                 display: None,
                 description: Some("Documentation group.".to_owned()),
-                extra: None,
             })
             .collect::<Vec<_>>();
         let mut scheme_symbols = doc_symbols.clone();
@@ -131,31 +128,23 @@ fn repl_completion_from_lsp_item(item: CompletionItem) -> ReplCompletion {
     ReplCompletion {
         value: item.label,
         display: item.detail,
-        description: item.documentation.and_then(completion_documentation_text),
-        extra: None,
+        description: completion_documentation_text(&item.documentation),
     }
 }
 
-fn completion_documentation_text(documentation: Documentation) -> Option<String> {
-    let text = match documentation {
-        Documentation::String(value) => value,
-        Documentation::MarkupContent(markup) => markup.value,
-    };
-    text.lines()
+fn completion_documentation_text(documentation: &str) -> Option<String> {
+    documentation
+        .lines()
         .map(str::trim)
         .find(|line| !line.is_empty() && !line.starts_with("```"))
         .map(str::to_owned)
 }
 
 fn documented_groups(docs: &DocIndex) -> Vec<String> {
-    let mut groups = docs
-        .visible_entries()
-        .map(|entry| entry.group_name())
-        .map(str::to_owned)
-        .collect::<Vec<_>>();
-    groups.sort();
-    groups.dedup();
-    groups
+    doc_group_counts(docs)
+        .keys()
+        .map(|group| (*group).to_owned())
+        .collect()
 }
 
 fn prefix_suggestions(prefix: &str, span: Span, candidates: &[ReplCompletion]) -> Vec<Suggestion> {
@@ -203,7 +192,6 @@ impl ReplCompletion {
             value: self.value.clone(),
             display_override: self.display.clone(),
             description: self.description.clone(),
-            extra: self.extra.clone(),
             span,
             append_whitespace: self.value.starts_with(':'),
             match_indices,

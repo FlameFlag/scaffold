@@ -129,6 +129,7 @@ scaffold-mcp = { path = "crates/scaffold-mcp" }
 scaffold-platform = { path = "crates/scaffold-platform" }
 scaffold-scheme = { path = "crates/scaffold-scheme" }
 serde_json = "1.0.150"
-termimad = "0.34.1"
+shlex = "2.0.1"
+tempfile = "3.27.0"
+termimad = { version = "0.34.1", default-features = false }
 thiserror = "2.0.18"
-tower-lsp = "0.20.0"

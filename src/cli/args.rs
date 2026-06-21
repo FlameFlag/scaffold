@@ -155,7 +155,7 @@ pub(super) struct DocsArgs {
     pub(super) source: Option<String>,
     #[arg(
         long,
-        value_parser = parse_positive_usize,
+        value_parser = clap::builder::RangedU64ValueParser::<usize>::new().range(1..),
         help = "Maximum search results to show; defaults to 20, range 1-100"
     )]
     pub(super) limit: Option<usize>,
@@ -176,6 +176,7 @@ pub(super) struct DocsArgs {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
 pub(super) enum DocsFormat {
+    #[value(alias("md"))]
     Markdown,
     Json,
 }
@@ -223,14 +224,4 @@ impl From<CompletionShell> for clap_complete::Shell {
             CompletionShell::Zsh => Self::Zsh,
         }
     }
-}
-
-fn parse_positive_usize(value: &str) -> Result<usize, String> {
-    let parsed = value
-        .parse::<usize>()
-        .map_err(|err| format!("invalid positive integer: {err}"))?;
-    if parsed == 0 {
-        return Err("value must be at least 1".to_owned());
-    }
-    Ok(parsed)
 }

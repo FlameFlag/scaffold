@@ -2,7 +2,7 @@ mod commands;
 mod completion;
 mod validation;
 
-use super::{CliError, print_json_values};
+use super::{CliError, io::print_json_values};
 use commands::{ReplControl, handle_repl_command};
 use completion::ReplCompleter;
 use reedline::{

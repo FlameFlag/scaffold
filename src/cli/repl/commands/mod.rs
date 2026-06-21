@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::fmt::Write as _;
 
 use termimad::{
     CompoundStyle, MadSkin,
@@ -6,12 +6,15 @@ use termimad::{
 };
 
 use scaffold_docs::{
-    DocEntry, DocIndex, detailed_markdown_for_entry, entry_count_label,
-    entry_summary_markdown_table, group_markdown_table, markdown_code_span, markdown_table,
-    search_doc_entries, source_markdown_for_entry, suggest_doc_entries,
+    DocEntry, DocIndex, detailed_markdown_for_entry, entry_count_label, group_markdown_table,
+    markdown_code_span, markdown_table, search_doc_entries, source_markdown_for_entry,
+    suggest_doc_entries,
 };
 
-use crate::cli::docs::{get_doc_entry, get_doc_source_entries, search_doc_groups};
+use crate::cli::docs::{
+    doc_group_counts, doc_group_entries, get_doc_entry, get_doc_source_entries,
+    render_entry_markdown_table as doc_entries_markdown, search_doc_groups,
+};
 
 pub(super) enum ReplControl {
     Continue,
@@ -68,7 +71,7 @@ fn print_doc_entry(docs: &DocIndex, name: &str) {
         }
         return;
     };
-    print_repl_markdown(&doc_entry_markdown(entry));
+    print_repl_markdown(&detailed_markdown_for_entry(entry));
 }
 
 fn print_doc_search(docs: &DocIndex, query: &str) {
@@ -99,11 +102,7 @@ fn print_doc_group(docs: &DocIndex, group: &str) {
         eprintln!("usage: :group GROUP");
         return;
     }
-    let mut entries = docs
-        .visible_entries()
-        .filter(|entry| entry.group_name().eq_ignore_ascii_case(group))
-        .collect::<Vec<_>>();
-    entries.sort_by(|left, right| left.name.cmp(&right.name));
+    let entries = doc_group_entries(docs, group);
     if entries.is_empty() {
         eprintln!("no documentation group named `{group}`");
         let suggestions = search_doc_groups(docs, group, 5);
@@ -171,29 +170,19 @@ fn repl_help_markdown() -> String {
     let mut output = String::from("## REPL commands\n\n");
     output.push_str(&markdown_table(
         &["Command", "Description"],
-        REPL_COMMAND_SPECS
-            .iter()
-            .map(|command| {
-                vec![
-                    format!("`{}`", command.usage),
-                    command.description.to_owned(),
-                ]
-            })
-            .collect(),
+        REPL_COMMAND_SPECS.iter().map(|command| {
+            vec![
+                format!("`{}`", command.usage),
+                command.description.to_owned(),
+            ]
+        }),
     ));
     output.push_str("\nUse `Alt+Enter` for a newline. Use `:q`, `:quit`, or `(exit)` to leave.\n");
     output
 }
 
-fn doc_entry_markdown(entry: &DocEntry) -> String {
-    detailed_markdown_for_entry(entry)
-}
-
 fn doc_groups_markdown(docs: &DocIndex) -> String {
-    let mut groups = BTreeMap::<&str, usize>::new();
-    for entry in docs.visible_entries() {
-        *groups.entry(entry.group_name()).or_default() += 1;
-    }
+    let groups = doc_group_counts(docs);
     let mut output = format!(
         "## Documentation groups\n\n{}.\n\n",
         entry_count_label(groups.values().sum::<usize>())
@@ -215,10 +204,11 @@ fn doc_group_suggestions_markdown(title: &str, groups: &[(&str, usize)]) -> Stri
     ));
     if let Some((group, _)) = groups.first() {
         output.push_str("\n## Try\n\n");
-        output.push_str(&format!(
-            "- {}\n",
+        let _ = writeln!(
+            &mut output,
+            "- {}",
             markdown_code_span(format!(":group {group}"))
-        ));
+        );
     }
     output
 }
@@ -228,12 +218,6 @@ fn doc_group_title(entry: &DocEntry) -> String {
         "Documentation group {}",
         markdown_code_span(entry.group_name())
     )
-}
-
-fn doc_entries_markdown(title: &str, entries: &[&DocEntry]) -> String {
-    let mut output = format!("## {title}\n\n{}.\n\n", entry_count_label(entries.len()));
-    output.push_str(&entry_summary_markdown_table(entries.iter().copied()));
-    output
 }
 
 fn doc_possible_matches_markdown(
@@ -251,16 +235,12 @@ fn doc_possible_matches_markdown(
         &matches,
     );
     output.push_str("\n## Try\n\n");
-    output.push_str(&format!(
-        "- {}\n",
+    let _ = writeln!(
+        &mut output,
+        "- {}",
         markdown_code_span(format!("{try_command} {}", first.name))
-    ));
+    );
     Some(output)
-}
-
-#[cfg(test)]
-fn doc_entry_table_row(entry: &DocEntry) -> String {
-    entry_summary_markdown_table([entry])
 }
 
 pub(super) struct ReplCommandSpec {

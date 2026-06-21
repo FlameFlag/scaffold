@@ -14,7 +14,7 @@ fn repl_command_parser_splits_command_and_rest() {
 fn repl_doc_summary_table_stays_compact() {
     let docs = DocIndex::scaffold();
     let entry = docs.get("tool").expect("tool docs");
-    let line = doc_entry_table_row(entry);
+    let line = scaffold_docs::entry_summary_markdown_table([entry]);
 
     assert!(!line.contains("(tool name action field ...)"));
     assert!(line.contains("Create a catalog tool object."));
@@ -87,7 +87,7 @@ fn repl_doc_entries_markdown_uses_table_layout() {
 fn repl_doc_entry_markdown_uses_reference_body_once() {
     let docs = DocIndex::scaffold();
     let entry = docs.get("source/path").expect("source/path docs");
-    let markdown = doc_entry_markdown(entry);
+    let markdown = detailed_markdown_for_entry(entry);
 
     assert!(markdown.starts_with("## `source/path`"));
     assert!(markdown.contains("```scheme\nsource/path\n```"));
@@ -109,7 +109,7 @@ fn repl_doc_entry_markdown_uses_reference_body_once() {
 fn repl_doc_entry_markdown_renders_no_documentation_fallback() {
     let docs = DocIndex::scaffold();
     let entry = docs.get("subject").expect("subject docs");
-    let markdown = doc_entry_markdown(entry);
+    let markdown = detailed_markdown_for_entry(entry);
 
     assert!(markdown.starts_with("## `subject`"));
     assert!(markdown.contains("No documentation provided."));
@@ -121,7 +121,7 @@ fn repl_doc_entry_markdown_renders_no_documentation_fallback() {
 fn repl_doc_lookup_is_case_insensitive() {
     let docs = DocIndex::scaffold();
     let entry = crate::cli::docs::get_doc_entry(&docs, "TOOL/PATH").expect("tool/path docs");
-    let markdown = doc_entry_markdown(entry);
+    let markdown = detailed_markdown_for_entry(entry);
 
     assert!(markdown.starts_with("## `tool/path`"));
 }
@@ -160,7 +160,7 @@ fn repl_doc_source_accepts_source_file_locations() {
 fn repl_doc_entry_markdown_deduplicates_keyword_summary() {
     let docs = DocIndex::scaffold();
     let entry = docs.get("begin").expect("begin docs");
-    let markdown = doc_entry_markdown(entry);
+    let markdown = detailed_markdown_for_entry(entry);
 
     assert_eq!(
         markdown

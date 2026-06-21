@@ -32,6 +32,6 @@ RUN bun run vscode:compile:check
 RUN bun run vscode:compile
 RUN bun run vscode:vsix:pack:check
 RUN bun run vscode:test:wasm
-RUN cargo run --locked -- fmt --check examples/catalog.scm examples/test.scm examples/extensions/software-packaging/catalog.scm examples/extensions/software-packaging/*/*.scm
+RUN cargo run --locked -- fmt --check examples/catalog.scm examples/test.scm examples/extensions/examples/catalog.scm examples/extensions/examples/*/*.scm
 RUN cargo run --locked -- --catalog examples/catalog.scm list
 RUN cargo run --locked -- --catalog examples/catalog.scm test

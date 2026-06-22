@@ -52,7 +52,11 @@ impl ScaffoldMcp {
             .into_iter()
             .map(|path| {
                 let path_text = display_path(&path);
-                match dsl::values_from_path_with_catalog_path(&path, &ctx.catalog_path) {
+                match dsl::values_from_path_with_catalog_path_and_mode(
+                    &path,
+                    &ctx.catalog_path,
+                    ctx.catalog_mode.as_deref(),
+                ) {
                     Ok(_) => test_success_json(path_text),
                     Err(err) => test_failure_json(path_text, err),
                 }
@@ -278,7 +282,7 @@ mod tests {
     fn quality_paths_resolve_explicit_paths_without_catalog_requirement() {
         let root = tempfile::tempdir().expect("root");
         let root = root.path();
-        let server = ScaffoldMcp::new(root.join("missing-scaffold.scm"));
+        let server = ScaffoldMcp::new(root.join("missing-scaffold.scm"), None);
 
         let (_ctx, files) = server
             .quality_paths(
@@ -298,7 +302,7 @@ mod tests {
 
     #[test]
     fn quality_paths_require_catalog_for_discovered_defaults() {
-        let server = ScaffoldMcp::new(PathBuf::from("/workspace/scaffold.scm"));
+        let server = ScaffoldMcp::new(PathBuf::from("/workspace/scaffold.scm"), None);
 
         let err = match server.quality_paths(
             None,
@@ -320,7 +324,7 @@ mod tests {
         let test = root.path().join("test.scm");
         std::fs::write(&catalog, "(import (rnrs))\n").expect("catalog");
         std::fs::write(&test, "(import (rnrs))\n").expect("test");
-        let server = ScaffoldMcp::new(catalog);
+        let server = ScaffoldMcp::new(catalog, None);
 
         let (_ctx, files) = server
             .quality_paths(

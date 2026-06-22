@@ -51,7 +51,8 @@ impl ScaffoldMcp {
     fn list_catalog_tools(&self) -> Result<CallToolResult, McpError> {
         self.require_catalog("list catalog tools")?;
         let ctx = self.context()?;
-        let catalog = Catalog::load(&ctx.catalog_path).map_err(internal_error)?;
+        let catalog = Catalog::load_with_mode(&ctx.catalog_path, ctx.catalog_mode.as_deref())
+            .map_err(internal_error)?;
         let host = Host::current();
         Ok(structured(json!({
             "catalog": ctx.catalog_path.display().to_string(),
@@ -67,7 +68,8 @@ impl ScaffoldMcp {
     fn check_catalog_tools(&self) -> Result<CallToolResult, McpError> {
         self.require_catalog("check catalog tools")?;
         let ctx = self.context()?;
-        let catalog = Catalog::load(&ctx.catalog_path).map_err(internal_error)?;
+        let catalog = Catalog::load_with_mode(&ctx.catalog_path, ctx.catalog_mode.as_deref())
+            .map_err(internal_error)?;
         let host = Host::current();
         Ok(structured(catalog_check_json(&ctx, &catalog, host)))
     }
@@ -218,6 +220,7 @@ mod tests {
         .expect("catalog");
         let ctx = Context {
             catalog_path: "catalog.scm".into(),
+            catalog_mode: None,
             root_dir: ".".into(),
             bin_dir: ".".into(),
             state_dir: ".".into(),

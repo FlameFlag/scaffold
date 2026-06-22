@@ -40,7 +40,14 @@ pub struct Catalog {
 
 impl Catalog {
     pub fn load(path: impl AsRef<Path>) -> Result<Self, CatalogError> {
-        let document = dsl::catalog_document_from_path(path)?;
+        Self::load_with_mode(path, None)
+    }
+
+    pub fn load_with_mode(
+        path: impl AsRef<Path>,
+        catalog_mode: Option<&str>,
+    ) -> Result<Self, CatalogError> {
+        let document = dsl::catalog_document_from_path_with_mode(path, catalog_mode)?;
         Self::from_document(document)
     }
 

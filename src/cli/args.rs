@@ -22,6 +22,13 @@ pub(super) struct Cli {
                 SCAFFOLD_CATALOG"
     )]
     pub(super) catalog: Option<PathBuf>,
+
+    #[arg(
+        long,
+        value_name = "MODE",
+        help = "Select a catalog mode exposed to Scheme as catalog/mode"
+    )]
+    pub(super) catalog_mode: Option<String>,
 }
 
 #[derive(Debug, Args)]
@@ -33,6 +40,13 @@ pub(super) struct CatalogArgs {
         help = "Use this catalog instead of auto-discovering scaffold.scm or catalog.scm"
     )]
     pub(super) catalog: Option<PathBuf>,
+
+    #[arg(
+        long,
+        value_name = "MODE",
+        help = "Select a catalog mode exposed to Scheme as catalog/mode"
+    )]
+    pub(super) catalog_mode: Option<String>,
 }
 
 #[derive(Debug, Args)]

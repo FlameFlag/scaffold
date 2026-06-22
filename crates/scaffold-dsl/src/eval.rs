@@ -16,13 +16,14 @@ use super::libraries::{load_bundled_libraries, load_user_libraries};
 use super::stdlib::{
     define_context_libraries, define_core_libraries, define_scheme_libraries, import_policy,
 };
-use super::{CatalogDocument, DslError, Result, SourceSpan, host, workspace};
+use super::{CatalogDocument, DslError, Result, SourceSpan, catalog_context, host, workspace};
 
 #[derive(Clone, Debug)]
 pub(crate) struct DslEvalContext {
     pub(super) host: host::Host,
     pub(super) workspace_root: Option<PathBuf>,
     pub(super) source_path: Option<PathBuf>,
+    pub(super) catalog_mode: Option<String>,
     pub(super) mode: DslEvalMode,
 }
 
@@ -32,8 +33,14 @@ impl DslEvalContext {
             host: host::Host::current(),
             workspace_root,
             source_path,
+            catalog_mode: None,
             mode: DslEvalMode::Catalog,
         }
+    }
+
+    pub(crate) fn with_catalog_mode(mut self, catalog_mode: Option<String>) -> Self {
+        self.catalog_mode = catalog_mode;
+        self
     }
 
     #[allow(dead_code)]
@@ -102,6 +109,11 @@ impl DslSession {
             .def_lib(&workspace::workspace_library_source(
                 context.workspace_root.as_deref(),
                 context.source_path.as_deref(),
+            ))
+            .map_err(scheme_error)?;
+        runtime
+            .def_lib(&catalog_context::catalog_context_library_source(
+                context.catalog_mode.as_deref(),
             ))
             .map_err(scheme_error)?;
         define_context_libraries(&runtime).map_err(scheme_error)?;

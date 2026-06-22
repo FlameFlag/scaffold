@@ -45,6 +45,8 @@
     since
     deprecated
     hidden
+    catalog/mode
+    catalog/mode?
     catalog
     catalog/from-lists
     tool-list/from-lists

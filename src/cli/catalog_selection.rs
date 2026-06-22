@@ -3,6 +3,12 @@ use std::path::PathBuf;
 use super::CliError;
 use super::args::{self, Command};
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(super) struct SelectedCatalog {
+    pub(super) path: Option<PathBuf>,
+    pub(super) mode: Option<String>,
+}
+
 pub(super) enum ContextCommand {
     Analyze(args::AnalyzeArgs),
     Eval(args::EvalArgs),
@@ -22,22 +28,36 @@ struct CommandInfo {
 }
 
 enum CatalogSupport {
-    Accepted(Option<PathBuf>),
+    Accepted {
+        path: Option<PathBuf>,
+        mode: Option<String>,
+    },
     Rejected,
 }
 
 pub(super) fn selected_catalog(
     command: &Command,
     top_level_catalog: Option<PathBuf>,
-) -> Result<Option<PathBuf>, CliError> {
+    top_level_catalog_mode: Option<String>,
+) -> Result<SelectedCatalog, CliError> {
     let info = command_info(command);
     match info.catalog {
-        CatalogSupport::Accepted(catalog) => Ok(catalog.or(top_level_catalog).or_else(env_catalog)),
-        CatalogSupport::Rejected if top_level_catalog.is_some() => Err(CliError::message(format!(
-            "`{}` does not use --catalog",
-            info.name
-        ))),
-        CatalogSupport::Rejected => Ok(None),
+        CatalogSupport::Accepted { path, mode } => Ok(SelectedCatalog {
+            path: path.or(top_level_catalog).or_else(env_catalog),
+            mode: mode.or(top_level_catalog_mode),
+        }),
+        CatalogSupport::Rejected
+            if top_level_catalog.is_some() || top_level_catalog_mode.is_some() =>
+        {
+            Err(CliError::message(format!(
+                "`{}` does not use --catalog",
+                info.name
+            )))
+        }
+        CatalogSupport::Rejected => Ok(SelectedCatalog {
+            path: None,
+            mode: None,
+        }),
     }
 }
 
@@ -51,7 +71,7 @@ fn command_info(command: &Command) -> CommandInfo {
     match command {
         Command::Analyze(args) => CommandInfo {
             name: "analyze",
-            catalog: CatalogSupport::Accepted(args.catalog.catalog.clone()),
+            catalog: catalog_support(&args.catalog),
         },
         Command::Docs(_) => CommandInfo {
             name: "docs",
@@ -59,19 +79,19 @@ fn command_info(command: &Command) -> CommandInfo {
         },
         Command::Eval(args) => CommandInfo {
             name: "eval",
-            catalog: CatalogSupport::Accepted(args.catalog.catalog.clone()),
+            catalog: catalog_support(&args.catalog),
         },
         Command::Fmt(args) => CommandInfo {
             name: "fmt",
-            catalog: CatalogSupport::Accepted(args.catalog.catalog.clone()),
+            catalog: catalog_support(&args.catalog),
         },
         Command::Install(args) => CommandInfo {
             name: "install",
-            catalog: CatalogSupport::Accepted(args.catalog.catalog.clone()),
+            catalog: catalog_support(&args.catalog),
         },
         Command::Uninstall(args) => CommandInfo {
             name: "uninstall",
-            catalog: CatalogSupport::Accepted(args.catalog.catalog.clone()),
+            catalog: catalog_support(&args.catalog),
         },
         Command::Lsp => CommandInfo {
             name: "lsp",
@@ -79,31 +99,38 @@ fn command_info(command: &Command) -> CommandInfo {
         },
         Command::Mcp(args) => CommandInfo {
             name: "mcp",
-            catalog: CatalogSupport::Accepted(args.catalog.clone()),
+            catalog: catalog_support(args),
         },
         Command::Repl(args) => CommandInfo {
             name: "repl",
-            catalog: CatalogSupport::Accepted(args.catalog.clone()),
+            catalog: catalog_support(args),
         },
         Command::List(args) => CommandInfo {
             name: "list",
-            catalog: CatalogSupport::Accepted(args.catalog.clone()),
+            catalog: catalog_support(args),
         },
         Command::Check(args) => CommandInfo {
             name: "check",
-            catalog: CatalogSupport::Accepted(args.catalog.clone()),
+            catalog: catalog_support(args),
         },
         Command::Test(args) => CommandInfo {
             name: "test",
-            catalog: CatalogSupport::Accepted(args.catalog.catalog.clone()),
+            catalog: catalog_support(&args.catalog),
         },
         Command::Paths(args) => CommandInfo {
             name: "paths",
-            catalog: CatalogSupport::Accepted(args.catalog.catalog.clone()),
+            catalog: catalog_support(&args.catalog),
         },
         Command::Completions(_) => CommandInfo {
             name: "completions",
             catalog: CatalogSupport::Rejected,
         },
+    }
+}
+
+fn catalog_support(args: &args::CatalogArgs) -> CatalogSupport {
+    CatalogSupport::Accepted {
+        path: args.catalog.clone(),
+        mode: args.catalog_mode.clone(),
     }
 }

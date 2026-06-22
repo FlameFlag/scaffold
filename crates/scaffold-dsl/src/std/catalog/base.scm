@@ -45,6 +45,8 @@
     since
     deprecated
     hidden
+    catalog/mode
+    catalog/mode?
     catalog
     catalog/from-lists
     tool-list/from-lists
@@ -107,6 +109,7 @@
   (import
     (rnrs)
     (scaffold config)
+    (scaffold catalog context)
     (scaffold catalog root)
     (scaffold catalog action)
     (scaffold catalog dependency)

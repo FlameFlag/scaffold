@@ -39,7 +39,8 @@ pub(super) fn require_catalog_for_workspace(ctx: &Context, action: &str) -> Resu
 }
 
 pub(super) fn load_catalog(ctx: &Context) -> Result<Catalog, CliError> {
-    Catalog::load(&ctx.catalog_path).map_err(|err| contextualize_catalog_error(ctx, err))
+    Catalog::load_with_mode(&ctx.catalog_path, ctx.catalog_mode.as_deref())
+        .map_err(|err| contextualize_catalog_error(ctx, err))
 }
 
 pub(super) fn contextualize_install_error(ctx: &Context, err: install::InstallError) -> CliError {

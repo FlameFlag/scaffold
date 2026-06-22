@@ -101,6 +101,7 @@ mod tests {
         let root = PathBuf::from("/tmp/scaffold-bindings-test");
         let ctx = Context {
             catalog_path: root.join("catalog.scm"),
+            catalog_mode: None,
             root_dir: root.join("repo"),
             bin_dir: root.join("bin"),
             state_dir: root.join("state"),

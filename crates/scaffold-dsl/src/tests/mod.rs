@@ -601,6 +601,64 @@ fn local_library_discovery_does_not_depend_on_directory_names() {
 }
 
 #[test]
+fn bare_relative_catalog_paths_discover_local_libraries() {
+    let root = tempfile::Builder::new()
+        .prefix("scaffold-dsl-bare-relative-catalog-")
+        .tempdir()
+        .expect("root");
+    let entries = root.path().join("extensions").join("entries");
+    std::fs::create_dir_all(&entries).expect("entries");
+    std::fs::write(
+        root.path().join("scaffold-userland.scm"),
+        "(import (rnrs) (scaffold catalog) (entries demo))\n\n(catalog demo)\n",
+    )
+    .expect("catalog");
+    std::fs::write(
+        entries.join("demo.scm"),
+        "(library (entries demo) (export demo) (import (rnrs) (scaffold catalog)) (define demo (tool \"demo\" (required))))\n",
+    )
+    .expect("library");
+
+    struct CurrentDirGuard(PathBuf);
+
+    impl Drop for CurrentDirGuard {
+        fn drop(&mut self) {
+            std::env::set_current_dir(&self.0).expect("restore current dir");
+        }
+    }
+
+    let _current_dir_guard = CurrentDirGuard(std::env::current_dir().expect("current dir"));
+    std::env::set_current_dir(root.path()).expect("enter catalog root");
+    let value = catalog_value_from_path("scaffold-userland.scm").expect("catalog");
+
+    assert_eq!(value["tools"][0]["name"], "demo");
+}
+
+#[test]
+fn catalog_mode_is_available_to_catalog_evaluation() {
+    let root = tempfile::Builder::new()
+        .prefix("scaffold-dsl-catalog-mode-")
+        .tempdir()
+        .expect("root");
+    let catalog_path = root.path().join("scaffold.scm");
+    std::fs::write(
+        &catalog_path,
+        "(import (rnrs) (scaffold catalog))\n\n\
+         (if (catalog/mode? \"host\")\n\
+           (tool \"host-tool\" (required))\n\
+           (tool \"default-tool\" (required)))\n",
+    )
+    .expect("catalog");
+
+    let default_value = catalog_value_from_path(&catalog_path).expect("default catalog");
+    let host_value =
+        catalog_document_from_path_with_mode(&catalog_path, Some("host")).expect("host catalog");
+
+    assert_eq!(default_value["tools"][0]["name"], "default-tool");
+    assert_eq!(host_value.value["tools"][0]["name"], "host-tool");
+}
+
+#[test]
 fn local_library_discovery_respects_gitignore_without_git() {
     let root = tempfile::Builder::new()
         .prefix("scaffold-dsl-ignored-library-roots-")

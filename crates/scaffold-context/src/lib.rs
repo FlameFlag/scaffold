@@ -12,6 +12,7 @@ pub enum ContextError {
 
 pub struct Context {
     pub catalog_path: PathBuf,
+    pub catalog_mode: Option<String>,
     pub root_dir: PathBuf,
     pub bin_dir: PathBuf,
     pub state_dir: PathBuf,
@@ -19,12 +20,18 @@ pub struct Context {
 
 impl Context {
     pub fn new(catalog_path: PathBuf) -> Result<Self, ContextError> {
+        Self::new_with_catalog_mode(catalog_path, None)
+    }
+
+    pub fn new_with_catalog_mode(
+        catalog_path: PathBuf,
+        catalog_mode: Option<String>,
+    ) -> Result<Self, ContextError> {
         let home = home::home_dir().ok_or(ContextError::MissingHome)?;
-        let root_dir = catalog_path
-            .parent()
-            .map_or_else(|| PathBuf::from("."), Path::to_path_buf);
+        let root_dir = catalog_parent_dir(&catalog_path).to_path_buf();
         Ok(Self {
             catalog_path,
+            catalog_mode,
             root_dir,
             bin_dir: home.join(".local").join("bin"),
             state_dir: home.join(".local").join("share").join("scaffold"),
@@ -76,15 +83,20 @@ impl Context {
 
 #[must_use]
 pub fn extension_dirs_for_catalog_path(catalog_path: &Path) -> Vec<PathBuf> {
-    let root = catalog_path
-        .parent()
-        .map_or_else(|| PathBuf::from("."), Path::to_path_buf);
+    let root = catalog_parent_dir(catalog_path).to_path_buf();
     extension_dirs_for_root(&root)
 }
 
 #[must_use]
 pub fn extension_dirs_for_root(root: &Path) -> Vec<PathBuf> {
     vec![root.to_path_buf()]
+}
+
+#[must_use]
+pub fn catalog_parent_dir(path: &Path) -> &Path {
+    path.parent()
+        .filter(|parent| !parent.as_os_str().is_empty())
+        .unwrap_or_else(|| Path::new("."))
 }
 
 #[must_use]
@@ -186,6 +198,7 @@ mod tests {
     fn discovers_default_test_paths_next_to_catalog() {
         let ctx = Context {
             catalog_path: fixture_path("local/library/catalog.scm"),
+            catalog_mode: None,
             root_dir: fixture_path("local/library"),
             bin_dir: PathBuf::from("."),
             state_dir: PathBuf::from("."),
@@ -205,6 +218,23 @@ mod tests {
         assert_eq!(
             extension_dirs_for_catalog_path(Path::new("/workspace/scaffold.scm")),
             vec![PathBuf::from("/workspace")]
+        );
+    }
+
+    #[test]
+    fn bare_catalog_filename_uses_current_directory_as_extension_root() {
+        let ctx = Context {
+            catalog_path: PathBuf::from("scaffold.scm"),
+            catalog_mode: None,
+            root_dir: catalog_parent_dir(Path::new("scaffold.scm")).to_path_buf(),
+            bin_dir: PathBuf::from("."),
+            state_dir: PathBuf::from("."),
+        };
+
+        assert_eq!(ctx.root_dir, PathBuf::from("."));
+        assert_eq!(
+            extension_dirs_for_catalog_path(Path::new("scaffold.scm")),
+            vec![PathBuf::from(".")]
         );
     }
 
@@ -238,6 +268,7 @@ mod tests {
 
         let ctx = Context {
             catalog_path: root.path().join("scaffold.scm"),
+            catalog_mode: None,
             root_dir: root.path().to_path_buf(),
             bin_dir: root.path().join("bin"),
             state_dir: root.path().join("state"),
@@ -287,6 +318,7 @@ mod tests {
 
         let ctx = Context {
             catalog_path: root.path().join("scaffold.scm"),
+            catalog_mode: None,
             root_dir: root.path().to_path_buf(),
             bin_dir: root.path().join("bin"),
             state_dir: root.path().join("state"),
@@ -329,6 +361,7 @@ mod tests {
         std::fs::write(root.path().join("library.scm"), "(import (rnrs))\n").expect("source");
         let ctx = Context {
             catalog_path: root.path().join("scaffold.scm"),
+            catalog_mode: None,
             root_dir: root.path().to_path_buf(),
             bin_dir: root.path().join("bin"),
             state_dir: root.path().join("state"),

@@ -24,11 +24,11 @@ use io::{write_output_file, write_stdout};
 
 pub fn run() -> Result<(), CliError> {
     let cli = Cli::parse();
-    let catalog = selected_catalog(&cli.command, cli.catalog)?;
+    let catalog = selected_catalog(&cli.command, cli.catalog, cli.catalog_mode)?;
 
     match cli.command {
         Command::Lsp => scaffold_lsp::run().map_err(CliError::Lsp),
-        Command::Mcp(_) => scaffold_mcp::run(catalog).map_err(CliError::Mcp),
+        Command::Mcp(_) => scaffold_mcp::run(catalog.path, catalog.mode).map_err(CliError::Mcp),
         Command::Completions(args) => {
             let mut command = Cli::command();
             let shell: Shell = args.shell.into();

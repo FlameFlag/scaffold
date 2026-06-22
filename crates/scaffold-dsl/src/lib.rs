@@ -6,6 +6,7 @@ use thiserror::Error;
 use scaffold_diagnostic::SourceDiagnostic;
 
 mod bundled;
+mod catalog_context;
 mod eval;
 mod fs;
 mod host;
@@ -103,6 +104,14 @@ pub fn values_from_path_with_catalog_path(
     path: impl AsRef<Path>,
     catalog_path: impl AsRef<Path>,
 ) -> Result<Vec<serde_json::Value>> {
+    values_from_path_with_catalog_path_and_mode(path, catalog_path, None)
+}
+
+pub fn values_from_path_with_catalog_path_and_mode(
+    path: impl AsRef<Path>,
+    catalog_path: impl AsRef<Path>,
+    catalog_mode: Option<&str>,
+) -> Result<Vec<serde_json::Value>> {
     let path = path.as_ref();
     let catalog_path = catalog_path.as_ref();
     let root = parent_dir(catalog_path);
@@ -115,7 +124,8 @@ pub fn values_from_path_with_catalog_path(
         &source,
         Some(source_name.as_ref()),
         &extension_dirs,
-        eval::DslEvalContext::new(Some(root), Some(path)),
+        eval::DslEvalContext::new(Some(root), Some(path))
+            .with_catalog_mode(catalog_mode.map(str::to_owned)),
     )
 }
 
@@ -142,6 +152,14 @@ pub fn session_with_catalog_path(
     catalog_path: impl AsRef<Path>,
     default_imports: bool,
 ) -> Result<DslSession> {
+    session_with_catalog_path_and_mode(catalog_path, default_imports, None)
+}
+
+pub fn session_with_catalog_path_and_mode(
+    catalog_path: impl AsRef<Path>,
+    default_imports: bool,
+    catalog_mode: Option<&str>,
+) -> Result<DslSession> {
     let catalog_path = catalog_path.as_ref();
     let root = parent_dir(catalog_path);
     let extension_dirs = scaffold_context::extension_dirs_for_catalog_path(catalog_path);
@@ -149,7 +167,8 @@ pub fn session_with_catalog_path(
     DslSession::with_context(
         &extension_dirs,
         default_imports,
-        eval::DslEvalContext::new(Some(context_root), None),
+        eval::DslEvalContext::new(Some(context_root), None)
+            .with_catalog_mode(catalog_mode.map(str::to_owned)),
     )
 }
 
@@ -172,6 +191,13 @@ pub fn catalog_value_from_path(path: impl AsRef<Path>) -> Result<serde_json::Val
 }
 
 pub fn catalog_document_from_path(path: impl AsRef<Path>) -> Result<CatalogDocument> {
+    catalog_document_from_path_with_mode(path, None)
+}
+
+pub fn catalog_document_from_path_with_mode(
+    path: impl AsRef<Path>,
+    catalog_mode: Option<&str>,
+) -> Result<CatalogDocument> {
     let path = path.as_ref();
     let root = parent_dir(path);
     let extension_dirs = scaffold_context::extension_dirs_for_catalog_path(path);
@@ -183,7 +209,8 @@ pub fn catalog_document_from_path(path: impl AsRef<Path>) -> Result<CatalogDocum
         source,
         source_name,
         &extension_dirs,
-        eval::DslEvalContext::new(Some(root), Some(path)),
+        eval::DslEvalContext::new(Some(root), Some(path))
+            .with_catalog_mode(catalog_mode.map(str::to_owned)),
     )
 }
 
@@ -198,7 +225,7 @@ pub fn values_from_str(text: &str) -> Result<Vec<serde_json::Value>> {
 }
 
 fn parent_dir(path: &Path) -> &Path {
-    path.parent().unwrap_or_else(|| Path::new("."))
+    scaffold_context::catalog_parent_dir(path)
 }
 
 fn absolute_lexical_path(path: &Path) -> Result<PathBuf> {

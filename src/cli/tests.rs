@@ -98,9 +98,13 @@ fn catalog_command_help_shows_catalog_option() {
 #[test]
 fn top_level_catalog_applies_to_catalog_commands() {
     let cli = Cli::parse_from(["scaffold", "--catalog", "/tmp/top-catalog", "list"]);
-    let catalog = selected_catalog(&cli.command, cli.catalog).expect("catalog");
+    let catalog = selected_catalog(&cli.command, cli.catalog, cli.catalog_mode).expect("catalog");
 
-    assert_eq!(catalog, Some(std::path::PathBuf::from("/tmp/top-catalog")));
+    assert_eq!(
+        catalog.path,
+        Some(std::path::PathBuf::from("/tmp/top-catalog"))
+    );
+    assert_eq!(catalog.mode, None);
 }
 
 #[test]
@@ -113,16 +117,53 @@ fn command_catalog_overrides_top_level_catalog() {
         "--catalog",
         "/tmp/sub-catalog",
     ]);
-    let catalog = selected_catalog(&cli.command, cli.catalog).expect("catalog");
+    let catalog = selected_catalog(&cli.command, cli.catalog, cli.catalog_mode).expect("catalog");
 
-    assert_eq!(catalog, Some(std::path::PathBuf::from("/tmp/sub-catalog")));
+    assert_eq!(
+        catalog.path,
+        Some(std::path::PathBuf::from("/tmp/sub-catalog"))
+    );
+}
+
+#[test]
+fn catalog_mode_applies_to_catalog_commands() {
+    let cli = Cli::parse_from(["scaffold", "--catalog-mode", "host", "list"]);
+    let catalog = selected_catalog(&cli.command, cli.catalog, cli.catalog_mode).expect("catalog");
+
+    assert_eq!(catalog.mode.as_deref(), Some("host"));
+}
+
+#[test]
+fn command_catalog_mode_overrides_top_level_catalog_mode() {
+    let cli = Cli::parse_from([
+        "scaffold",
+        "--catalog-mode",
+        "userland",
+        "list",
+        "--catalog-mode",
+        "host",
+    ]);
+    let catalog = selected_catalog(&cli.command, cli.catalog, cli.catalog_mode).expect("catalog");
+
+    assert_eq!(catalog.mode.as_deref(), Some("host"));
 }
 
 #[test]
 fn top_level_catalog_is_rejected_for_builtin_docs() {
     let cli = Cli::parse_from(["scaffold", "--catalog", "/tmp/top-catalog", "docs"]);
-    let message = selected_catalog(&cli.command, cli.catalog)
+    let message = selected_catalog(&cli.command, cli.catalog, cli.catalog_mode)
         .expect_err("docs should reject explicit catalog")
+        .to_string();
+
+    assert!(message.contains("docs"));
+    assert!(message.contains("--catalog"));
+}
+
+#[test]
+fn top_level_catalog_mode_is_rejected_for_builtin_docs() {
+    let cli = Cli::parse_from(["scaffold", "--catalog-mode", "host", "docs"]);
+    let message = selected_catalog(&cli.command, cli.catalog, cli.catalog_mode)
+        .expect_err("docs should reject explicit catalog mode")
         .to_string();
 
     assert!(message.contains("docs"));
@@ -239,6 +280,7 @@ fn check_rows_mark_present_missing_and_unsupported_tools() {
     .expect("catalog");
     let ctx = scaffold_context::Context {
         catalog_path: std::path::PathBuf::from("catalog.scm"),
+        catalog_mode: None,
         root_dir: std::path::PathBuf::from("."),
         bin_dir: std::path::PathBuf::from("."),
         state_dir: std::path::PathBuf::from("."),
@@ -376,6 +418,7 @@ fn path_rows_can_include_discovered_scheme_sources() {
     std::fs::write(entries.join("test.scm"), "(import (rnrs))\n").expect("test");
     let ctx = scaffold_context::Context {
         catalog_path: root.path().join("scaffold.scm"),
+        catalog_mode: None,
         root_dir: root.path().to_path_buf(),
         bin_dir: root.path().join("bin"),
         state_dir: root.path().join("state"),
@@ -398,6 +441,7 @@ fn path_rows_can_include_discovered_scheme_sources() {
 fn default_discovery_error_names_missing_catalog() {
     let ctx = scaffold_context::Context {
         catalog_path: std::path::PathBuf::from("/workspace/scaffold.scm"),
+        catalog_mode: None,
         root_dir: std::path::PathBuf::from("/workspace"),
         bin_dir: std::path::PathBuf::from("."),
         state_dir: std::path::PathBuf::from("."),
@@ -416,6 +460,7 @@ fn default_discovery_error_names_missing_catalog() {
 fn catalog_anchor_error_can_describe_eval_and_repl() {
     let ctx = scaffold_context::Context {
         catalog_path: std::path::PathBuf::from("/workspace/scaffold.scm"),
+        catalog_mode: None,
         root_dir: std::path::PathBuf::from("/workspace"),
         bin_dir: std::path::PathBuf::from("."),
         state_dir: std::path::PathBuf::from("."),
@@ -437,7 +482,10 @@ fn catalog_anchor_error_can_describe_eval_and_repl() {
 #[test]
 fn uninstall_requires_explicit_targets_or_all() {
     let args = crate::cli::args::UninstallArgs {
-        catalog: CatalogArgs { catalog: None },
+        catalog: CatalogArgs {
+            catalog: None,
+            catalog_mode: None,
+        },
         tools: Vec::new(),
         all: false,
         dry_run: false,
@@ -454,7 +502,10 @@ fn uninstall_requires_explicit_targets_or_all() {
 #[test]
 fn uninstall_all_uses_empty_target_list_for_existing_install_api() {
     let args = crate::cli::args::UninstallArgs {
-        catalog: CatalogArgs { catalog: None },
+        catalog: CatalogArgs {
+            catalog: None,
+            catalog_mode: None,
+        },
         tools: Vec::new(),
         all: true,
         dry_run: true,
@@ -467,6 +518,7 @@ fn uninstall_all_uses_empty_target_list_for_existing_install_api() {
 fn catalog_io_error_names_catalog_path() {
     let ctx = scaffold_context::Context {
         catalog_path: std::path::PathBuf::from("/definitely/missing/scaffold.scm"),
+        catalog_mode: None,
         root_dir: std::path::PathBuf::from("/definitely/missing"),
         bin_dir: std::path::PathBuf::from("."),
         state_dir: std::path::PathBuf::from("."),

@@ -21,21 +21,24 @@ use super::{internal_error, prompts, resources, tools};
 #[derive(Debug, Clone)]
 pub(super) struct ScaffoldMcp {
     catalog_path: PathBuf,
+    catalog_mode: Option<String>,
     tool_router: ToolRouter<Self>,
     prompt_router: PromptRouter<Self>,
 }
 
 impl ScaffoldMcp {
-    pub(super) fn new(catalog_path: PathBuf) -> Self {
+    pub(super) fn new(catalog_path: PathBuf, catalog_mode: Option<String>) -> Self {
         Self {
             catalog_path,
+            catalog_mode,
             tool_router: tools::router(),
             prompt_router: prompts::router(),
         }
     }
 
     pub(super) fn context(&self) -> Result<Context, McpError> {
-        Context::new(self.catalog_path.clone()).map_err(internal_error)
+        Context::new_with_catalog_mode(self.catalog_path.clone(), self.catalog_mode.clone())
+            .map_err(internal_error)
     }
 
     pub(super) fn require_catalog(&self, action: &str) -> Result<(), McpError> {
@@ -62,6 +65,7 @@ impl ScaffoldMcp {
         let ctx = self.context()?;
         Ok(json!({
             "catalog": ctx.catalog_path.display().to_string(),
+            "catalog_mode": ctx.catalog_mode,
             "catalog_exists": ctx.catalog_path.exists(),
             "root": ctx.root_dir.display().to_string(),
             "root_exists": ctx.root_dir.exists(),
@@ -120,7 +124,7 @@ mod tests {
 
     #[test]
     fn require_catalog_reports_missing_active_catalog() {
-        let server = ScaffoldMcp::new(PathBuf::from("/workspace/scaffold.scm"));
+        let server = ScaffoldMcp::new(PathBuf::from("/workspace/scaffold.scm"), None);
 
         let err = server
             .require_catalog("evaluate expressions")
@@ -134,7 +138,7 @@ mod tests {
 
     #[test]
     fn server_instructions_prefer_reference_search_over_full_render() {
-        let server = ScaffoldMcp::new(PathBuf::from("/workspace/scaffold.scm"));
+        let server = ScaffoldMcp::new(PathBuf::from("/workspace/scaffold.scm"), None);
         let info = server.get_info();
         let instructions = info.instructions.expect("instructions");
 
@@ -148,7 +152,7 @@ mod tests {
     fn project_paths_include_existence_status() {
         let root = tempfile::tempdir().expect("root");
         let catalog_path = root.path().join("scaffold.scm");
-        let server = ScaffoldMcp::new(catalog_path);
+        let server = ScaffoldMcp::new(catalog_path, None);
 
         let paths = server.project_paths_json().expect("paths");
 

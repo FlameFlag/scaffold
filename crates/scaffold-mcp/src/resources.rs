@@ -92,7 +92,7 @@ mod tests {
     #[test]
     fn paths_resource_returns_pretty_json_with_mime_type() {
         let root = tempfile::tempdir().expect("root");
-        let server = ScaffoldMcp::new(root.path().join("scaffold.scm"));
+        let server = ScaffoldMcp::new(root.path().join("scaffold.scm"), None);
 
         let contents = read(&server, PATHS_URI).expect("paths resource");
         let ResourceContents::TextResourceContents {
@@ -111,7 +111,7 @@ mod tests {
 
     #[test]
     fn unknown_resource_reports_requested_uri() {
-        let server = ScaffoldMcp::new(PathBuf::from("/workspace/scaffold.scm"));
+        let server = ScaffoldMcp::new(PathBuf::from("/workspace/scaffold.scm"), None);
 
         let err = read(&server, "scaffold://missing").expect_err("unknown resource");
         let message = err.to_string();

@@ -56,7 +56,7 @@ mod tests {
 
     #[test]
     fn write_catalog_prompt_prefers_targeted_reference_search() {
-        let server = ScaffoldMcp::new(PathBuf::from("/workspace/scaffold.scm"));
+        let server = ScaffoldMcp::new(PathBuf::from("/workspace/scaffold.scm"), None);
         let prompt = server.write_scaffold_catalog();
         let message = prompt.messages.first().expect("prompt message");
         let PromptMessageContent::Text { text } = &message.content else {
@@ -70,7 +70,7 @@ mod tests {
 
     #[test]
     fn debug_prompt_prefers_targeted_reference_search() {
-        let server = ScaffoldMcp::new(PathBuf::from("/workspace/scaffold.scm"));
+        let server = ScaffoldMcp::new(PathBuf::from("/workspace/scaffold.scm"), None);
         let prompt = server.debug_scaffold_eval();
         let message = prompt.messages.first().expect("prompt message");
         let PromptMessageContent::Text { text } = &message.content else {

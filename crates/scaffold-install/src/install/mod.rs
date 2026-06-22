@@ -42,7 +42,7 @@ pub fn install_catalog_with_reporter(
     names: &[String],
     reporter: &mut impl InstallReporter,
 ) -> Result<(), InstallError> {
-    let catalog = Catalog::load(&ctx.catalog_path)?;
+    let catalog = Catalog::load_with_mode(&ctx.catalog_path, ctx.catalog_mode.as_deref())?;
     let installing_all = names.is_empty();
     let host = Host::current();
     for tool in resolve_install_order(&catalog, names)? {
@@ -74,7 +74,7 @@ pub fn uninstall_catalog_with_reporter(
     dry_run: bool,
     reporter: &mut impl InstallReporter,
 ) -> Result<(), InstallError> {
-    let catalog = Catalog::load(&ctx.catalog_path)?;
+    let catalog = Catalog::load_with_mode(&ctx.catalog_path, ctx.catalog_mode.as_deref())?;
     let mut tools = resolve_install_order(&catalog, names)?;
     tools.reverse();
     for tool in tools {
@@ -105,6 +105,7 @@ mod tests {
         .expect("tool");
         let ctx = Context {
             catalog_path: PathBuf::from("catalog.scm"),
+            catalog_mode: None,
             root_dir: PathBuf::from("."),
             bin_dir: PathBuf::from("."),
             state_dir: PathBuf::from("."),
@@ -118,6 +119,7 @@ mod tests {
         let current_exe = std::env::current_exe().expect("current test executable");
         let ctx = Context {
             catalog_path: PathBuf::from("catalog.scm"),
+            catalog_mode: None,
             root_dir: PathBuf::from("."),
             bin_dir: PathBuf::from("."),
             state_dir: PathBuf::from("."),
@@ -234,6 +236,7 @@ mod tests {
         );
         let ctx = Context {
             catalog_path,
+            catalog_mode: None,
             root_dir: root.path().to_path_buf(),
             bin_dir: root.path().join("bin"),
             state_dir: root.path().join("state"),
@@ -252,6 +255,7 @@ mod tests {
         );
         let ctx = Context {
             catalog_path,
+            catalog_mode: None,
             root_dir: root.path().to_path_buf(),
             bin_dir: root.path().join("bin"),
             state_dir: root.path().join("state"),
@@ -278,6 +282,7 @@ mod tests {
         );
         let ctx = Context {
             catalog_path,
+            catalog_mode: None,
             root_dir: root.path().to_path_buf(),
             bin_dir: root.path().join("bin"),
             state_dir: root.path().join("state"),
@@ -296,6 +301,7 @@ mod tests {
         );
         let ctx = Context {
             catalog_path,
+            catalog_mode: None,
             root_dir: root.path().to_path_buf(),
             bin_dir: root.path().join("bin"),
             state_dir: root.path().join("state"),
@@ -320,6 +326,7 @@ mod tests {
         .expect("catalog");
         let ctx = Context {
             catalog_path,
+            catalog_mode: None,
             root_dir: root.path().to_path_buf(),
             bin_dir: root.path().join("bin"),
             state_dir: root.path().join("state"),
@@ -343,6 +350,7 @@ mod tests {
         .expect("catalog");
         let ctx = Context {
             catalog_path,
+            catalog_mode: None,
             root_dir: root.path().to_path_buf(),
             bin_dir: root.path().join("bin"),
             state_dir: root.path().join("state"),
@@ -366,6 +374,7 @@ mod tests {
         .expect("catalog");
         let ctx = Context {
             catalog_path,
+            catalog_mode: None,
             root_dir: root.path().to_path_buf(),
             bin_dir: root.path().join("bin"),
             state_dir: root.path().join("state"),
@@ -394,6 +403,7 @@ mod tests {
         .expect("catalog");
         let ctx = Context {
             catalog_path,
+            catalog_mode: None,
             root_dir: root.path().to_path_buf(),
             bin_dir: root.path().join("bin"),
             state_dir: root.path().join("state"),

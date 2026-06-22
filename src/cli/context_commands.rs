@@ -7,7 +7,7 @@ use scaffold_platform::Host;
 use super::{
     CliError,
     catalog_output::{catalog_check_rows, render_catalog_check, render_catalog_list},
-    catalog_selection::ContextCommand,
+    catalog_selection::{ContextCommand, SelectedCatalog},
     fmt_output::render_format_check_failures,
     install_output::{CliInstallReporter, render_install_events, uninstall_targets},
     io::{print_json_values, write_stderr, write_stdout},
@@ -22,10 +22,10 @@ use super::{
 
 pub(super) fn run_with_context(
     command: ContextCommand,
-    catalog: Option<std::path::PathBuf>,
+    catalog: SelectedCatalog,
 ) -> Result<(), CliError> {
-    let catalog_path = catalog.unwrap_or_else(context::default_catalog_path);
-    let ctx = Context::new(catalog_path)?;
+    let catalog_path = catalog.path.unwrap_or_else(context::default_catalog_path);
+    let ctx = Context::new_with_catalog_mode(catalog_path, catalog.mode)?;
 
     match command {
         ContextCommand::Analyze(args) => {
@@ -85,7 +85,11 @@ pub(super) fn run_with_context(
         }
         ContextCommand::Eval(args) => {
             require_catalog_for_workspace(&ctx, "evaluate expressions")?;
-            let session = dsl::session_with_catalog_path(&ctx.catalog_path, true)?;
+            let session = dsl::session_with_catalog_path_and_mode(
+                &ctx.catalog_path,
+                true,
+                ctx.catalog_mode.as_deref(),
+            )?;
             print_json_values(session.eval_json(&args.expression, Some("<eval>"))?)?;
         }
         ContextCommand::Install(args) => {
@@ -144,7 +148,11 @@ pub(super) fn run_with_context(
             let rows = files
                 .into_iter()
                 .map(|path| {
-                    dsl::values_from_path_with_catalog_path(&path, &ctx.catalog_path)?;
+                    dsl::values_from_path_with_catalog_path_and_mode(
+                        &path,
+                        &ctx.catalog_path,
+                        ctx.catalog_mode.as_deref(),
+                    )?;
                     Ok(TestRow {
                         path: path.display().to_string(),
                     })

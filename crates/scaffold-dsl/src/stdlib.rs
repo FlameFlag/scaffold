@@ -259,6 +259,33 @@ const RUST_BACKED_CAPABILITIES: &[CapabilityDescriptor] = &[
         notes: "Exposes paths supplied by DslEvalContext; it does not inspect the filesystem.",
     },
     CapabilityDescriptor {
+        library_name: &["scaffold", "catalog", "context"],
+        library: "(scaffold catalog context)",
+        bridge_library_name: &["scaffold", "catalog", "context", "generated"],
+        bridge_library: "(scaffold catalog context generated)",
+        effect: "context-read-only",
+        modes: &[
+            CapabilityMode {
+                name: "catalog",
+                availability: "available",
+            },
+            CapabilityMode {
+                name: "test",
+                availability: "available",
+            },
+            CapabilityMode {
+                name: "editor",
+                availability: "reference-only",
+            },
+            CapabilityMode {
+                name: "wasm",
+                availability: "reference-only",
+            },
+        ],
+        docs_source: "src/dsl/std/catalog/context.scm",
+        notes: "Exposes explicit catalog evaluation options such as --catalog-mode.",
+    },
+    CapabilityDescriptor {
         library_name: &["scaffold", "fs"],
         library: "(scaffold fs)",
         bridge_library_name: &["scaffold", "fs", "builtins"],
@@ -306,6 +333,10 @@ pub(super) fn core_documentation_sources() -> Vec<DocumentationSource> {
             DocumentationSource {
                 path: "src/dsl/std/workspace.scm",
                 source: include_str!("std/workspace.scm"),
+            },
+            DocumentationSource {
+                path: "src/dsl/std/catalog/context.scm",
+                source: include_str!("std/catalog/context.scm"),
             },
         ])
         .collect()

@@ -334,13 +334,12 @@ mod tests {
         assert!(markdown.starts_with("# Scaffold Scheme Reference"));
         assert!(markdown.contains("## Contents"));
         assert!(markdown.contains("| Group                                   | Entries |"));
-        assert!(markdown.contains("| [Catalog](#catalog)                     | 41      |"));
+        assert!(markdown.contains("| [Catalog](#catalog)                     | 43      |"));
         assert!(markdown.contains("## Capability Contracts"));
         assert!(markdown.contains("## Catalog Schema"));
-        assert!(
-            markdown
-                .contains("| `(scaffold fs)`        | host-read-only    | available | available |")
-        );
+        assert!(markdown.contains(
+            "| `(scaffold fs)`              | host-read-only    | available | available |"
+        ));
         assert!(markdown.contains("## <a id=\"catalog\"></a>Catalog"));
         assert!(markdown.contains("## <a id=\"filesystem\"></a>Filesystem"));
         assert!(markdown.contains("## <a id=\"paths\"></a>Paths"));

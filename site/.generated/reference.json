@@ -70,6 +70,30 @@
     {
       "library_name": [
         "scaffold",
+        "catalog",
+        "context"
+      ],
+      "library": "(scaffold catalog context)",
+      "bridge_library_name": [
+        "scaffold",
+        "catalog",
+        "context",
+        "generated"
+      ],
+      "bridge_library": "(scaffold catalog context generated)",
+      "effect": "context-read-only",
+      "modes": {
+        "catalog": "available",
+        "editor": "reference-only",
+        "test": "available",
+        "wasm": "reference-only"
+      },
+      "docs_source": "src/dsl/std/catalog/context.scm",
+      "notes": "Exposes explicit catalog evaluation options such as --catalog-mode."
+    },
+    {
+      "library_name": [
+        "scaffold",
         "fs"
       ],
       "library": "(scaffold fs)",
@@ -1795,6 +1819,69 @@
       "hidden": false
     },
     {
+      "name": "catalog/mode",
+      "kind": "function",
+      "signature": "catalog/mode",
+      "summary": "Mode selected for the current catalog evaluation.",
+      "markdown": null,
+      "raw_markdown": null,
+      "rendered_markdown": "```scheme\ncatalog/mode\n```\n\nMode selected for the current catalog evaluation.\n\n| Field               | Value                      |\n| ------------------- | -------------------------- |\n| Group               | Catalog                    |\n| Effect              | context-read-only          |\n| Requires capability | `scaffold.catalog-context` |\n\n**Returns:** A mode string supplied by `--catalog-mode`, or `#f` when absent.",
+      "example": null,
+      "params": [],
+      "returns": "A mode string supplied by `--catalog-mode`, or `#f` when absent.",
+      "group": "Catalog",
+      "see": [],
+      "effect": "context-read-only",
+      "requires_capability": [
+        "scaffold.catalog-context"
+      ],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/context.scm",
+      "source_location": "src/dsl/std/catalog/context.scm:14",
+      "range": {
+        "line": 13,
+        "start": 10,
+        "length": 12
+      },
+      "hidden": false
+    },
+    {
+      "name": "catalog/mode?",
+      "kind": "function",
+      "signature": "(catalog/mode? value)",
+      "summary": "Return whether `catalog/mode` matches a mode string.",
+      "markdown": null,
+      "raw_markdown": null,
+      "rendered_markdown": "```scheme\n(catalog/mode? value)\n```\n\nReturn whether `catalog/mode` matches a mode string.\n\n| Field               | Value                      |\n| ------------------- | -------------------------- |\n| Group               | Catalog                    |\n| Effect              | context-read-only          |\n| Requires capability | `scaffold.catalog-context` |\n\n**Parameters**\n\n| Parameter | Description                                          |\n| --------- | ---------------------------------------------------- |\n| `value`   | Mode string to compare with the active catalog mode. |\n",
+      "example": null,
+      "params": [
+        {
+          "name": "value",
+          "summary": "Mode string to compare with the active catalog mode."
+        }
+      ],
+      "returns": null,
+      "group": "Catalog",
+      "see": [],
+      "effect": "context-read-only",
+      "requires_capability": [
+        "scaffold.catalog-context"
+      ],
+      "stability": null,
+      "since": null,
+      "deprecated": null,
+      "source": "src/dsl/std/catalog/context.scm",
+      "source_location": "src/dsl/std/catalog/context.scm:22",
+      "range": {
+        "line": 21,
+        "start": 11,
+        "length": 13
+      },
+      "hidden": false
+    },
+    {
       "name": "catalog/tool",
       "kind": "keyword",
       "signature": "(catalog/tool name action field ...)",
@@ -2628,9 +2715,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/catalog/base.scm",
-      "source_location": "src/dsl/std/catalog/base.scm:127",
+      "source_location": "src/dsl/std/catalog/base.scm:130",
       "range": {
-        "line": 126,
+        "line": 129,
         "start": 14,
         "length": 12
       },
@@ -2666,9 +2753,9 @@
       "since": null,
       "deprecated": null,
       "source": "src/dsl/std/catalog/base.scm",
-      "source_location": "src/dsl/std/catalog/base.scm:133",
+      "source_location": "src/dsl/std/catalog/base.scm:136",
       "range": {
-        "line": 132,
+        "line": 135,
         "start": 14,
         "length": 13
       },

@@ -197,7 +197,7 @@ fn repl_missing_doc_possible_matches_use_specific_title() {
     assert!(markdown.starts_with("## Possible matches for `Catlog`"));
     assert!(markdown.contains("`catalog/tool`"));
     assert!(markdown.contains("## Try"));
-    assert!(markdown.contains("- `:doc catalog`"));
+    assert!(markdown.contains("- `:doc catalog/mode`"));
     assert!(!markdown.contains("Search results for"));
 }
 

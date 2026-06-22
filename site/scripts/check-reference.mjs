@@ -371,7 +371,7 @@ const expectations = [
   },
   {
     query: "context read only",
-    expected: "source/dir",
+    expected: "catalog/mode",
   },
   {
     query: "ripgrep",
